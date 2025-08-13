@@ -1,0 +1,24 @@
+{
+  "kind": "collectionType",
+  "collectionName": "post_types",
+  "info": {
+    "singularName": "post-type",
+    "pluralName": "post-types",
+    "displayName": "post-type"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "title": {
+      "type": "string"
+    },
+    "postboxes": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::postbox.postbox",
+      "mappedBy": "post_type"
+    }
+  }
+}

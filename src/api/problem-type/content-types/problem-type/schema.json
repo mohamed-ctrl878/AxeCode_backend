@@ -1,0 +1,24 @@
+{
+  "kind": "collectionType",
+  "collectionName": "problem_types",
+  "info": {
+    "singularName": "problem-type",
+    "pluralName": "problem-types",
+    "displayName": "problem-type"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "title": {
+      "type": "string"
+    },
+    "problems": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::problem.problem",
+      "mappedBy": "problem_types"
+    }
+  }
+}

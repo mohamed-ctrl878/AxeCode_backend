@@ -1,0 +1,73 @@
+{
+  "kind": "collectionType",
+  "collectionName": "problems",
+  "info": {
+    "singularName": "problem",
+    "pluralName": "problems",
+    "displayName": "problem",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "functionName": {
+      "type": "string"
+    },
+    "functionReturnType": {
+      "type": "string"
+    },
+    "language": {
+      "type": "string"
+    },
+    "dificulty": {
+      "type": "string"
+    },
+    "tittle": {
+      "type": "string"
+    },
+    "courses": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::course.course"
+    },
+    "problem_types": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::problem-type.problem-type",
+      "inversedBy": "problems"
+    },
+    "description": {
+      "type": "blocks"
+    },
+    "testCases": {
+      "type": "json"
+    },
+    "dislikes": {
+      "type": "biginteger",
+      "default": "1"
+    },
+    "seeproblem": {
+      "type": "biginteger",
+      "default": "1"
+    },
+    "acceptedproblem": {
+      "type": "biginteger",
+      "default": "1"
+    },
+    "likes": {
+      "type": "biginteger",
+      "default": "1"
+    },
+    "userputlike": {
+      "type": "json"
+    },
+    "comments": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::comment.comment",
+      "mappedBy": "problem"
+    }
+  }
+}

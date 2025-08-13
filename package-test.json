@@ -1,0 +1,23 @@
+{
+    "name": "code-execution-tests",
+    "version": "1.0.0",
+    "description": "Test runner for code execution API",
+    "main": "test_runner.js",
+    "scripts": {
+        "test": "node test_runner.js",
+        "test:all": "node test_runner.js all",
+        "test:list": "node test_runner.js list",
+        "test:specific": "node test_runner.js test",
+        "install-deps": "npm install axios"
+    },
+    "dependencies": {
+        "axios": "^1.6.0"
+    },
+    "keywords": [
+        "testing",
+        "api",
+        "code-execution"
+    ],
+    "author": "Your Name",
+    "license": "MIT"
+}

@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simple HttpOnly Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 600px;
+        margin: 50px auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+      }
+      button {
+        background-color: #007bff;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+      .result {
+        margin-top: 10px;
+        padding: 10px;
+        border-radius: 4px;
+      }
+      .success {
+        background-color: #d4edda;
+        color: #155724;
+      }
+      .error {
+        background-color: #f8d7da;
+        color: #721c24;
+      }
+      .info {
+        background-color: #d1ecf1;
+        color: #0c5460;
+      }
+      input {
+        width: 100%;
+        padding: 8px;
+        margin: 5px 0;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🍪 Simple HttpOnly Cookies Test</h1>
+
+    <div class="container">
+      <h2>Login Form</h2>
+      <input
+        type="email"
+        id="email"
+        placeholder="Email"
+        value="test@example.com"
+      />
+      <input
+        type="password"
+        id="password"
+        placeholder="Password"
+        value="password123"
+      />
+      <button id="testLoginBtn">1. Test Login</button>
+      <button id="testAuthBtn">2. Test Auth</button>
+      <button id="testLogoutBtn">3. Test Logout</button>
+      <button id="checkCookiesBtn">4. Check Cookies</button>
+
+      <div id="result"></div>
+    </div>
+
+    <div class="container">
+      <h2>Test Credentials</h2>
+      <p>You can use these test credentials (if you created a user):</p>
+      <ul>
+        <li><strong>Email:</strong> test@example.com</li>
+        <li><strong>Password:</strong> password123</li>
+      </ul>
+      <p><em>Or use any user you created in the Strapi admin panel.</em></p>
+    </div>
+
+    <script src="simple-test-script.js"></script>
+  </body>
+</html>

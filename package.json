@@ -1,0 +1,35 @@
+{
+  "name": "axe-code",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A Strapi application",
+  "scripts": {
+    "build": "strapi build",
+    "deploy": "strapi deploy",
+    "dev": "strapi develop",
+    "start": "strapi start",
+    "strapi": "strapi"
+  },
+  "dependencies": {
+    "@strapi/plugin-cloud": "^5.16.0",
+    "@strapi/plugin-users-permissions": "^5.16.0",
+    "@strapi/provider-email-nodemailer": "^5.16.0",
+    "@strapi/strapi": "^5.16.0",
+    "axios": "^1.10.0",
+    "nodemailer": "^7.0.3",
+    "pg": "8.8.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "react-router-dom": "^6.0.0",
+    "sendmail": "^1.6.1",
+    "strapi-utils": "^2.0.2",
+    "styled-components": "^6.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0 <=22.x.x",
+    "npm": ">=6.0.0"
+  },
+  "strapi": {
+    "uuid": "41a96715-be7e-4c6a-a928-7cb454b0888d"
+  }
+}

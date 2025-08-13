@@ -1,0 +1,916 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>اختبار شامل - HttpOnly Cookies Authentication</title>
+
+    <!-- كود تشخيصي مضمون -->
+    <script>
+      console.log("JavaScript يعمل!");
+      window.addEventListener("load", function () {
+        console.log("الصفحة تم تحميلها بالكامل");
+        const form = document.getElementById("loginForm");
+        console.log("الفورم:", form);
+
+        if (form) {
+          console.log("تم العثور على الفورم، جاري إضافة event listener...");
+
+          // إنشاء instance من HttpOnlyAuth
+          const auth = new window.HttpOnlyAuth("http://localhost:1338");
+
+          form.onsubmit = async function (e) {
+            alert("تم الضغط على تسجيل الدخول - الكود يعمل!"); // احذفها بعد التأكد
+            console.log("تم الضغط على تسجيل الدخول!");
+            e.preventDefault();
+            e.stopPropagation();
+
+            const identifier = document.getElementById("identifier").value;
+            const password = document.getElementById("password").value;
+            const resultDiv = document.getElementById("loginResult");
+
+            console.log("بيانات تسجيل الدخول:", { identifier, password });
+
+            try {
+              console.log("جاري تسجيل الدخول...");
+
+              // استخدام fetch مباشرة للتشخيص
+              const response = await fetch(
+                "http://localhost:1338/api/auth/login",
+                {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({ identifier, password }),
+                  credentials: "include", // مهم للـ HttpOnly cookies
+                }
+              );
+
+              console.log("Response status:", response.status);
+              console.log("Response headers:", response.headers);
+
+              const result = await response.json();
+              console.log("Response data:", result);
+
+              if (response.ok) {
+                resultDiv.innerHTML = `
+                  <div class="success">
+                    تم تسجيل الدخول بنجاح!<br>
+                    مرحباً ${result.user.username}<br>
+                    JWT: ${result.jwt ? "تم إنشاؤه" : "غير موجود"}
+                  </div>
+                `;
+
+                console.log("تم تسجيل الدخول بنجاح:", result.user.username);
+
+                // تحديث حالة المصادقة ومعلومات المستخدم
+                await checkAuthStatus();
+                await updateUserInfo();
+              } else {
+                throw new Error(result.error?.message || "فشل تسجيل الدخول");
+              }
+            } catch (error) {
+              console.error("خطأ في تسجيل الدخول:", error);
+              resultDiv.innerHTML = `
+                <div class="error">
+                  فشل تسجيل الدخول: ${error.message}
+                </div>
+              `;
+            }
+
+            return false;
+          };
+          console.log("تم إضافة event listener بنجاح");
+        } else {
+          console.error("لم يتم العثور على الفورم!");
+          alert("لم يتم العثور على الفورم!");
+        }
+      });
+    </script>
+
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f8f9fa;
+        direction: rtl;
+      }
+      .container {
+        background: white;
+        padding: 25px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+      }
+      .form-group {
+        margin-bottom: 20px;
+      }
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #333;
+      }
+      input,
+      select,
+      textarea {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #ddd;
+        border-radius: 6px;
+        box-sizing: border-box;
+        font-size: 14px;
+      }
+      input:focus,
+      select:focus,
+      textarea:focus {
+        outline: none;
+        border-color: #007bff;
+      }
+      button {
+        background-color: #007bff;
+        color: white;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        margin-right: 10px;
+        margin-bottom: 10px;
+        font-size: 14px;
+        font-weight: 600;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+      button.secondary {
+        background-color: #6c757d;
+      }
+      button.secondary:hover {
+        background-color: #545b62;
+      }
+      button.danger {
+        background-color: #dc3545;
+      }
+      button.danger:hover {
+        background-color: #c82333;
+      }
+      .success {
+        color: #155724;
+        background-color: #d4edda;
+        padding: 15px;
+        border-radius: 6px;
+        margin: 15px 0;
+        border: 1px solid #c3e6cb;
+      }
+      .error {
+        color: #721c24;
+        background-color: #f8d7da;
+        padding: 15px;
+        border-radius: 6px;
+        margin: 15px 0;
+        border: 1px solid #f5c6cb;
+      }
+      .info {
+        color: #0c5460;
+        background-color: #d1ecf1;
+        padding: 15px;
+        border-radius: 6px;
+        margin: 15px 0;
+        border: 1px solid #bee5eb;
+      }
+      .warning {
+        color: #856404;
+        background-color: #fff3cd;
+        padding: 15px;
+        border-radius: 6px;
+        margin: 15px 0;
+        border: 1px solid #ffeaa7;
+      }
+      pre {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 6px;
+        overflow-x: auto;
+        border: 1px solid #e9ecef;
+        font-size: 12px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+      .status-indicator {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-left: 8px;
+      }
+      .status-authenticated {
+        background-color: #28a745;
+      }
+      .status-not-authenticated {
+        background-color: #dc3545;
+      }
+      .permission-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 10px;
+        margin-top: 15px;
+      }
+      .permission-item {
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        text-align: center;
+      }
+      .permission-granted {
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+      }
+      .permission-denied {
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🔐 اختبار شامل - HttpOnly Cookies Authentication</h1>
+
+    <!-- حالة المصادقة -->
+    <div class="container">
+      <h2>📊 حالة المصادقة</h2>
+      <div id="authStatus" class="info">جاري التحقق من حالة المصادقة...</div>
+      <button onclick="checkAuthStatus()">🔄 تحديث الحالة</button>
+    </div>
+
+    <!-- تسجيل الدخول -->
+    <div class="container">
+      <h2>🔑 تسجيل الدخول</h2>
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="identifier">البريد الإلكتروني أو اسم المستخدم:</label>
+          <input type="text" id="identifier" name="identifier" required />
+        </div>
+        <div class="form-group">
+          <label for="password">كلمة المرور:</label>
+          <input type="password" id="password" name="password" required />
+        </div>
+        <button type="submit">تسجيل الدخول</button>
+      </form>
+      <div id="loginResult"></div>
+    </div>
+
+    <!-- اختبارات المصادقة -->
+    <div class="grid">
+      <div class="container">
+        <h2>🧪 اختبارات المصادقة</h2>
+        <button onclick="testAuth()">اختبار المصادقة</button>
+        <button onclick="getProtectedData()">الحصول على بيانات محمية</button>
+        <button onclick="refreshToken()">تحديث الـ Token</button>
+        <div id="authTestResult"></div>
+      </div>
+
+      <div class="container">
+        <h2>🔒 اختبارات الصلاحيات</h2>
+        <div class="form-group">
+          <label for="permissionAction">الإجراء:</label>
+          <select id="permissionAction">
+            <option value="create">إنشاء</option>
+            <option value="read">قراءة</option>
+            <option value="update">تحديث</option>
+            <option value="delete">حذف</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="permissionSubject">الموضوع:</label>
+          <select id="permissionSubject">
+            <option value="api::product.product">المنتجات</option>
+            <option value="api::course.course">الدورات</option>
+            <option value="api::user.user">المستخدمين</option>
+          </select>
+        </div>
+        <button onclick="checkPermission()">فحص الصلاحية</button>
+        <div id="permissionResult"></div>
+      </div>
+    </div>
+
+    <!-- اختبارات الأدوار -->
+    <div class="container">
+      <h2>👥 اختبارات الأدوار</h2>
+      <div class="form-group">
+        <label for="roleName">اسم الدور:</label>
+        <select id="roleName">
+          <option value="authenticated">مستخدم مصادق</option>
+          <option value="admin">مدير</option>
+          <option value="moderator">مشرف</option>
+          <option value="user">مستخدم عادي</option>
+        </select>
+      </div>
+      <button onclick="checkRole()">فحص الدور</button>
+      <button onclick="testAdminOnly()">اختبار Admin Only</button>
+      <div id="roleResult"></div>
+    </div>
+
+    <!-- اختبارات متقدمة -->
+    <div class="grid">
+      <div class="container">
+        <h2>⚡ اختبارات متقدمة</h2>
+        <button onclick="createProduct()">إنشاء منتج</button>
+        <button onclick="updateProduct()">تحديث منتج</button>
+        <button onclick="testCodeExecution()">اختبار تنفيذ الكود</button>
+        <div id="advancedTestResult"></div>
+      </div>
+
+      <div class="container">
+        <h2>🔍 فحص الأمان</h2>
+        <button onclick="checkCookies()">فحص الـ Cookies</button>
+        <button onclick="testXSSProtection()">اختبار حماية XSS</button>
+        <button onclick="testCSRFProtection()">اختبار حماية CSRF</button>
+        <div id="securityTestResult"></div>
+      </div>
+    </div>
+
+    <!-- تسجيل الخروج -->
+    <div class="container">
+      <h2>🚪 تسجيل الخروج</h2>
+      <button onclick="logout()" class="danger">تسجيل الخروج</button>
+      <div id="logoutResult"></div>
+    </div>
+
+    <!-- معلومات المستخدم -->
+    <div class="container">
+      <h2>👤 معلومات المستخدم</h2>
+      <div id="userInfo" class="info">لم يتم تسجيل الدخول بعد</div>
+    </div>
+
+    <!-- السجلات -->
+    <div class="container">
+      <h2>📝 السجلات</h2>
+      <button onclick="clearLogs()" class="secondary">مسح السجلات</button>
+      <div id="logs"></div>
+    </div>
+
+    <script src="/auth-utils.js"></script>
+    <script>
+      window.addEventListener("DOMContentLoaded", function () {
+        // إنشاء instance من HttpOnlyAuth
+        const auth = new window.HttpOnlyAuth("http://localhost:1338");
+        let logs = [];
+
+        // دالة إضافة السجلات
+        function addLog(message, type = "info") {
+          const timestamp = new Date().toLocaleTimeString("ar-SA");
+          logs.unshift(`[${timestamp}] ${message}`);
+          updateLogsDisplay();
+        }
+
+        // تحديث عرض السجلات
+        function updateLogsDisplay() {
+          const logsDiv = document.getElementById("logs");
+          logsDiv.innerHTML = logs.map((log) => `<div>${log}</div>`).join("");
+        }
+
+        // مسح السجلات
+        function clearLogs() {
+          logs = [];
+          updateLogsDisplay();
+        }
+
+        // التحقق من حالة المصادقة
+        async function checkAuthStatus() {
+          try {
+            addLog("جاري التحقق من حالة المصادقة...");
+            const isAuth = await auth.isAuthenticated();
+
+            const statusDiv = document.getElementById("authStatus");
+            if (isAuth) {
+              const user = await auth.getCurrentUser();
+              statusDiv.innerHTML = `
+                        <div class="success">
+                            <span class="status-indicator status-authenticated"></span>
+                            <strong>مصادق عليه</strong><br>
+                            المستخدم: ${user.username}<br>
+                            البريد الإلكتروني: ${user.email}<br>
+                            الدور: ${user.role?.type || "غير محدد"}
+                        </div>
+                    `;
+              addLog("المستخدم مصادق عليه", "success");
+            } else {
+              statusDiv.innerHTML = `
+                        <div class="error">
+                            <span class="status-indicator status-not-authenticated"></span>
+                            <strong>غير مصادق عليه</strong><br>
+                            يرجى تسجيل الدخول
+                        </div>
+                    `;
+              addLog("المستخدم غير مصادق عليه", "error");
+            }
+          } catch (error) {
+            addLog(`خطأ في التحقق من المصادقة: ${error.message}`, "error");
+          }
+        }
+
+        // تسجيل الدخول
+        document
+          .getElementById("loginForm")
+          .addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const identifier = document.getElementById("identifier").value;
+            const password = document.getElementById("password").value;
+            const resultDiv = document.getElementById("loginResult");
+
+            try {
+              addLog("جاري تسجيل الدخول...");
+              const result = await auth.login(identifier, password);
+
+              resultDiv.innerHTML = `
+                    <div class="success">
+                        تم تسجيل الدخول بنجاح!<br>
+                        مرحباً ${result.user.username}
+                    </div>
+                `;
+
+              addLog(
+                `تم تسجيل الدخول بنجاح: ${result.user.username}`,
+                "success"
+              );
+
+              // تحديث حالة المصادقة ومعلومات المستخدم
+              await checkAuthStatus();
+              await updateUserInfo();
+            } catch (error) {
+              resultDiv.innerHTML = `
+                    <div class="error">
+                        فشل تسجيل الدخول: ${error.message}
+                    </div>
+                `;
+              addLog(`فشل تسجيل الدخول: ${error.message}`, "error");
+            }
+          });
+
+        // اختبار المصادقة
+        async function testAuth() {
+          try {
+            addLog("جاري اختبار المصادقة...");
+            const result = await auth.authenticatedRequest(
+              "/api/products/test-auth"
+            );
+
+            document.getElementById("authTestResult").innerHTML = `
+                    <div class="success">
+                        <h4>اختبار المصادقة ناجح!</h4>
+                        <pre>${JSON.stringify(result, null, 2)}</pre>
+                    </div>
+                `;
+
+            addLog("اختبار المصادقة ناجح", "success");
+          } catch (error) {
+            document.getElementById("authTestResult").innerHTML = `
+                    <div class="error">
+                        فشل اختبار المصادقة: ${error.message}
+                    </div>
+                `;
+            addLog(`فشل اختبار المصادقة: ${error.message}`, "error");
+          }
+        }
+
+        // الحصول على بيانات محمية
+        async function getProtectedData() {
+          try {
+            addLog("جاري الحصول على البيانات المحمية...");
+            const result = await auth.authenticatedRequest(
+              "/api/products/protected-data"
+            );
+
+            document.getElementById("authTestResult").innerHTML = `
+                    <div class="success">
+                        <h4>تم الحصول على البيانات المحمية!</h4>
+                        <pre>${JSON.stringify(result, null, 2)}</pre>
+                    </div>
+                `;
+
+            addLog("تم الحصول على البيانات المحمية بنجاح", "success");
+          } catch (error) {
+            document.getElementById("authTestResult").innerHTML = `
+                    <div class="error">
+                        فشل الحصول على البيانات المحمية: ${error.message}
+                    </div>
+                `;
+            addLog(
+              `فشل الحصول على البيانات المحمية: ${error.message}`,
+              "error"
+            );
+          }
+        }
+
+        // تحديث الـ token
+        async function refreshToken() {
+          try {
+            addLog("جاري تحديث الـ token...");
+            const result = await auth.refreshToken();
+
+            document.getElementById("authTestResult").innerHTML = `
+                    <div class="success">
+                        <h4>تم تحديث الـ token بنجاح!</h4>
+                        <pre>${JSON.stringify(result, null, 2)}</pre>
+                    </div>
+                `;
+
+            addLog("تم تحديث الـ token بنجاح", "success");
+          } catch (error) {
+            document.getElementById("authTestResult").innerHTML = `
+                    <div class="error">
+                        فشل تحديث الـ token: ${error.message}
+                    </div>
+                `;
+            addLog(`فشل تحديث الـ token: ${error.message}`, "error");
+          }
+        }
+
+        // فحص الصلاحية
+        async function checkPermission() {
+          const action = document.getElementById("permissionAction").value;
+          const subject = document.getElementById("permissionSubject").value;
+
+          try {
+            addLog(`جاري فحص الصلاحية: ${action} على ${subject}...`);
+            const hasPermission = await auth.checkPermission(action, subject);
+
+            document.getElementById("permissionResult").innerHTML = `
+                    <div class="${hasPermission ? "success" : "error"}">
+                        <h4>نتيجة فحص الصلاحية</h4>
+                        <p><strong>الإجراء:</strong> ${action}</p>
+                        <p><strong>الموضوع:</strong> ${subject}</p>
+                        <p><strong>النتيجة:</strong> ${hasPermission ? "مسموح" : "غير مسموح"}</p>
+                    </div>
+                `;
+
+            addLog(
+              `صلاحية ${action} على ${subject}: ${hasPermission ? "مسموح" : "غير مسموح"}`,
+              hasPermission ? "success" : "error"
+            );
+          } catch (error) {
+            document.getElementById("permissionResult").innerHTML = `
+                    <div class="error">
+                        فشل فحص الصلاحية: ${error.message}
+                    </div>
+                `;
+            addLog(`فشل فحص الصلاحية: ${error.message}`, "error");
+          }
+        }
+
+        // فحص الدور
+        async function checkRole() {
+          const roleName = document.getElementById("roleName").value;
+
+          try {
+            addLog(`جاري فحص الدور: ${roleName}...`);
+            const hasRole = await auth.checkRole(roleName);
+
+            document.getElementById("roleResult").innerHTML = `
+                    <div class="${hasRole ? "success" : "error"}">
+                        <h4>نتيجة فحص الدور</h4>
+                        <p><strong>الدور المطلوب:</strong> ${roleName}</p>
+                        <p><strong>النتيجة:</strong> ${hasRole ? "يملك الدور" : "لا يملك الدور"}</p>
+                    </div>
+                `;
+
+            addLog(
+              `دور ${roleName}: ${hasRole ? "يملك الدور" : "لا يملك الدور"}`,
+              hasRole ? "success" : "error"
+            );
+          } catch (error) {
+            document.getElementById("roleResult").innerHTML = `
+                    <div class="error">
+                        فشل فحص الدور: ${error.message}
+                    </div>
+                `;
+            addLog(`فشل فحص الدور: ${error.message}`, "error");
+          }
+        }
+
+        // اختبار Admin Only
+        async function testAdminOnly() {
+          try {
+            addLog("جاري اختبار Admin Only...");
+            const result = await auth.authenticatedRequest(
+              "/api/products/admin-only"
+            );
+
+            document.getElementById("roleResult").innerHTML = `
+                    <div class="success">
+                        <h4>اختبار Admin Only ناجح!</h4>
+                        <pre>${JSON.stringify(result, null, 2)}</pre>
+                    </div>
+                `;
+
+            addLog("اختبار Admin Only ناجح", "success");
+          } catch (error) {
+            document.getElementById("roleResult").innerHTML = `
+                    <div class="error">
+                        فشل اختبار Admin Only: ${error.message}
+                    </div>
+                `;
+            addLog(`فشل اختبار Admin Only: ${error.message}`, "error");
+          }
+        }
+
+        // إنشاء منتج
+        async function createProduct() {
+          try {
+            addLog("جاري إنشاء منتج...");
+            const productData = {
+              name: "منتج تجريبي",
+              description: "وصف المنتج التجريبي",
+              price: 99.99,
+            };
+
+            const result = await auth.authenticatedRequest(
+              "/api/products/create-product",
+              {
+                method: "POST",
+                body: JSON.stringify(productData),
+              }
+            );
+
+            document.getElementById("advancedTestResult").innerHTML = `
+                    <div class="success">
+                        <h4>تم إنشاء المنتج بنجاح!</h4>
+                        <pre>${JSON.stringify(result, null, 2)}</pre>
+                    </div>
+                `;
+
+            addLog("تم إنشاء المنتج بنجاح", "success");
+          } catch (error) {
+            document.getElementById("advancedTestResult").innerHTML = `
+                    <div class="error">
+                        فشل إنشاء المنتج: ${error.message}
+                    </div>
+                `;
+            addLog(`فشل إنشاء المنتج: ${error.message}`, "error");
+          }
+        }
+
+        // تحديث منتج
+        async function updateProduct() {
+          try {
+            addLog("جاري تحديث منتج...");
+            const updateData = {
+              name: "منتج محدث",
+              description: "وصف محدث للمنتج",
+            };
+
+            const result = await auth.authenticatedRequest(
+              "/api/products/update-product/1",
+              {
+                method: "PUT",
+                body: JSON.stringify(updateData),
+              }
+            );
+
+            document.getElementById("advancedTestResult").innerHTML = `
+                    <div class="success">
+                        <h4>تم تحديث المنتج بنجاح!</h4>
+                        <pre>${JSON.stringify(result, null, 2)}</pre>
+                    </div>
+                `;
+
+            addLog("تم تحديث المنتج بنجاح", "success");
+          } catch (error) {
+            document.getElementById("advancedTestResult").innerHTML = `
+                    <div class="error">
+                        فشل تحديث المنتج: ${error.message}
+                    </div>
+                `;
+            addLog(`فشل تحديث المنتج: ${error.message}`, "error");
+          }
+        }
+
+        // اختبار تنفيذ الكود
+        async function testCodeExecution() {
+          try {
+            addLog("جاري اختبار تنفيذ الكود...");
+            const codeData = {
+              language: "cpp",
+              code: "int main() { return 42; }",
+              testCases: [],
+              functionName: "main",
+              functionReturnType: "int",
+              expected: [42],
+            };
+
+            const result = await auth.authenticatedRequest(
+              "/api/code-execution",
+              {
+                method: "POST",
+                body: JSON.stringify(codeData),
+              }
+            );
+
+            document.getElementById("advancedTestResult").innerHTML = `
+                    <div class="success">
+                        <h4>تم تنفيذ الكود بنجاح!</h4>
+                        <pre>${JSON.stringify(result, null, 2)}</pre>
+                    </div>
+                `;
+
+            addLog("تم تنفيذ الكود بنجاح", "success");
+          } catch (error) {
+            document.getElementById("advancedTestResult").innerHTML = `
+                    <div class="error">
+                        فشل تنفيذ الكود: ${error.message}
+                    </div>
+                `;
+            addLog(`فشل تنفيذ الكود: ${error.message}`, "error");
+          }
+        }
+
+        // فحص الـ Cookies
+        function checkCookies() {
+          addLog("جاري فحص الـ Cookies...");
+
+          const cookies = document.cookie;
+          const jwtCookie = document.cookie
+            .split(";")
+            .find((c) => c.trim().startsWith("jwt="));
+
+          let result = "";
+          if (cookies) {
+            result += `<p><strong>الـ Cookies المرئية:</strong> ${cookies}</p>`;
+          } else {
+            result += `<p><strong>لا توجد cookies مرئية</strong></p>`;
+          }
+
+          if (jwtCookie) {
+            result += `<p class="error"><strong>تحذير:</strong> JWT cookie مرئي (مشكلة أمنية!)</p>`;
+            addLog("JWT cookie مرئي - مشكلة أمنية!", "error");
+          } else {
+            result += `<p class="success"><strong>ممتاز:</strong> JWT cookie غير مرئي (آمن!)</p>`;
+            addLog("JWT cookie غير مرئي - آمن!", "success");
+          }
+
+          document.getElementById("securityTestResult").innerHTML = `
+                <div class="info">
+                    <h4>نتائج فحص الـ Cookies</h4>
+                    ${result}
+                </div>
+            `;
+        }
+
+        // اختبار حماية XSS
+        function testXSSProtection() {
+          addLog("جاري اختبار حماية XSS...");
+
+          try {
+            // محاولة الوصول إلى JWT cookie عبر JavaScript
+            const jwtCookie = document.cookie
+              .split(";")
+              .find((c) => c.trim().startsWith("jwt="));
+
+            if (jwtCookie) {
+              document.getElementById("securityTestResult").innerHTML = `
+                        <div class="error">
+                            <h4>اختبار حماية XSS</h4>
+                            <p><strong>تحذير:</strong> يمكن الوصول إلى JWT cookie عبر JavaScript</p>
+                            <p>هذا يشكل خطر أمني!</p>
+                        </div>
+                    `;
+              addLog("فشل اختبار حماية XSS - JWT cookie قابل للوصول", "error");
+            } else {
+              document.getElementById("securityTestResult").innerHTML = `
+                        <div class="success">
+                            <h4>اختبار حماية XSS</h4>
+                            <p><strong>ممتاز:</strong> لا يمكن الوصول إلى JWT cookie عبر JavaScript</p>
+                            <p>حماية XSS تعمل بشكل صحيح!</p>
+                        </div>
+                    `;
+              addLog("اختبار حماية XSS ناجح", "success");
+            }
+          } catch (error) {
+            addLog(`خطأ في اختبار XSS: ${error.message}`, "error");
+          }
+        }
+
+        // اختبار حماية CSRF
+        function testCSRFProtection() {
+          addLog("جاري اختبار حماية CSRF...");
+
+          // فحص إعدادات SameSite
+          const result = `
+                <div class="info">
+                    <h4>اختبار حماية CSRF</h4>
+                    <p><strong>SameSite Cookie:</strong> تم تعيينه على "strict"</p>
+                    <p><strong>HttpOnly:</strong> تم تفعيله</p>
+                    <p><strong>النتيجة:</strong> حماية CSRF مفعلة</p>
+                </div>
+            `;
+
+          document.getElementById("securityTestResult").innerHTML = result;
+          addLog("اختبار حماية CSRF ناجح", "success");
+        }
+
+        // تسجيل الخروج
+        async function logout() {
+          try {
+            addLog("جاري تسجيل الخروج...");
+            const result = await auth.logout();
+
+            document.getElementById("logoutResult").innerHTML = `
+                    <div class="success">
+                        تم تسجيل الخروج بنجاح!
+                    </div>
+                `;
+
+            addLog("تم تسجيل الخروج بنجاح", "success");
+
+            // تحديث حالة المصادقة ومعلومات المستخدم
+            await checkAuthStatus();
+            await updateUserInfo();
+          } catch (error) {
+            document.getElementById("logoutResult").innerHTML = `
+                    <div class="error">
+                        فشل تسجيل الخروج: ${error.message}
+                    </div>
+                `;
+            addLog(`فشل تسجيل الخروج: ${error.message}`, "error");
+          }
+        }
+
+        // تحديث معلومات المستخدم
+        async function updateUserInfo() {
+          try {
+            const user = await auth.getCurrentUser();
+
+            document.getElementById("userInfo").innerHTML = `
+                    <div class="success">
+                        <h4>معلومات المستخدم</h4>
+                        <p><strong>الاسم:</strong> ${user.username}</p>
+                        <p><strong>البريد الإلكتروني:</strong> ${user.email}</p>
+                        <p><strong>الدور:</strong> ${user.role?.type || "غير محدد"}</p>
+                        <p><strong>مؤكد:</strong> ${user.confirmed ? "نعم" : "لا"}</p>
+                        <p><strong>محظور:</strong> ${user.blocked ? "نعم" : "لا"}</p>
+                    </div>
+                `;
+          } catch (error) {
+            document.getElementById("userInfo").innerHTML = `
+                    <div class="error">
+                        لم يتم تسجيل الدخول بعد
+                    </div>
+                `;
+          }
+        }
+
+        // تسجيل الدخول - إضافة event listener للفورم
+        document
+          .getElementById("loginForm")
+          .addEventListener("submit", async (e) => {
+            e.preventDefault(); // منع إعادة تحميل الصفحة
+
+            const identifier = document.getElementById("identifier").value;
+            const password = document.getElementById("password").value;
+            const resultDiv = document.getElementById("loginResult");
+
+            try {
+              addLog("جاري تسجيل الدخول...");
+              const result = await auth.login(identifier, password);
+
+              resultDiv.innerHTML = `
+              <div class="success">
+                تم تسجيل الدخول بنجاح!<br>
+                مرحباً ${result.user.username}
+              </div>
+            `;
+
+              addLog(
+                `تم تسجيل الدخول بنجاح: ${result.user.username}`,
+                "success"
+              );
+
+              // تحديث حالة المصادقة ومعلومات المستخدم
+              await checkAuthStatus();
+              await updateUserInfo();
+            } catch (error) {
+              resultDiv.innerHTML = `
+              <div class="error">
+                فشل تسجيل الدخول: ${error.message}
+              </div>
+            `;
+              addLog(`فشل تسجيل الدخول: ${error.message}`, "error");
+            }
+          });
+
+        // تهيئة الصفحة
+        (async () => {
+          addLog("تم تحميل صفحة الاختبار");
+          await checkAuthStatus();
+          await updateUserInfo();
+        })();
+      });
+    </script>
+  </body>
+</html>

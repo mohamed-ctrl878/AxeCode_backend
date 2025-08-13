@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Console Test - HttpOnly Cookies</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+      }
+      pre {
+        background-color: #f8f9fa;
+        padding: 10px;
+        border-radius: 4px;
+        overflow-x: auto;
+        border: 1px solid #e9ecef;
+      }
+      .success {
+        color: green;
+      }
+      .error {
+        color: red;
+      }
+      .info {
+        color: blue;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>HttpOnly Cookies - Console Testing</h1>
+
+    <div class="container">
+      <h2>Test Commands</h2>
+      <p>
+        Open your browser's Developer Tools (F12) and run these commands in the
+        Console:
+      </p>
+
+      <h3>1. Login</h3>
+      <pre>await testLogin('your-email@example.com', 'your-password')</pre>
+
+      <h3>2. Check Authentication</h3>
+      <pre>await testAuth()</pre>
+
+      <h3>3. Get Protected Data</h3>
+      <pre>await getProtectedData()</pre>
+
+      <h3>4. Check Current User</h3>
+      <pre>await getCurrentUser()</pre>
+
+      <h3>5. Logout</h3>
+      <pre>await logout()</pre>
+
+      <h3>6. Check Cookies (Security Test)</h3>
+      <pre>checkCookies()</pre>
+    </div>
+
+    <div class="container">
+      <h2>Results</h2>
+      <div id="results"></div>
+    </div>
+
+    <script src="/test-console-script.js"></script>
+  </body>
+</html>
