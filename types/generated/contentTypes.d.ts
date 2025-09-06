@@ -409,29 +409,30 @@ export interface ApiCommentComment extends Struct.CollectionTypeSchema {
   };
 }
 
-export interface ApiCourseToPracticeCourseToPractice
-  extends Struct.CollectionTypeSchema {
-  collectionName: 'course_to_practices';
+export interface ApiCourseTypeCourseType extends Struct.CollectionTypeSchema {
+  collectionName: 'course_types';
   info: {
-    displayName: 'courseToPractice';
-    pluralName: 'course-to-practices';
-    singularName: 'course-to-practice';
+    displayName: 'course-type';
+    pluralName: 'course-types';
+    singularName: 'course-type';
   };
   options: {
     draftAndPublish: true;
   };
   attributes: {
-    courses: Schema.Attribute.Relation<'oneToMany', 'api::course.course'>;
+    courses: Schema.Attribute.Relation<'manyToMany', 'api::course.course'>;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    lessons: Schema.Attribute.Relation<'manyToMany', 'api::lesson.lesson'>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
-      'api::course-to-practice.course-to-practice'
+      'api::course-type.course-type'
     > &
       Schema.Attribute.Private;
     publishedAt: Schema.Attribute.DateTime;
+    title: Schema.Attribute.String;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -450,15 +451,14 @@ export interface ApiCourseCourse extends Struct.CollectionTypeSchema {
     draftAndPublish: true;
   };
   attributes: {
-    course_to_practice: Schema.Attribute.Relation<
-      'manyToOne',
-      'api::course-to-practice.course-to-practice'
+    course_types: Schema.Attribute.Relation<
+      'manyToMany',
+      'api::course-type.course-type'
     >;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     description: Schema.Attribute.Blocks;
-    lessons: Schema.Attribute.Relation<'oneToMany', 'api::lesson.lesson'>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
@@ -466,13 +466,16 @@ export interface ApiCourseCourse extends Struct.CollectionTypeSchema {
     > &
       Schema.Attribute.Private;
     picture: Schema.Attribute.Media<'images'>;
+    problem_types: Schema.Attribute.Relation<
+      'manyToMany',
+      'api::problem-type.problem-type'
+    >;
     publishedAt: Schema.Attribute.DateTime;
-    special: Schema.Attribute.String;
-    tittle: Schema.Attribute.String;
-    topic: Schema.Attribute.String;
+    title: Schema.Attribute.String;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    weeks: Schema.Attribute.Relation<'oneToMany', 'api::week.week'>;
   };
 }
 
@@ -488,7 +491,10 @@ export interface ApiLessonLesson extends Struct.CollectionTypeSchema {
     draftAndPublish: true;
   };
   attributes: {
-    course: Schema.Attribute.Relation<'manyToOne', 'api::course.course'>;
+    course_types: Schema.Attribute.Relation<
+      'manyToMany',
+      'api::course-type.course-type'
+    >;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -499,105 +505,17 @@ export interface ApiLessonLesson extends Struct.CollectionTypeSchema {
       'api::lesson.lesson'
     > &
       Schema.Attribute.Private;
+    problem_types: Schema.Attribute.Relation<
+      'manyToMany',
+      'api::problem-type.problem-type'
+    >;
     publishedAt: Schema.Attribute.DateTime;
-    tittle: Schema.Attribute.String;
+    title: Schema.Attribute.String;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     video: Schema.Attribute.Media<'videos' | 'audios' | 'files', true>;
-  };
-}
-
-export interface ApiPostTypePostType extends Struct.CollectionTypeSchema {
-  collectionName: 'post_types';
-  info: {
-    displayName: 'post-type';
-    pluralName: 'post-types';
-    singularName: 'post-type';
-  };
-  options: {
-    draftAndPublish: true;
-  };
-  attributes: {
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::post-type.post-type'
-    > &
-      Schema.Attribute.Private;
-    postboxes: Schema.Attribute.Relation<'oneToMany', 'api::postbox.postbox'>;
-    publishedAt: Schema.Attribute.DateTime;
-    title: Schema.Attribute.String;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
-export interface ApiPostPost extends Struct.CollectionTypeSchema {
-  collectionName: 'posts';
-  info: {
-    displayName: 'post';
-    pluralName: 'posts';
-    singularName: 'post';
-  };
-  options: {
-    draftAndPublish: true;
-  };
-  attributes: {
-    caption: Schema.Attribute.Blocks;
-    comments: Schema.Attribute.Relation<'oneToMany', 'api::comment.comment'>;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    image: Schema.Attribute.Media<'images' | 'files'>;
-    likes: Schema.Attribute.String;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<'oneToMany', 'api::post.post'> &
-      Schema.Attribute.Private;
-    postbox: Schema.Attribute.Relation<'manyToOne', 'api::postbox.postbox'>;
-    publishedAt: Schema.Attribute.DateTime;
-    title: Schema.Attribute.String;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
-export interface ApiPostboxPostbox extends Struct.CollectionTypeSchema {
-  collectionName: 'postboxes';
-  info: {
-    displayName: 'postbox';
-    pluralName: 'postboxes';
-    singularName: 'postbox';
-  };
-  options: {
-    draftAndPublish: true;
-  };
-  attributes: {
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::postbox.postbox'
-    > &
-      Schema.Attribute.Private;
-    picture: Schema.Attribute.Media<'images' | 'files'>;
-    post_type: Schema.Attribute.Relation<
-      'manyToOne',
-      'api::post-type.post-type'
-    >;
-    posts: Schema.Attribute.Relation<'oneToMany', 'api::post.post'>;
-    publishedAt: Schema.Attribute.DateTime;
-    title: Schema.Attribute.String;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
+    weeks: Schema.Attribute.Relation<'manyToMany', 'api::week.week'>;
   };
 }
 
@@ -612,9 +530,11 @@ export interface ApiProblemTypeProblemType extends Struct.CollectionTypeSchema {
     draftAndPublish: true;
   };
   attributes: {
+    courses: Schema.Attribute.Relation<'manyToMany', 'api::course.course'>;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    lessons: Schema.Attribute.Relation<'manyToMany', 'api::lesson.lesson'>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
@@ -707,28 +627,27 @@ export interface ApiProductProduct extends Struct.CollectionTypeSchema {
   };
 }
 
-export interface ApiReplieReplie extends Struct.CollectionTypeSchema {
-  collectionName: 'replies';
+export interface ApiWeekWeek extends Struct.CollectionTypeSchema {
+  collectionName: 'weeks';
   info: {
-    displayName: 'replie';
-    pluralName: 'replies';
-    singularName: 'replie';
+    displayName: 'week';
+    pluralName: 'weeks';
+    singularName: 'week';
   };
   options: {
     draftAndPublish: true;
   };
   attributes: {
+    course: Schema.Attribute.Relation<'manyToOne', 'api::course.course'>;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    lessons: Schema.Attribute.Relation<'manyToMany', 'api::lesson.lesson'>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::replie.replie'
-    > &
+    localizations: Schema.Attribute.Relation<'oneToMany', 'api::week.week'> &
       Schema.Attribute.Private;
     publishedAt: Schema.Attribute.DateTime;
-    replie: Schema.Attribute.Text;
+    title: Schema.Attribute.String;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -1247,16 +1166,13 @@ declare module '@strapi/strapi' {
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
       'api::comment.comment': ApiCommentComment;
-      'api::course-to-practice.course-to-practice': ApiCourseToPracticeCourseToPractice;
+      'api::course-type.course-type': ApiCourseTypeCourseType;
       'api::course.course': ApiCourseCourse;
       'api::lesson.lesson': ApiLessonLesson;
-      'api::post-type.post-type': ApiPostTypePostType;
-      'api::post.post': ApiPostPost;
-      'api::postbox.postbox': ApiPostboxPostbox;
       'api::problem-type.problem-type': ApiProblemTypeProblemType;
       'api::problem.problem': ApiProblemProblem;
       'api::product.product': ApiProductProduct;
-      'api::replie.replie': ApiReplieReplie;
+      'api::week.week': ApiWeekWeek;
       'plugin::content-releases.release': PluginContentReleasesRelease;
       'plugin::content-releases.release-action': PluginContentReleasesReleaseAction;
       'plugin::i18n.locale': PluginI18NLocale;

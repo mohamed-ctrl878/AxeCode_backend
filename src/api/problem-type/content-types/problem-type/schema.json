@@ -19,6 +19,18 @@
       "relation": "manyToMany",
       "target": "api::problem.problem",
       "mappedBy": "problem_types"
+    },
+    "courses": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::course.course",
+      "mappedBy": "problem_types"
+    },
+    "lessons": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::lesson.lesson",
+      "mappedBy": "problem_types"
     }
   }
 }

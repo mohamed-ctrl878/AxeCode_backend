@@ -1,0 +1,30 @@
+{
+  "kind": "collectionType",
+  "collectionName": "course_types",
+  "info": {
+    "singularName": "course-type",
+    "pluralName": "course-types",
+    "displayName": "course-type"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "courses": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::course.course",
+      "inversedBy": "course_types"
+    },
+    "title": {
+      "type": "string"
+    },
+    "lessons": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::lesson.lesson",
+      "inversedBy": "course_types"
+    }
+  }
+}

@@ -1,9 +1,9 @@
 'use strict';
 
 /**
- * replie service
+ * course-type service
  */
 
 const { createCoreService } = require('@strapi/strapi').factories;
 
-module.exports = createCoreService('api::replie.replie');
+module.exports = createCoreService('api::course-type.course-type');

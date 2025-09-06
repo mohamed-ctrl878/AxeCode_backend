@@ -12,7 +12,7 @@
   },
   "pluginOptions": {},
   "attributes": {
-    "tittle": {
+    "title": {
       "type": "string"
     },
     "video": {
@@ -25,14 +25,26 @@
         "files"
       ]
     },
-    "course": {
-      "type": "relation",
-      "relation": "manyToOne",
-      "target": "api::course.course",
-      "inversedBy": "lessons"
-    },
     "description": {
       "type": "blocks"
+    },
+    "course_types": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::course-type.course-type",
+      "mappedBy": "lessons"
+    },
+    "weeks": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::week.week",
+      "mappedBy": "lessons"
+    },
+    "problem_types": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::problem-type.problem-type",
+      "inversedBy": "lessons"
     }
   }
 }

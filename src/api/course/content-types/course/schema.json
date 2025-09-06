@@ -12,14 +12,8 @@
   },
   "pluginOptions": {},
   "attributes": {
-    "tittle": {
+    "title": {
       "type": "string"
-    },
-    "lessons": {
-      "type": "relation",
-      "relation": "oneToMany",
-      "target": "api::lesson.lesson",
-      "mappedBy": "course"
     },
     "description": {
       "type": "blocks"
@@ -32,17 +26,23 @@
         "images"
       ]
     },
-    "course_to_practice": {
+    "weeks": {
       "type": "relation",
-      "relation": "manyToOne",
-      "target": "api::course-to-practice.course-to-practice",
+      "relation": "oneToMany",
+      "target": "api::week.week",
+      "mappedBy": "course"
+    },
+    "problem_types": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::problem-type.problem-type",
       "inversedBy": "courses"
     },
-    "special": {
-      "type": "string"
-    },
-    "topic": {
-      "type": "string"
+    "course_types": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::course-type.course-type",
+      "mappedBy": "courses"
     }
   }
 }

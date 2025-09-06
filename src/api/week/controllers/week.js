@@ -1,9 +1,9 @@
 'use strict';
 
 /**
- * replie controller
+ * week controller
  */
 
 const { createCoreController } = require('@strapi/strapi').factories;
 
-module.exports = createCoreController('api::replie.replie');
+module.exports = createCoreController('api::week.week');
