@@ -16,6 +16,8 @@
     "@strapi/provider-email-nodemailer": "^5.16.0",
     "@strapi/strapi": "^5.16.0",
     "axios": "^1.10.0",
+    "better-sqlite3": "^12.2.0",
+    "dockerode": "^4.0.8",
     "nodemailer": "^7.0.3",
     "pg": "8.8.0",
     "react": "^18.0.0",
@@ -23,7 +25,8 @@
     "react-router-dom": "^6.0.0",
     "sendmail": "^1.6.1",
     "strapi-utils": "^2.0.2",
-    "styled-components": "^6.0.0"
+    "styled-components": "^6.0.0",
+    "tar-stream": "^3.1.7"
   },
   "engines": {
     "node": ">=18.0.0 <=22.x.x",
