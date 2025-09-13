@@ -1,0 +1,24 @@
+{
+  "language": "cpp",
+  "code": "double calculateAverage(vector<int> nums) { if(nums.empty()) return 0.0; double sum = 0; for(int num : nums) sum += num; return sum / nums.size(); }",
+  "testCases": [
+    {
+      "id": 1,
+      "inputs": [[10, 20, 30, 40, 50]],
+      "inputTypes": ["vector<int>"]
+    },
+    {
+      "id": 2,
+      "inputs": [[1, 2, 3]],
+      "inputTypes": ["vector<int>"]
+    },
+    {
+      "id": 3,
+      "inputs": [[]],
+      "inputTypes": ["vector<int>"]
+    }
+  ],
+  "functionName": "calculateAverage",
+  "functionReturnType": "double",
+  "expected": [30.0, 2.0, 0.0]
+}

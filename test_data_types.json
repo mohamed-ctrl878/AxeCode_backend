@@ -1,0 +1,19 @@
+{
+  "language": "cpp",
+  "code": "vector<int> reverseArray(vector<int> nums) { reverse(nums.begin(), nums.end()); return nums; }",
+  "testCases": [
+    {
+      "id": 1,
+      "inputs": [[1, 2, 3, 4, 5]],
+      "inputTypes": ["vector<int>"]
+    },
+    {
+      "id": 2,
+      "inputs": [[10, 20, 30]],
+      "inputTypes": ["vector<int>"]
+    }
+  ],
+  "functionName": "reverseArray",
+  "functionReturnType": "vector<int>",
+  "expected": [[5, 4, 3, 2, 1], [30, 20, 10]]
+}

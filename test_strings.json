@@ -1,0 +1,19 @@
+{
+  "language": "cpp",
+  "code": "string reverseString(string str) { reverse(str.begin(), str.end()); return str; }",
+  "testCases": [
+    {
+      "id": 1,
+      "inputs": ["hello"],
+      "inputTypes": ["string"]
+    },
+    {
+      "id": 2,
+      "inputs": ["world"],
+      "inputTypes": ["string"]
+    }
+  ],
+  "functionName": "reverseString",
+  "functionReturnType": "string",
+  "expected": ["olleh", "dlrow"]
+}

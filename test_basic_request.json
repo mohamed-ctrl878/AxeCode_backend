@@ -1,0 +1,19 @@
+{
+  "language": "cpp",
+  "code": "int add(int a, int b) { return a + b; }",
+  "testCases": [
+    {
+      "id": 1,
+      "inputs": [5, 3],
+      "inputTypes": ["int", "int"]
+    },
+    {
+      "id": 2,
+      "inputs": [10, 15],
+      "inputTypes": ["int", "int"]
+    }
+  ],
+  "functionName": "add",
+  "functionReturnType": "int",
+  "expected": [8, 25]
+}

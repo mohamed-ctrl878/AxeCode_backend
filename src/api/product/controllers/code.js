@@ -1,8 +1,9 @@
-const fs = require("fs");
-const { exec } = require("child_process");
-const path = require("path");
-const util = require("util");
-const execPromise = util.promisify(exec);
+'use strict';
+
+const path = require('path');
+const fs = require('fs');
+
+console.log('[Product Controller] Loading code.js');
 
 // إعدادات الأمان والحدود
 const SECURITY_CONFIG = {
@@ -86,6 +87,16 @@ const SECURITY_CONFIG = {
 
 module.exports = {
   async executeCode(ctx) {
+    console.log('[Product Controller] Execute method called');
+    console.log('[Product Controller] Request body:', JSON.stringify(ctx.request.body, null, 2));
+
+    // تصحيح هيكل البيانات إذا كانت مغلفة في كائن request
+    const requestData = ctx.request.body.request || ctx.request.body;
+    console.log('[Product Controller] Processed request data:', JSON.stringify(requestData, null, 2));
+
+    const dockerService = strapi.service('api::product.docker-executor');
+    console.log('[Product Controller] Docker service:', dockerService);
+    
     try {
       const {
         language,
@@ -94,7 +105,7 @@ module.exports = {
         functionName,
         functionReturnType,
         expected,
-      } = ctx.request.body;
+      } = requestData;
 
       // فحص حجم الكود
       if (code && code.length > SECURITY_CONFIG.MAX_CODE_SIZE) {
@@ -145,9 +156,12 @@ module.exports = {
         return ctx.badRequest("Invalid or missing expected results array");
       }
 
+      console.log('[Product Controller] Creating temporary directory');
       const tmpDir = path.join(__dirname, "tmp");
+      console.log('[Product Controller] Temporary directory path:', tmpDir);
       try {
         fs.mkdirSync(tmpDir, { recursive: true });
+        console.log('[Product Controller] Temporary directory created successfully');
       } catch (error) {
         return ctx.send({
           compileError:
@@ -369,7 +383,9 @@ int main() {
         });
       }
 
+      console.log('[Product Controller] Writing code to file:', filepath);
       fs.writeFileSync(filepath, fullCode);
+      console.log('[Product Controller] Code written successfully');
 
       // طباعة الكود المُنشأ للتحقق
       console.log("Generated C++ Code:");
@@ -386,50 +402,17 @@ int main() {
       }
 
       try {
-        console.log("Compiling file:", filepath);
+        console.log("[Product Controller] Executing code in Docker container");
+        console.log("[Product Controller] Docker service available:", !!dockerService);
+        console.log("[Product Controller] Docker executor available:", !!this.dockerExecutor);
 
-        // فحص وجود g++
-        try {
-          await execPromise("g++ --version");
-        } catch (error) {
-          return ctx.send({
-            compileError:
-              "g++ compiler not found. Please install g++ compiler.",
-            results: [],
-          });
-        }
-
-        // تنفيذ التجميع مع حدود زمنية
-        const compileOutput = await Promise.race([
-          execPromise(`g++ -std=c++17 -O2 ${filepath} -o ${filepath}.exe`),
-          new Promise((_, reject) =>
-            setTimeout(() => reject(new Error("Compilation timeout")), 10000)
-          ),
-        ]);
-
-        if (compileOutput.stderr && compileOutput.stderr.trim() !== "") {
-          console.log("Compilation stderr:", compileOutput.stderr);
-          return ctx.send({
-            compileError: "Compilation error: " + compileOutput.stderr,
-            results: [],
-          });
-        }
-
-        // تنفيذ البرنامج مع حدود زمنية وذاكرة
-        const executionOutput = await Promise.race([
-          execPromise(`${filepath}.exe`),
-          new Promise((_, reject) =>
-            setTimeout(
-              () => reject(new Error("Execution timeout")),
-              SECURITY_CONFIG.MAX_EXECUTION_TIME
-            )
-          ),
-        ]);
+        // تنفيذ الكود في حاوية Docker
+        const executionOutput = await dockerService.execute(fullCode, testCases);
 
         // فحص حجم النتيجة
         if (
-          executionOutput.stdout &&
-          executionOutput.stdout.length > SECURITY_CONFIG.MAX_OUTPUT_SIZE
+          executionOutput.output &&
+          executionOutput.output.length > SECURITY_CONFIG.MAX_OUTPUT_SIZE
         ) {
           return ctx.send({
             compileError: "Output size exceeds limit",
@@ -438,12 +421,13 @@ int main() {
         }
 
         // طباعة النتيجة الكاملة من التنفيذ
-        console.log("EXECUTION OUTPUT:", executionOutput.stdout);
-        console.log("EXECUTION STDERR:", executionOutput.stderr);
+        console.log("EXECUTION OUTPUT:", executionOutput.output);
+        console.log("EXIT CODE:", executionOutput.exitCode);
+        console.log("ERROR:", executionOutput.error);
 
-        if (executionOutput.stderr) {
+        if (executionOutput.error) {
           return ctx.send({
-            compileError: "Execution error: " + executionOutput.stderr,
+            compileError: "Execution error: " + executionOutput.error,
             results: [],
           });
         }
@@ -457,7 +441,7 @@ int main() {
         }
 
         // تحليل النتائج
-        const outputLines = executionOutput.stdout
+        const outputLines = executionOutput.output
           .split("\n")
           .filter((line) => line.trim());
         console.log("FILTERED OUTPUT LINES:", outputLines);
