@@ -1,16 +1,52 @@
 "use strict";
 
 module.exports = {
-  // تسجيل الدخول مع إرسال JWT كـ Cookie
+  // Login with JWT sent as Cookie
   async login(ctx) {
     try {
-      const { identifier, password } = ctx.request.body;
+      const { identifier, password, recaptchaToken } = ctx.request.body;
 
       if (!identifier || !password) {
         return ctx.badRequest("Missing identifier or password");
       }
 
-      // البحث عن المستخدم
+      // Verify reCAPTCHA token if provided
+      if (recaptchaToken) {
+        const recaptchaService = strapi.service("api::auth.recaptcha-service");
+        const clientIP = recaptchaService.getClientIP(ctx);
+        
+        const verificationResult = await recaptchaService.verifyRecaptcha(
+          recaptchaToken,
+          clientIP
+        );
+        
+        if (!recaptchaService.isValidVerification(verificationResult)) {
+          strapi.log.warn('Login rejected: reCAPTCHA verification failed', {
+            identifier,
+            clientIP,
+            errorCodes: verificationResult.errorCodes,
+          });
+          return ctx.badRequest("reCAPTCHA verification failed", {
+            error: "recaptcha_failed",
+            details: "Please complete the reCAPTCHA verification"
+          });
+        }
+        
+        strapi.log.info('reCAPTCHA verification successful', {
+          identifier,
+          score: verificationResult.score
+        });
+      } else {
+        // If reCAPTCHA is enabled but no token provided
+        if (process.env.RECAPTCHA_REQUIRED === 'true') {
+          return ctx.badRequest("reCAPTCHA verification is required", {
+            error: "recaptcha_missing",
+            details: "Please complete the reCAPTCHA verification"
+          });
+        }
+      }
+
+      // Find user
       const user = await strapi
         .query("plugin::users-permissions.user")
         .findOne({
@@ -21,7 +57,7 @@ module.exports = {
         return ctx.unauthorized("User not found");
       }
 
-      // التحقق من كلمة المرور
+      // Validate password
       const validPassword = await strapi.plugins[
         "users-permissions"
       ].services.user.validatePassword(password, user.password);
@@ -37,21 +73,21 @@ module.exports = {
         return ctx.forbidden("User is not confirmed");
       }
 
-      // إنشاء JWT
+      // Create JWT
       const jwt = strapi.plugins["users-permissions"].services.jwt.issue({
         id: user.id,
       });
 
-      // إرسال JWT كـ Cookie
+      // Send JWT as Cookie
       ctx.cookies.set("jwt", jwt, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
-        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 يوم
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
         path: "/",
       });
 
-      // إرجاع بيانات المستخدم وJWT في body أيضاً
+      // Return user data and JWT in body as well
       return ctx.send({
         jwt,
         user: {
@@ -67,7 +103,7 @@ module.exports = {
     }
   },
 
-  // تسجيل الخروج
+  // Logout
   async logout(ctx) {
     try {
       const authService = strapi.service("api::auth.auth-service");
@@ -79,7 +115,7 @@ module.exports = {
     }
   },
 
-  // الحصول على المستخدم الحالي
+  // Get current user
   async me(ctx) {
     try {
       const authService = strapi.service("api::auth.auth-service");
@@ -97,7 +133,7 @@ module.exports = {
     }
   },
 
-  // تحديث الـ token
+  // Refresh token
   async refresh(ctx) {
     try {
       const authService = strapi.service("api::auth.auth-service");
@@ -112,7 +148,7 @@ module.exports = {
     }
   },
 
-  // التحقق من الصلاحيات
+  // Check permissions
   async checkPermission(ctx) {
     try {
       const { action, subject } = ctx.request.body;
@@ -136,7 +172,7 @@ module.exports = {
     }
   },
 
-  // التحقق من الدور
+  // Check role
   async checkRole(ctx) {
     try {
       const { roleName } = ctx.request.body;
