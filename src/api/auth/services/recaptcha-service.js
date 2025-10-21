@@ -52,12 +52,15 @@ module.exports = () => ({
 
       const verificationResult = response.data;
 
-      // Log the verification attempt
+      // Log the verification attempt with full details
       strapi.log.info(`reCAPTCHA verification attempt: ${verificationResult.success ? 'SUCCESS' : 'FAILED'}`, {
         success: verificationResult.success,
         errorCodes: verificationResult['error-codes'] || [],
         score: verificationResult.score || null,
         action: verificationResult.action || null,
+        hostname: verificationResult.hostname || null,
+        challengeTs: verificationResult.challenge_ts || null,
+        fullResponse: verificationResult // Include full Google response for debugging
       });
 
       return {

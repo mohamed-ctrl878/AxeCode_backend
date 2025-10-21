@@ -11,6 +11,7 @@
   "options": {
     "draftAndPublish": false
   },
+  "pluginOptions": {},
   "attributes": {
     "username": {
       "type": "string",
@@ -48,6 +49,22 @@
       "private": true,
       "searchable": false
     },
+    "firstname": {
+      "type": "string",
+      "required": false
+    },
+    "lastname": {
+      "type": "string",
+      "required": false
+    },
+    "phone": {
+      "type": "string",
+      "required": false
+    },
+    "birthday": {
+      "type": "date",
+      "required": false
+    },
     "confirmed": {
       "type": "boolean",
       "default": false,
@@ -81,6 +98,18 @@
     },
     "submition": {
       "type": "json"
+    },
+    "conversations": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::conversation.conversation",
+      "mappedBy": "users_permissions_users"
+    },
+    "messages": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::message.message",
+      "mappedBy": "users_permissions_user"
     }
   }
 }

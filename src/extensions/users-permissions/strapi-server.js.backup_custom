@@ -1,0 +1,128 @@
+'use strict';
+
+const _ = require('lodash');
+const { yup, validateYupSchema } = require('@strapi/utils');
+const { ValidationError, ApplicationError } = require('@strapi/utils').errors;
+
+module.exports = (plugin) => {
+  const validateRegistrationData = async (data) => {
+    const schema = yup.object({
+      email: yup.string().email().required(),
+      password: yup.string().min(6).required(),
+      username: yup.string(),
+      firstname: yup.string(),
+      lastname: yup.string(),
+      phone: yup.string(),
+      birthday: yup.mixed().transform((value) => (value === "" ? null : value)),
+      recaptchaToken: yup.string().nullable()
+    });
+
+    try {
+      const validData = await schema.validate(data, {
+        abortEarly: false,
+        stripUnknown: false
+      });
+      return validData;
+    } catch (error) {
+      strapi.log.error('Validation error:', error);
+      throw new ValidationError(
+        'Invalid input: ' + error.errors.join(', ')
+      );
+    }
+  };
+
+  const sanitizeUser = (user) => {
+    const { password, resetPasswordToken, confirmationToken, ...sanitizedUser } = user;
+    return sanitizedUser;
+  };
+
+  plugin.controllers.auth.register = async (ctx) => {
+    try {
+      const pluginStore = strapi.store({ type: 'plugin', name: 'users-permissions' });
+      const settings = await pluginStore.get({ key: 'advanced' });
+
+      if (!settings?.allow_register) {
+        throw new ApplicationError('Register action is currently disabled');
+      }
+
+      // تحقق من صحة البيانات
+      const validatedData = await validateRegistrationData(ctx.request.body);
+
+      // تجهيز بيانات المستخدم
+      const params = {
+        ...validatedData,
+        provider: 'local',
+        email: validatedData.email.toLowerCase(),
+        username: validatedData.username || validatedData.email,
+      };
+
+      // البحث عن الدور الافتراضي
+      const role = await strapi
+        .query('plugin::users-permissions.role')
+        .findOne({
+          where: { type: settings?.default_role || 'authenticated' }
+        });
+
+      if (!role) {
+        throw new ApplicationError('Default role not found');
+      }
+
+      // التحقق من وجود البريد الإلكتروني
+      const existingUser = await strapi
+        .query('plugin::users-permissions.user')
+        .findOne({
+          where: { email: params.email }
+        });
+
+      if (existingUser) {
+        throw new ApplicationError('Email is already taken');
+      }
+
+      try {
+        // إنشاء المستخدم
+        params.role = role.id;
+        params.confirmed = !settings?.email_confirmation;
+
+        const user = await strapi
+          .query('plugin::users-permissions.user')
+          .create({ data: params });
+
+        const sanitizedUser = sanitizeUser(user);
+
+        if (settings?.email_confirmation) {
+          try {
+            await strapi
+              .plugin('users-permissions')
+              .service('user')
+              .sendConfirmationEmail(sanitizedUser);
+          } catch (err) {
+            strapi.log.error('Error sending confirmation email:', err);
+          }
+          return ctx.send({ user: sanitizedUser });
+        }
+
+        const jwt = strapi
+          .plugin('users-permissions')
+          .service('jwt')
+          .issue({ id: user.id });
+
+        return ctx.send({
+          jwt,
+          user: sanitizedUser,
+        });
+
+      } catch (err) {
+        strapi.log.error('User creation error:', err);
+        if (err.message.includes('username')) {
+          throw new ApplicationError('Username already taken');
+        }
+        throw err;
+      }
+    } catch (err) {
+      strapi.log.error('Registration error:', err);
+      throw err;
+    }
+  };
+
+  return plugin;
+};

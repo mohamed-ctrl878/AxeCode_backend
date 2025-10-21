@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from './hooks/useAuth';
 const LoginForm = React.lazy(() => import('./components/Auth/LoginForm'));
 const CodeExecutionPanel = React.lazy(() => import('./components/CodeExecution/CodeExecutionPanel'));
 const VirtualizedProjectList = React.lazy(() => import('./components/ProjectList/VirtualizedProjectList'));
+const Chat = React.lazy(() => import('./components/Chat/Chat'));
 
 // Global Styles
 const GlobalStyle = createGlobalStyle`
@@ -300,6 +301,15 @@ const MemoizedHeader = React.memo(({ currentView, onViewChange, user, onLogout }
               💻 Code Editor
             </NavButton>
             
+            <NavButton
+              className={currentView === 'chat' ? 'active' : ''}
+              onClick={() => onViewChange('chat')}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              💬 Chat
+            </NavButton>
+            
             <UserInfo>
               <UserAvatar>
                 {getUserInitials(user)}
@@ -381,6 +391,20 @@ const Dashboard = React.memo(() => {
             transition={{ duration: 0.3 }}
           >
             <CodeExecutionPanel />
+          </motion.div>
+        );
+      
+      case 'chat':
+        return (
+          <motion.div
+            key="chat"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <h2 style={{ marginBottom: '24px' }}>💬 Real-time Chat</h2>
+            <Chat conversationId={1} currentUser={user} />
           </motion.div>
         );
       

@@ -1,0 +1,116 @@
+'use strict';
+
+const _ = require('lodash');
+const { yup, validateYupSchema } = require('@strapi/utils');
+const { ValidationError, ApplicationError } = require('@strapi/utils').errors;
+
+const emailRegExp = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+
+module.exports = (plugin) => {
+  const validateRegistrationData = async (data) => {
+    const schema = yup.object().shape({
+      email: yup.string().email().required(),
+      password: yup.string().min(6).required(),
+      username: yup.string(),
+      firstname: yup.string(),
+      lastname: yup.string(),
+      phone: yup.string().min(8),
+      birthday: yup.date().max(new Date(), 'Birthday cannot be in the future')
+    });
+
+    await validateYupSchema(schema)(data);
+  };
+
+  const sanitizeUser = (user) => {
+    const { password, resetPasswordToken, confirmationToken, ...sanitizedUser } = user;
+    return sanitizedUser;
+  };
+
+  plugin.controllers.auth.register = async (ctx) => {
+    try {
+      const pluginStore = strapi.store({ type: 'plugin', name: 'users-permissions' });
+      const settings = await pluginStore.get({ key: 'advanced' });
+
+      if (settings && !settings.allow_register) {
+        throw new ApplicationError('Register action is currently disabled');
+      }
+
+      // Validate input data
+      await validateRegistrationData(ctx.request.body);
+
+      const params = {
+        ...ctx.request.body,
+        provider: 'local',
+      };
+
+      // Get default role
+      const role = await strapi
+        .query('plugin::users-permissions.role')
+        .findOne({ 
+          where: { 
+            type: settings && settings.default_role ? settings.default_role : 'authenticated'
+          } 
+        });
+
+      if (!role) {
+        throw new ApplicationError('Impossible to find the default role');
+      }
+
+      // Check for existing user
+      const existingUser = await strapi
+        .query('plugin::users-permissions.user')
+        .findOne({ where: { email: params.email.toLowerCase() } });
+
+      if (existingUser) {
+        throw new ApplicationError('Email is already taken');
+      }
+
+      try {
+        params.role = role.id;
+        params.email = params.email.toLowerCase();
+        params.username = params.username || params.email;
+        params.confirmed = !settings?.email_confirmation;
+
+        const user = await strapi.query('plugin::users-permissions.user').create({ data: params });
+        const sanitizedUser = sanitizeUser(user);
+
+        if (settings?.email_confirmation) {
+          try {
+            await strapi
+              .plugin('users-permissions')
+              .service('user')
+              .sendConfirmationEmail(sanitizedUser);
+          } catch (err) {
+            throw new ApplicationError('Error sending confirmation email');
+          }
+
+          return ctx.send({ user: sanitizedUser });
+        }
+
+        const jwt = strapi
+          .plugin('users-permissions')
+          .service('jwt')
+          .issue(_.pick(user, ['id']));
+
+        return ctx.send({
+          jwt,
+          user: sanitizedUser,
+        });
+      } catch (err) {
+        strapi.log.error(err);
+        if (_.includes(err.message, 'username')) {
+          throw new ApplicationError('Username already taken');
+        } else {
+          throw new ApplicationError('An error occurred during account creation');
+        }
+      }
+    } catch (err) {
+      if (err.name === 'ValidationError') {
+        throw new ValidationError(err.message);
+      }
+      throw err;
+    }
+  };
+
+  return plugin;
+};

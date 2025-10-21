@@ -50,5 +50,37 @@ module.exports = {
         auth: false,
       },
     },
+    {
+      method: "POST",
+      path: "/auth/forgot-password",
+      handler: "auth.forgotPassword",
+      config: {
+        auth: false,
+      },
+    },
+    {
+      method: "POST",
+      path: "/auth/reset-password",
+      handler: "auth.resetPassword",
+      config: {
+        auth: false,
+      },
+    },
+    {
+      method: "POST",
+      path: "/auth/register",
+      handler: "auth.register",
+      config: {
+        auth: false,
+      },
+    },
+    {
+      method: "POST",
+      path: "/auth/confirm-email",
+      handler: "auth.confirmEmail",
+      config: {
+        auth: false,
+      },
+    },
   ],
 };

@@ -1,0 +1,129 @@
+'use strict';
+
+const _ = require('lodash');
+const { yup, validateYupSchema } = require('@strapi/utils');
+const { ValidationError, ApplicationError } = require('@strapi/utils').errors;
+
+// تعريف schema للتحقق من صحة البيانات
+const registrationSchema = yup.object({
+  email: yup.string().email().required(),
+  password: yup.string().min(6).required(),
+  username: yup.string(),
+  firstname: yup.string(),
+  lastname: yup.string(),
+  phone: yup.string().min(8),
+  birthday: yup.mixed().transform((value) => (value === "" ? null : value)),
+  recaptchaToken: yup.string().nullable()
+});
+
+module.exports = (plugin) => {
+  const validateRegistrationData = async (data) => {
+    const schema = yup.object().shape({
+      email: yup.string().email().required(),
+      password: yup.string().min(6).required(),
+      username: yup.string(),
+      firstname: yup.string(),
+      lastname: yup.string(),
+      phone: yup.string().min(8),
+      birthday: yup.date().transform((value) => {
+        return value ? new Date(value) : null;
+      }).max(new Date(), 'Birthday cannot be in the future'),
+      recaptchaToken: yup.string().nullable()
+    });
+
+    try {
+      await validateYupSchema(schema)(data);
+    } catch (error) {
+      strapi.log.error('Validation error:', error);
+      throw error;
+    }
+  };
+
+  const sanitizeUser = (user) => {
+    const { password, resetPasswordToken, confirmationToken, ...sanitizedUser } = user;
+    return sanitizedUser;
+  };
+
+  plugin.controllers.auth.register = async (ctx) => {
+    try {
+      const pluginStore = strapi.store({ type: 'plugin', name: 'users-permissions' });
+      const settings = await pluginStore.get({ key: 'advanced' });
+
+      if (settings && !settings.allow_register) {
+        throw new ApplicationError('Register action is currently disabled');
+      }
+
+      await validateRegistrationData(ctx.request.body);
+
+      const params = {
+        ...ctx.request.body,
+        provider: 'local',
+      };
+
+      const role = await strapi
+        .query('plugin::users-permissions.role')
+        .findOne({ 
+          where: { 
+            type: settings && settings.default_role ? settings.default_role : 'authenticated'
+          } 
+        });
+
+      if (!role) {
+        throw new ApplicationError('Impossible to find the default role');
+      }
+
+      const existingUser = await strapi
+        .query('plugin::users-permissions.user')
+        .findOne({ where: { email: params.email.toLowerCase() } });
+
+      if (existingUser) {
+        throw new ApplicationError('Email is already taken');
+      }
+
+      try {
+        params.role = role.id;
+        params.email = params.email.toLowerCase();
+        params.username = params.username || params.email;
+        params.confirmed = !settings?.email_confirmation;
+
+        const user = await strapi.query('plugin::users-permissions.user').create({ data: params });
+        const sanitizedUser = sanitizeUser(user);
+
+        if (settings?.email_confirmation) {
+          try {
+            await strapi
+              .plugin('users-permissions')
+              .service('user')
+              .sendConfirmationEmail(sanitizedUser);
+          } catch (err) {
+            throw new ApplicationError('Error sending confirmation email');
+          }
+          return ctx.send({ user: sanitizedUser });
+        }
+
+        const jwt = strapi
+          .plugin('users-permissions')
+          .service('jwt')
+          .issue(_.pick(user, ['id']));
+
+        return ctx.send({
+          jwt,
+          user: sanitizedUser,
+        });
+      } catch (err) {
+        strapi.log.error(err);
+        if (_.includes(err.message, 'username')) {
+          throw new ApplicationError('Username already taken');
+        }
+        throw new ApplicationError('An error occurred during account creation');
+      }
+    } catch (err) {
+      if (err.name === 'ValidationError') {
+        throw new ValidationError(err.message);
+      }
+      throw err;
+    }
+  };
+
+  return plugin;
+};
