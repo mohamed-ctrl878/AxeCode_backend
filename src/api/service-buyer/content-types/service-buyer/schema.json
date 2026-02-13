@@ -1,0 +1,42 @@
+{
+  "kind": "collectionType",
+  "collectionName": "service_buyers",
+  "info": {
+    "singularName": "service-buyer",
+    "pluralName": "service-buyers",
+    "displayName": "service-buyer"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "type_of_service": {
+      "type": "enumeration",
+      "enum": [
+        "course",
+        "event",
+        "live"
+      ]
+    },
+    "service_id": {
+      "type": "string"
+    },
+    "payment_type": {
+      "type": "enumeration",
+      "enum": [
+        "wallet",
+        "IBAN"
+      ]
+    },
+    "payment_details": {
+      "type": "string"
+    },
+    "owner": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "service_buyers"
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+    "kind": "singleType",
+    "collectionName": "recommendations",
+    "info": {
+        "singularName": "recommendation",
+        "pluralName": "recommendations",
+        "displayName": "Recommendation Settings",
+        "description": "Virtual API for recommendation engine"
+    },
+    "options": {
+        "draftAndPublish": false
+    },
+    "pluginOptions": {},
+    "attributes": {}
+}

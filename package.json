@@ -8,14 +8,17 @@
     "deploy": "strapi deploy",
     "dev": "strapi develop",
     "start": "strapi start",
-    "strapi": "strapi"
+    "strapi": "strapi",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@sensinum/strapi-plugin-mcp": "^1.1.0",
     "@strapi/plugin-cloud": "^5.16.0",
     "@strapi/plugin-users-permissions": "^5.16.0",
     "@strapi/provider-email-nodemailer": "^5.16.0",
     "@strapi/strapi": "^5.16.0",
-    "axios": "^1.10.0",
+    "axios": "^1.13.2",
     "bcrypt": "^6.0.0",
     "better-sqlite3": "^12.2.0",
     "dockerode": "^4.0.8",
@@ -27,9 +30,12 @@
     "react-router-dom": "^6.0.0",
     "sendmail": "^1.6.1",
     "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.3",
     "strapi-utils": "^2.0.2",
     "styled-components": "^6.0.0",
-    "tar-stream": "^3.1.7"
+    "tar-stream": "^3.1.7",
+    "validator": "^13.15.26",
+    "zod": "^4.3.6"
   },
   "engines": {
     "node": ">=18.0.0 <=22.x.x",
@@ -37,5 +43,9 @@
   },
   "strapi": {
     "uuid": "41a96715-be7e-4c6a-a928-7cb454b0888d"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^4.0.18",
+    "vitest": "^4.0.18"
   }
 }

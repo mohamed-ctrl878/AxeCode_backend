@@ -1,0 +1,13 @@
+{
+    "kind": "collectionType",
+    "collectionName": "postboxes",
+    "info": {
+        "singularName": "postbox",
+        "pluralName": "postboxes",
+        "displayName": "postbox"
+    },
+    "options": {
+        "draftAndPublish": false
+    },
+    "attributes": {}
+}

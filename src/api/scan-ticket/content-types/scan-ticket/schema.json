@@ -1,0 +1,13 @@
+{
+    "kind": "collectionType",
+    "collectionName": "scan_tickets",
+    "info": {
+        "singularName": "scan-ticket",
+        "pluralName": "scan-tickets",
+        "displayName": "Scan Ticket"
+    },
+    "options": {
+        "draftAndPublish": false
+    },
+    "attributes": {}
+}

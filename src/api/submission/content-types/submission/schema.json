@@ -1,0 +1,72 @@
+{
+    "kind": "collectionType",
+    "collectionName": "submissions",
+    "info": {
+        "singularName": "submission",
+        "pluralName": "submissions",
+        "displayName": "Submission",
+        "description": "User code submissions for problems"
+    },
+    "options": {
+        "draftAndPublish": false
+    },
+    "pluginOptions": {},
+    "attributes": {
+        "code": {
+            "type": "text",
+            "required": true
+        },
+        "language": {
+            "type": "enumeration",
+            "enum": [
+                "python",
+                "java",
+                "javascript",
+                "cpp"
+            ],
+            "required": true
+        },
+        "verdict": {
+            "type": "enumeration",
+            "enum": [
+                "pending",
+                "accepted",
+                "wrong_answer",
+                "time_limit_exceeded",
+                "memory_limit_exceeded",
+                "runtime_error",
+                "compile_error"
+            ],
+            "default": "pending"
+        },
+        "executionTime": {
+            "type": "decimal"
+        },
+        "memoryUsed": {
+            "type": "integer"
+        },
+        "judgeOutput": {
+            "type": "json"
+        },
+        "testCasesPassed": {
+            "type": "integer",
+            "default": 0
+        },
+        "totalTestCases": {
+            "type": "integer",
+            "default": 0
+        },
+        "problem": {
+            "type": "relation",
+            "relation": "manyToOne",
+            "target": "api::problem.problem",
+            "inversedBy": "submissions"
+        },
+        "user": {
+            "type": "relation",
+            "relation": "manyToOne",
+            "target": "plugin::users-permissions.user",
+            "inversedBy": "submissions"
+        }
+    }
+}

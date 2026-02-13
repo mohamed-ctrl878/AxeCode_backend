@@ -1,0 +1,60 @@
+{
+  "kind": "collectionType",
+  "collectionName": "reports",
+  "info": {
+    "singularName": "report",
+    "pluralName": "reports",
+    "displayName": "report"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "screans": {
+      "type": "media",
+      "multiple": true,
+      "allowedTypes": [
+        "images",
+        "files",
+        "videos",
+        "audios"
+      ]
+    },
+    "description": {
+      "type": "blocks"
+    },
+    "reporter_user": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "reported_user": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "report_types": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::report-type.report-type",
+      "mappedBy": "report"
+    },
+    "content_type": {
+      "type": "enumeration",
+      "enum": [
+        "article",
+        "blog",
+        "post",
+        "course",
+        "problem",
+        "live",
+        "event",
+        "message"
+      ]
+    },
+    "docId": {
+      "type": "string"
+    }
+  }
+}

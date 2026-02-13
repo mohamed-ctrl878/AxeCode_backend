@@ -1,0 +1,67 @@
+# version: '2.4'
+
+services:
+  server:
+    image: judge0/judge0:latest
+    env_file: D:/judge0-infra/judge0.conf
+    ports:
+      - "2358:2358"
+    privileged: true
+    cgroup: host
+    volumes:
+      - D:/judge0-infra/box:/box
+      - D:/judge0-infra/isolate_job_patched.rb:/api/app/jobs/isolate_job.rb:ro
+    restart: always
+    environment:
+      - POSTGRES_HOST=db
+      - REDIS_HOST=redis
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+  worker:
+    image: judge0/judge0:latest
+    command: ["./scripts/workers"]
+    volumes:
+      - D:/judge0-infra/box:/box
+      - D:/judge0-infra/isolate_job_patched.rb:/api/app/jobs/isolate_job.rb:ro
+    env_file: D:/judge0-infra/judge0.conf
+    privileged: true
+    cgroup: host
+    restart: always
+    environment:
+      - POSTGRES_HOST=db
+      - REDIS_HOST=redis
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+  db:
+    image: postgres:13
+    volumes:
+      - D:/judge0-infra/judge0-data/db:/var/lib/postgresql/data
+    restart: always
+    environment:
+      - POSTGRES_DB=judge0
+      - POSTGRES_USER=judge0
+      - POSTGRES_PASSWORD=judge0
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+  redis:
+    image: redis:6.0
+    volumes:
+      - D:/judge0-infra/judge0-data/redis:/data
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"

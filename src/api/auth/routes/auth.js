@@ -75,8 +75,16 @@ module.exports = {
       },
     },
     {
-      method: "POST",
+      method: "GET",
       path: "/auth/confirm-email",
+      handler: "auth.confirmEmail",
+      config: {
+        auth: false,
+      },
+    },
+    {
+      method: "GET",
+      path: "/auth/email-confirmation",
       handler: "auth.confirmEmail",
       config: {
         auth: false,

@@ -1,0 +1,18 @@
+{
+  "kind": "collectionType",
+  "collectionName": "help_centers",
+  "info": {
+    "singularName": "help-center",
+    "pluralName": "help-centers",
+    "displayName": "help_center"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "terms": {
+      "type": "blocks"
+    }
+  }
+}

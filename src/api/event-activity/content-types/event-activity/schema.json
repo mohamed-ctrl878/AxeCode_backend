@@ -1,0 +1,30 @@
+{
+  "kind": "collectionType",
+  "collectionName": "event_activities",
+  "info": {
+    "singularName": "event-activity",
+    "pluralName": "event-activities",
+    "displayName": "event-activity"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "title": {
+      "type": "string"
+    },
+    "from": {
+      "type": "time"
+    },
+    "description": {
+      "type": "text"
+    },
+    "event": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::event.event",
+      "inversedBy": "event_activities"
+    }
+  }
+}

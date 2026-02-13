@@ -1,0 +1,24 @@
+{
+  "kind": "collectionType",
+  "collectionName": "report_types",
+  "info": {
+    "singularName": "report-type",
+    "pluralName": "report-types",
+    "displayName": "report_type"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "type": {
+      "type": "string"
+    },
+    "report": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::report.report",
+      "inversedBy": "report_types"
+    }
+  }
+}

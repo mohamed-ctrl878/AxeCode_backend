@@ -49,22 +49,6 @@
       "private": true,
       "searchable": false
     },
-    "firstname": {
-      "type": "string",
-      "required": false
-    },
-    "lastname": {
-      "type": "string",
-      "required": false
-    },
-    "phone": {
-      "type": "string",
-      "required": false
-    },
-    "birthday": {
-      "type": "date",
-      "required": false
-    },
     "confirmed": {
       "type": "boolean",
       "default": false,
@@ -82,6 +66,22 @@
       "inversedBy": "users",
       "configurable": false
     },
+    "firstname": {
+      "type": "string",
+      "required": false
+    },
+    "lastname": {
+      "type": "string",
+      "required": false
+    },
+    "phone": {
+      "type": "string",
+      "required": false
+    },
+    "birthday": {
+      "type": "date",
+      "required": false
+    },
     "avatar": {
       "type": "media",
       "multiple": false,
@@ -90,26 +90,120 @@
         "images"
       ]
     },
-    "comments": {
+    "submissions": {
       "type": "relation",
       "relation": "oneToMany",
-      "target": "api::comment.comment",
-      "mappedBy": "users_permissions_user"
+      "target": "api::submission.submission",
+      "mappedBy": "user"
     },
-    "submition": {
-      "type": "json"
-    },
-    "conversations": {
+    "admin_conversations": {
       "type": "relation",
       "relation": "manyToMany",
       "target": "api::conversation.conversation",
-      "mappedBy": "users_permissions_users"
+      "inversedBy": "admins"
     },
     "messages": {
       "type": "relation",
       "relation": "oneToMany",
       "target": "api::message.message",
       "mappedBy": "users_permissions_user"
+    },
+    "posts": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::post.post",
+      "mappedBy": "users_permissions_user"
+    },
+    "likes": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::like.like",
+      "mappedBy": "users_permissions_user"
+    },
+    "comments": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::comment.comment",
+      "mappedBy": "users_permissions_user"
+    },
+    "rates": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::rate.rate",
+      "mappedBy": "users_permissions_user"
+    },
+    "enroled_contents": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::enroled-content.enroled-content",
+      "mappedBy": "users_permissions_user"
+    },
+    "user_entitlements": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::user-entitlement.user-entitlement",
+      "mappedBy": "users_permissions_user"
+    },
+    "courses": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::course.course",
+      "mappedBy": "users_permissions_user"
+    },
+    "lessons": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::lesson.lesson",
+      "mappedBy": "users_permissions_user"
+    },
+    "weeks": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::week.week",
+      "mappedBy": "users_permissions_user"
+    },
+    "service_buyers": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::service-buyer.service-buyer",
+      "mappedBy": "owner"
+    },
+    "events": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::event.event",
+      "mappedBy": "users_permissions_user"
+    },
+    "scanners": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::scanner.scanner",
+      "mappedBy": "users_permissions_user"
+    },
+    "created_conversations": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::conversation.conversation",
+      "mappedBy": "creator"
+    },
+    "university": {
+      "type": "string",
+      "required": false
+    },
+    "conversations": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::conversation.conversation",
+      "mappedBy": "members"
+    },
+    "interest_map": {
+      "type": "json"
+    },
+    "seen_history": {
+      "type": "json"
+    },
+    "last_decay_date": {
+      "type": "datetime"
     }
   }
 }

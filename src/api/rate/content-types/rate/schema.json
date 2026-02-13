@@ -1,0 +1,39 @@
+{
+  "kind": "collectionType",
+  "collectionName": "rates",
+  "info": {
+    "singularName": "rate",
+    "pluralName": "rates",
+    "displayName": "rate"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "content_types": {
+      "type": "enumeration",
+      "enum": [
+        "course",
+        "lesson",
+        "live",
+        "blog",
+        "article",
+        "problem",
+        "event"
+      ]
+    },
+    "docId": {
+      "type": "string"
+    },
+    "rate": {
+      "type": "float"
+    },
+    "users_permissions_user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "rates"
+    }
+  }
+}

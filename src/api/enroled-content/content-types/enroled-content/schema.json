@@ -1,0 +1,32 @@
+{
+  "kind": "collectionType",
+  "collectionName": "enroled_contents",
+  "info": {
+    "singularName": "enroled-content",
+    "pluralName": "enroled-contents",
+    "displayName": "enroled_content"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "content_types": {
+      "type": "enumeration",
+      "enum": [
+        "course",
+        "event",
+        "live"
+      ]
+    },
+    "users_permissions_user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "enroled_contents"
+    },
+    "docId": {
+      "type": "string"
+    }
+  }
+}

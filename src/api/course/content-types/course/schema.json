@@ -43,6 +43,27 @@
       "relation": "manyToMany",
       "target": "api::course-type.course-type",
       "mappedBy": "courses"
+    },
+    "difficulty": {
+      "type": "enumeration",
+      "enum": [
+        "Rasy",
+        "Medium",
+        "Advanced"
+      ]
+    },
+    "users_permissions_user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "courses"
+    },
+    "tags": {
+      "type": "json"
+    },
+    "engagement_score": {
+      "type": "integer",
+      "default": 0
     }
   }
 }

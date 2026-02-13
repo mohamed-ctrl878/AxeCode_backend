@@ -13,9 +13,9 @@
   "attributes": {
     "lessons": {
       "type": "relation",
-      "relation": "manyToMany",
+      "relation": "oneToMany",
       "target": "api::lesson.lesson",
-      "inversedBy": "weeks"
+      "mappedBy": "week"
     },
     "course": {
       "type": "relation",
@@ -25,6 +25,12 @@
     },
     "title": {
       "type": "string"
+    },
+    "users_permissions_user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "weeks"
     }
   }
 }

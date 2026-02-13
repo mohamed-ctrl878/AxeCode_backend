@@ -1,0 +1,40 @@
+{
+    "kind": "collectionType",
+    "collectionName": "code_templates",
+    "info": {
+        "singularName": "code-template",
+        "pluralName": "code-templates",
+        "displayName": "Code Template",
+        "description": "Language-specific code templates for problems"
+    },
+    "options": {
+        "draftAndPublish": false
+    },
+    "pluginOptions": {},
+    "attributes": {
+        "language": {
+            "type": "enumeration",
+            "enum": [
+                "python",
+                "java",
+                "javascript",
+                "cpp"
+            ],
+            "required": true
+        },
+        "starterCode": {
+            "type": "text",
+            "required": true
+        },
+        "wrapperCode": {
+            "type": "text",
+            "required": true
+        },
+        "problem": {
+            "type": "relation",
+            "relation": "manyToOne",
+            "target": "api::problem.problem",
+            "inversedBy": "code_templates"
+        }
+    }
+}

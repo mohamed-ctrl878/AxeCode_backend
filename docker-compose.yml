@@ -1,0 +1,25 @@
+version: "3.8"
+
+services:
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    container_name: axe-media-server
+    ports:
+      - "1935:1935"   # RTMP ingest (OBS streaming)
+      - "8888:8888"   # HLS playback
+      - "8554:8554"   # RTSP (optional)
+      - "8889:8889"   # WebRTC (optional)
+      - "8890:8890"   # SRT (optional)
+      - "9997:9997"   # API for monitoring
+    volumes:
+      - ./mediamtx.yml:/mediamtx.yml
+      - ./recordings:/recordings
+    environment:
+      - MTX_PROTOCOLS=tcp
+    restart: unless-stopped
+    networks:
+      - axe-network
+
+networks:
+  axe-network:
+    driver: bridge

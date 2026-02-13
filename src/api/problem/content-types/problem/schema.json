@@ -4,28 +4,65 @@
   "info": {
     "singularName": "problem",
     "pluralName": "problems",
-    "displayName": "problem",
-    "description": ""
+    "displayName": "Problem",
+    "description": "Algorithm problems for practice"
   },
   "options": {
     "draftAndPublish": true
   },
   "pluginOptions": {},
   "attributes": {
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "title"
+    },
+    "difficulty": {
+      "type": "enumeration",
+      "enum": [
+        "easy",
+        "medium",
+        "hard"
+      ],
+      "default": "easy",
+      "required": true
+    },
+    "description": {
+      "type": "blocks"
+    },
+    "constraints": {
+      "type": "text"
+    },
+    "examples": {
+      "type": "json"
+    },
+    "hints": {
+      "type": "json"
+    },
     "functionName": {
+      "type": "string",
+      "required": true
+    },
+    "functionParams": {
+      "type": "json"
+    },
+    "returnType": {
       "type": "string"
     },
-    "functionReturnType": {
-      "type": "string"
+    "timeLimit": {
+      "type": "integer",
+      "default": 2000
     },
-    "language": {
-      "type": "string"
+    "memoryLimit": {
+      "type": "integer",
+      "default": 256000
     },
-    "dificulty": {
-      "type": "string"
-    },
-    "tittle": {
-      "type": "string"
+    "public": {
+      "type": "boolean",
+      "default": false
     },
     "courses": {
       "type": "relation",
@@ -38,36 +75,30 @@
       "target": "api::problem-type.problem-type",
       "inversedBy": "problems"
     },
-    "description": {
-      "type": "blocks"
-    },
-    "testCases": {
-      "type": "json"
-    },
-    "dislikes": {
-      "type": "biginteger",
-      "default": "1"
-    },
-    "seeproblem": {
-      "type": "biginteger",
-      "default": "1"
-    },
-    "acceptedproblem": {
-      "type": "biginteger",
-      "default": "1"
-    },
-    "likes": {
-      "type": "biginteger",
-      "default": "1"
-    },
-    "userputlike": {
-      "type": "json"
-    },
-    "comments": {
+    "test_cases": {
       "type": "relation",
       "relation": "oneToMany",
-      "target": "api::comment.comment",
+      "target": "api::test-case.test-case",
       "mappedBy": "problem"
+    },
+    "submissions": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::submission.submission",
+      "mappedBy": "problem"
+    },
+    "code_templates": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::code-template.code-template",
+      "mappedBy": "problem"
+    },
+    "tags": {
+      "type": "json"
+    },
+    "engagement_score": {
+      "type": "integer",
+      "default": 0
     }
   }
 }

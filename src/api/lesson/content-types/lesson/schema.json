@@ -15,9 +15,31 @@
     "title": {
       "type": "string"
     },
+    "type_of_lesson": {
+      "type": "enumeration",
+      "enum": [
+        "video",
+        "article"
+      ],
+      "default": "video"
+    },
+    "isCompleted": {
+      "type": "boolean",
+      "default": false
+    },
     "video": {
       "type": "media",
-      "multiple": true,
+      "conditions": {
+        "visible": {
+          "==": [
+            {
+              "var": "public"
+            },
+            true
+          ]
+        }
+      },
+      "multiple": false,
       "required": false,
       "allowedTypes": [
         "videos",
@@ -26,7 +48,17 @@
       ]
     },
     "description": {
-      "type": "blocks"
+      "type": "blocks",
+      "conditions": {
+        "visible": {
+          "==": [
+            {
+              "var": "public"
+            },
+            true
+          ]
+        }
+      }
     },
     "course_types": {
       "type": "relation",
@@ -34,16 +66,25 @@
       "target": "api::course-type.course-type",
       "mappedBy": "lessons"
     },
-    "weeks": {
+    "week": {
       "type": "relation",
-      "relation": "manyToMany",
+      "relation": "manyToOne",
       "target": "api::week.week",
-      "mappedBy": "lessons"
+      "inversedBy": "lessons"
     },
     "problem_types": {
       "type": "relation",
       "relation": "manyToMany",
       "target": "api::problem-type.problem-type",
+      "inversedBy": "lessons"
+    },
+    "public": {
+      "type": "boolean"
+    },
+    "users_permissions_user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
       "inversedBy": "lessons"
     }
   }

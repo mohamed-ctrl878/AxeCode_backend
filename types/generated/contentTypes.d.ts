@@ -373,6 +373,112 @@ export interface AdminUser extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiArticleArticle extends Struct.CollectionTypeSchema {
+  collectionName: 'articles';
+  info: {
+    description: 'Articles with dynamic content blocks (text, image, diagram)';
+    displayName: 'Article';
+    pluralName: 'articles';
+    singularName: 'article';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    author: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+    contentBlocks: Schema.Attribute.JSON;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    engagement_score: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::article.article'
+    > &
+      Schema.Attribute.Private;
+    posts: Schema.Attribute.Relation<'oneToMany', 'api::post.post'>;
+    publishedAt: Schema.Attribute.DateTime;
+    tags: Schema.Attribute.JSON;
+    title: Schema.Attribute.String & Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiBlogBlog extends Struct.CollectionTypeSchema {
+  collectionName: 'blogs';
+  info: {
+    description: 'Blog posts with rich text content and images';
+    displayName: 'Blog';
+    pluralName: 'blogs';
+    singularName: 'blog';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Blocks & Schema.Attribute.Required;
+    engagement_score: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    image: Schema.Attribute.Media<'images'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<'oneToMany', 'api::blog.blog'> &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    publisher: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+    tags: Schema.Attribute.JSON;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiCodeTemplateCodeTemplate
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'code_templates';
+  info: {
+    description: 'Language-specific code templates for problems';
+    displayName: 'Code Template';
+    pluralName: 'code-templates';
+    singularName: 'code-template';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    language: Schema.Attribute.Enumeration<
+      ['python', 'java', 'javascript', 'cpp']
+    > &
+      Schema.Attribute.Required;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::code-template.code-template'
+    > &
+      Schema.Attribute.Private;
+    problem: Schema.Attribute.Relation<'manyToOne', 'api::problem.problem'>;
+    publishedAt: Schema.Attribute.DateTime;
+    starterCode: Schema.Attribute.Text & Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    wrapperCode: Schema.Attribute.Text & Schema.Attribute.Required;
+  };
+}
+
 export interface ApiCommentComment extends Struct.CollectionTypeSchema {
   collectionName: 'comments';
   info: {
@@ -385,10 +491,23 @@ export interface ApiCommentComment extends Struct.CollectionTypeSchema {
     draftAndPublish: true;
   };
   attributes: {
-    comment: Schema.Attribute.Text;
+    comment: Schema.Attribute.Blocks;
+    content_types: Schema.Attribute.Enumeration<
+      [
+        'lesson',
+        'blog',
+        'article',
+        'post',
+        'course',
+        'problem',
+        'live',
+        'event',
+      ]
+    >;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    docId: Schema.Attribute.String;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
@@ -396,8 +515,6 @@ export interface ApiCommentComment extends Struct.CollectionTypeSchema {
     > &
       Schema.Attribute.Private;
     parentId: Schema.Attribute.String;
-    problem: Schema.Attribute.Relation<'manyToOne', 'api::problem.problem'>;
-    problemId: Schema.Attribute.String;
     publishedAt: Schema.Attribute.DateTime;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
@@ -421,25 +538,39 @@ export interface ApiConversationConversation
     draftAndPublish: true;
   };
   attributes: {
+    admins: Schema.Attribute.Relation<
+      'manyToMany',
+      'plugin::users-permissions.user'
+    >;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    creator: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+    discription: Schema.Attribute.Blocks;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
       'api::conversation.conversation'
     > &
       Schema.Attribute.Private;
-    messages: Schema.Attribute.Relation<'oneToMany', 'api::message.message'>;
-    publishedAt: Schema.Attribute.DateTime;
-    title: Schema.Attribute.String;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    users_permissions_users: Schema.Attribute.Relation<
+    members: Schema.Attribute.Relation<
       'manyToMany',
       'plugin::users-permissions.user'
     >;
+    messages: Schema.Attribute.Relation<'oneToMany', 'api::message.message'>;
+    muted_users: Schema.Attribute.Relation<
+      'manyToMany',
+      'plugin::users-permissions.user'
+    >;
+    photo: Schema.Attribute.Media<'images' | 'files' | 'videos' | 'audios'>;
+    publishedAt: Schema.Attribute.DateTime;
+    title: Schema.Attribute.String & Schema.Attribute.Unique;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
   };
 }
 
@@ -493,6 +624,8 @@ export interface ApiCourseCourse extends Struct.CollectionTypeSchema {
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     description: Schema.Attribute.Blocks;
+    difficulty: Schema.Attribute.Enumeration<['Rasy', 'Medium', 'Advanced']>;
+    engagement_score: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
@@ -505,11 +638,257 @@ export interface ApiCourseCourse extends Struct.CollectionTypeSchema {
       'api::problem-type.problem-type'
     >;
     publishedAt: Schema.Attribute.DateTime;
+    tags: Schema.Attribute.JSON;
     title: Schema.Attribute.String;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    users_permissions_user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
     weeks: Schema.Attribute.Relation<'oneToMany', 'api::week.week'>;
+  };
+}
+
+export interface ApiEnroledContentEnroledContent
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'enroled_contents';
+  info: {
+    displayName: 'enroled_content';
+    pluralName: 'enroled-contents';
+    singularName: 'enroled-content';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    content_types: Schema.Attribute.Enumeration<['course', 'event', 'live']>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    docId: Schema.Attribute.String;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::enroled-content.enroled-content'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    users_permissions_user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+  };
+}
+
+export interface ApiEntitlementEntitlement extends Struct.CollectionTypeSchema {
+  collectionName: 'entitlements';
+  info: {
+    displayName: 'entitlement';
+    pluralName: 'entitlements';
+    singularName: 'entitlement';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    content_types: Schema.Attribute.Enumeration<
+      ['role', 'course', 'uplive', 'upevent', 'veiwlive', 'veiwevent']
+    >;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    currency: Schema.Attribute.String;
+    decision: Schema.Attribute.Boolean;
+    description: Schema.Attribute.String;
+    duration: Schema.Attribute.DateTime;
+    itemId: Schema.Attribute.String;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::entitlement.entitlement'
+    > &
+      Schema.Attribute.Private;
+    price: Schema.Attribute.Decimal;
+    publishedAt: Schema.Attribute.DateTime;
+    title: Schema.Attribute.String;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    users_permissions_user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+  };
+}
+
+export interface ApiEventActivityEventActivity
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'event_activities';
+  info: {
+    displayName: 'event-activity';
+    pluralName: 'event-activities';
+    singularName: 'event-activity';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Text;
+    event: Schema.Attribute.Relation<'manyToOne', 'api::event.event'>;
+    from: Schema.Attribute.Time;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::event-activity.event-activity'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    title: Schema.Attribute.String;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiEventEvent extends Struct.CollectionTypeSchema {
+  collectionName: 'events';
+  info: {
+    displayName: 'event';
+    pluralName: 'events';
+    singularName: 'event';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    date: Schema.Attribute.DateTime;
+    discription: Schema.Attribute.Blocks;
+    duration: Schema.Attribute.Integer;
+    engagement_score: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    event_activities: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::event-activity.event-activity'
+    >;
+    image: Schema.Attribute.Media<
+      'images' | 'files' | 'videos' | 'audios',
+      true
+    >;
+    live_streaming: Schema.Attribute.Boolean;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<'oneToMany', 'api::event.event'> &
+      Schema.Attribute.Private;
+    location: Schema.Attribute.String;
+    onsite: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    publishedAt: Schema.Attribute.DateTime;
+    scanners: Schema.Attribute.Relation<'oneToMany', 'api::scanner.scanner'>;
+    speakers: Schema.Attribute.Relation<'oneToMany', 'api::speaker.speaker'>;
+    tags: Schema.Attribute.JSON;
+    title: Schema.Attribute.String & Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    users_permissions_user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+  };
+}
+
+export interface ApiFaqFaq extends Struct.CollectionTypeSchema {
+  collectionName: 'faqs';
+  info: {
+    displayName: 'faq';
+    pluralName: 'faqs';
+    singularName: 'faq';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    answer: Schema.Attribute.Blocks;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<'oneToMany', 'api::faq.faq'> &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    question: Schema.Attribute.String;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiGlobalTagGlobalTag extends Struct.CollectionTypeSchema {
+  collectionName: 'global_tags';
+  info: {
+    description: 'Global repository of tags with usage frequency';
+    displayName: 'Global Tag';
+    pluralName: 'global-tags';
+    singularName: 'global-tag';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    count: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<1>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    last_used: Schema.Attribute.DateTime;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::global-tag.global-tag'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiHelpCenterHelpCenter extends Struct.CollectionTypeSchema {
+  collectionName: 'help_centers';
+  info: {
+    displayName: 'help_center';
+    pluralName: 'help-centers';
+    singularName: 'help-center';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::help-center.help-center'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    terms: Schema.Attribute.Blocks;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
   };
 }
 
@@ -533,6 +912,7 @@ export interface ApiLessonLesson extends Struct.CollectionTypeSchema {
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     description: Schema.Attribute.Blocks;
+    isCompleted: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
@@ -543,13 +923,156 @@ export interface ApiLessonLesson extends Struct.CollectionTypeSchema {
       'manyToMany',
       'api::problem-type.problem-type'
     >;
+    public: Schema.Attribute.Boolean;
     publishedAt: Schema.Attribute.DateTime;
     title: Schema.Attribute.String;
+    type_of_lesson: Schema.Attribute.Enumeration<['video', 'article']> &
+      Schema.Attribute.DefaultTo<'video'>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    video: Schema.Attribute.Media<'videos' | 'audios' | 'files', true>;
-    weeks: Schema.Attribute.Relation<'manyToMany', 'api::week.week'>;
+    users_permissions_user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+    video: Schema.Attribute.Media<'videos' | 'audios' | 'files'>;
+    week: Schema.Attribute.Relation<'manyToOne', 'api::week.week'>;
+  };
+}
+
+export interface ApiLikeLike extends Struct.CollectionTypeSchema {
+  collectionName: 'likes';
+  info: {
+    displayName: 'like';
+    pluralName: 'likes';
+    singularName: 'like';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    content_types: Schema.Attribute.Enumeration<
+      [
+        'lesson',
+        'live',
+        'blog',
+        'message',
+        'post',
+        'course',
+        'problem',
+        'event',
+      ]
+    >;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    docId: Schema.Attribute.String;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<'oneToMany', 'api::like.like'> &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    users_permissions_user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+  };
+}
+
+export interface ApiLiveChatLiveChat extends Struct.CollectionTypeSchema {
+  collectionName: 'live_chats';
+  info: {
+    description: 'Chat messages for live streaming sessions';
+    displayName: 'Live Chat';
+    pluralName: 'live-chats';
+    singularName: 'live-chat';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    isModerated: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::live-chat.live-chat'
+    > &
+      Schema.Attribute.Private;
+    message: Schema.Attribute.Text & Schema.Attribute.Required;
+    moderatedBy: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+    publishedAt: Schema.Attribute.DateTime;
+    stream: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::live-stream.live-stream'
+    >;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+  };
+}
+
+export interface ApiLiveStreamLiveStream extends Struct.CollectionTypeSchema {
+  collectionName: 'live_streams';
+  info: {
+    description: 'Live streaming sessions with RTMP ingest and HLS playback';
+    displayName: 'Live Stream';
+    pluralName: 'live-streams';
+    singularName: 'live-stream';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    category: Schema.Attribute.String;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Text;
+    endedAt: Schema.Attribute.DateTime;
+    engagement_score: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    host: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+    isRecorded: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::live-stream.live-stream'
+    > &
+      Schema.Attribute.Private;
+    peakViewers: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    playbackUrl: Schema.Attribute.String;
+    publishedAt: Schema.Attribute.DateTime;
+    recordingUrl: Schema.Attribute.String;
+    scheduledAt: Schema.Attribute.DateTime;
+    startedAt: Schema.Attribute.DateTime;
+    status: Schema.Attribute.Enumeration<
+      ['scheduled', 'live', 'ended', 'cancelled']
+    > &
+      Schema.Attribute.DefaultTo<'scheduled'>;
+    streamKey: Schema.Attribute.String &
+      Schema.Attribute.Private &
+      Schema.Attribute.Unique;
+    tags: Schema.Attribute.JSON;
+    thumbnailUrl: Schema.Attribute.String;
+    title: Schema.Attribute.String & Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    viewerCount: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
   };
 }
 
@@ -579,7 +1102,6 @@ export interface ApiMessageMessage extends Struct.CollectionTypeSchema {
       Schema.Attribute.Private;
     message: Schema.Attribute.Blocks;
     publishedAt: Schema.Attribute.DateTime;
-    text: Schema.Attribute.String;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -587,6 +1109,69 @@ export interface ApiMessageMessage extends Struct.CollectionTypeSchema {
       'manyToOne',
       'plugin::users-permissions.user'
     >;
+  };
+}
+
+export interface ApiPostPost extends Struct.CollectionTypeSchema {
+  collectionName: 'posts';
+  info: {
+    displayName: 'post';
+    pluralName: 'posts';
+    singularName: 'post';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    article: Schema.Attribute.Relation<'manyToOne', 'api::article.article'>;
+    caption: Schema.Attribute.Blocks;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    engagement_score: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<'oneToMany', 'api::post.post'> &
+      Schema.Attribute.Private;
+    media: Schema.Attribute.Media<
+      'images' | 'files' | 'videos' | 'audios',
+      true
+    >;
+    publishedAt: Schema.Attribute.DateTime;
+    tags: Schema.Attribute.JSON;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    users_permissions_user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+  };
+}
+
+export interface ApiPostboxPostbox extends Struct.CollectionTypeSchema {
+  collectionName: 'postboxes';
+  info: {
+    displayName: 'postbox';
+    pluralName: 'postboxes';
+    singularName: 'postbox';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::postbox.postbox'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
   };
 }
 
@@ -624,8 +1209,8 @@ export interface ApiProblemTypeProblemType extends Struct.CollectionTypeSchema {
 export interface ApiProblemProblem extends Struct.CollectionTypeSchema {
   collectionName: 'problems';
   info: {
-    description: '';
-    displayName: 'problem';
+    description: 'Algorithm problems for practice';
+    displayName: 'Problem';
     pluralName: 'problems';
     singularName: 'problem';
   };
@@ -633,38 +1218,53 @@ export interface ApiProblemProblem extends Struct.CollectionTypeSchema {
     draftAndPublish: true;
   };
   attributes: {
-    acceptedproblem: Schema.Attribute.BigInteger &
-      Schema.Attribute.DefaultTo<'1'>;
-    comments: Schema.Attribute.Relation<'oneToMany', 'api::comment.comment'>;
+    code_templates: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::code-template.code-template'
+    >;
+    constraints: Schema.Attribute.Text;
     courses: Schema.Attribute.Relation<'oneToMany', 'api::course.course'>;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     description: Schema.Attribute.Blocks;
-    dificulty: Schema.Attribute.String;
-    dislikes: Schema.Attribute.BigInteger & Schema.Attribute.DefaultTo<'1'>;
-    functionName: Schema.Attribute.String;
-    functionReturnType: Schema.Attribute.String;
-    language: Schema.Attribute.String;
-    likes: Schema.Attribute.BigInteger & Schema.Attribute.DefaultTo<'1'>;
+    difficulty: Schema.Attribute.Enumeration<['easy', 'medium', 'hard']> &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'easy'>;
+    engagement_score: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    examples: Schema.Attribute.JSON;
+    functionName: Schema.Attribute.String & Schema.Attribute.Required;
+    functionParams: Schema.Attribute.JSON;
+    hints: Schema.Attribute.JSON;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
       'api::problem.problem'
     > &
       Schema.Attribute.Private;
+    memoryLimit: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<256000>;
     problem_types: Schema.Attribute.Relation<
       'manyToMany',
       'api::problem-type.problem-type'
     >;
+    public: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     publishedAt: Schema.Attribute.DateTime;
-    seeproblem: Schema.Attribute.BigInteger & Schema.Attribute.DefaultTo<'1'>;
-    testCases: Schema.Attribute.JSON;
-    tittle: Schema.Attribute.String;
+    returnType: Schema.Attribute.String;
+    slug: Schema.Attribute.UID<'title'>;
+    submissions: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::submission.submission'
+    >;
+    tags: Schema.Attribute.JSON;
+    test_cases: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::test-case.test-case'
+    >;
+    timeLimit: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<2000>;
+    title: Schema.Attribute.String & Schema.Attribute.Required;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    userputlike: Schema.Attribute.JSON;
   };
 }
 
@@ -698,6 +1298,443 @@ export interface ApiProductProduct extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiRateRate extends Struct.CollectionTypeSchema {
+  collectionName: 'rates';
+  info: {
+    displayName: 'rate';
+    pluralName: 'rates';
+    singularName: 'rate';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    content_types: Schema.Attribute.Enumeration<
+      ['course', 'lesson', 'live', 'blog', 'article', 'problem', 'event']
+    >;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    docId: Schema.Attribute.String;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<'oneToMany', 'api::rate.rate'> &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    rate: Schema.Attribute.Float;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    users_permissions_user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+  };
+}
+
+export interface ApiRecommendationRecommendation
+  extends Struct.SingleTypeSchema {
+  collectionName: 'recommendations';
+  info: {
+    description: 'Virtual API for recommendation engine';
+    displayName: 'Recommendation Settings';
+    pluralName: 'recommendations';
+    singularName: 'recommendation';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::recommendation.recommendation'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiReportTypeReportType extends Struct.CollectionTypeSchema {
+  collectionName: 'report_types';
+  info: {
+    displayName: 'report_type';
+    pluralName: 'report-types';
+    singularName: 'report-type';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::report-type.report-type'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    report: Schema.Attribute.Relation<'manyToOne', 'api::report.report'>;
+    type: Schema.Attribute.String;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiReportReport extends Struct.CollectionTypeSchema {
+  collectionName: 'reports';
+  info: {
+    displayName: 'report';
+    pluralName: 'reports';
+    singularName: 'report';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    content_type: Schema.Attribute.Enumeration<
+      [
+        'article',
+        'blog',
+        'post',
+        'course',
+        'problem',
+        'live',
+        'event',
+        'message',
+      ]
+    >;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Blocks;
+    docId: Schema.Attribute.String;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::report.report'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    report_types: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::report-type.report-type'
+    >;
+    reported_user: Schema.Attribute.Relation<
+      'oneToOne',
+      'plugin::users-permissions.user'
+    >;
+    reporter_user: Schema.Attribute.Relation<
+      'oneToOne',
+      'plugin::users-permissions.user'
+    >;
+    screans: Schema.Attribute.Media<
+      'images' | 'files' | 'videos' | 'audios',
+      true
+    >;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiRoadmapRoadmap extends Struct.CollectionTypeSchema {
+  collectionName: 'roadmaps';
+  info: {
+    displayName: 'Roadmap';
+    pluralName: 'roadmaps';
+    singularName: 'roadmap';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    author: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+    color: Schema.Attribute.String & Schema.Attribute.DefaultTo<'#FFD700'>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Blocks;
+    flowData: Schema.Attribute.JSON;
+    icon: Schema.Attribute.String & Schema.Attribute.DefaultTo<'faMapSigns'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::roadmap.roadmap'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    tags: Schema.Attribute.JSON;
+    title: Schema.Attribute.String & Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiScanTicketScanTicket extends Struct.CollectionTypeSchema {
+  collectionName: 'scan_tickets';
+  info: {
+    displayName: 'Scan Ticket';
+    pluralName: 'scan-tickets';
+    singularName: 'scan-ticket';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::scan-ticket.scan-ticket'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiScannerScanner extends Struct.CollectionTypeSchema {
+  collectionName: 'scanners';
+  info: {
+    displayName: 'scanner';
+    pluralName: 'scanners';
+    singularName: 'scanner';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    event: Schema.Attribute.Relation<'manyToOne', 'api::event.event'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::scanner.scanner'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    users_permissions_user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+  };
+}
+
+export interface ApiServiceBuyerServiceBuyer
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'service_buyers';
+  info: {
+    displayName: 'service-buyer';
+    pluralName: 'service-buyers';
+    singularName: 'service-buyer';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::service-buyer.service-buyer'
+    > &
+      Schema.Attribute.Private;
+    owner: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+    payment_details: Schema.Attribute.String;
+    payment_type: Schema.Attribute.Enumeration<['wallet', 'IBAN']>;
+    publishedAt: Schema.Attribute.DateTime;
+    service_id: Schema.Attribute.String;
+    type_of_service: Schema.Attribute.Enumeration<['course', 'event', 'live']>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiSpeakerSpeaker extends Struct.CollectionTypeSchema {
+  collectionName: 'speakers';
+  info: {
+    displayName: 'Speaker';
+    pluralName: 'speakers';
+    singularName: 'speaker';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    event: Schema.Attribute.Relation<'manyToOne', 'api::event.event'>;
+    linkedin: Schema.Attribute.String;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::speaker.speaker'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String;
+    publishedAt: Schema.Attribute.DateTime;
+    title: Schema.Attribute.String;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    userId: Schema.Attribute.Integer;
+  };
+}
+
+export interface ApiSubmissionSubmission extends Struct.CollectionTypeSchema {
+  collectionName: 'submissions';
+  info: {
+    description: 'User code submissions for problems';
+    displayName: 'Submission';
+    pluralName: 'submissions';
+    singularName: 'submission';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    code: Schema.Attribute.Text & Schema.Attribute.Required;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    executionTime: Schema.Attribute.Decimal;
+    judgeOutput: Schema.Attribute.JSON;
+    language: Schema.Attribute.Enumeration<
+      ['python', 'java', 'javascript', 'cpp']
+    > &
+      Schema.Attribute.Required;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::submission.submission'
+    > &
+      Schema.Attribute.Private;
+    memoryUsed: Schema.Attribute.Integer;
+    problem: Schema.Attribute.Relation<'manyToOne', 'api::problem.problem'>;
+    publishedAt: Schema.Attribute.DateTime;
+    testCasesPassed: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    totalTestCases: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+    verdict: Schema.Attribute.Enumeration<
+      [
+        'pending',
+        'accepted',
+        'wrong_answer',
+        'time_limit_exceeded',
+        'memory_limit_exceeded',
+        'runtime_error',
+        'compile_error',
+      ]
+    > &
+      Schema.Attribute.DefaultTo<'pending'>;
+  };
+}
+
+export interface ApiTestCaseTestCase extends Struct.CollectionTypeSchema {
+  collectionName: 'test_cases';
+  info: {
+    description: 'Test cases for problem validation';
+    displayName: 'Test Case';
+    pluralName: 'test-cases';
+    singularName: 'test-case';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    expectedOutput: Schema.Attribute.JSON & Schema.Attribute.Required;
+    input: Schema.Attribute.JSON & Schema.Attribute.Required;
+    isHidden: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::test-case.test-case'
+    > &
+      Schema.Attribute.Private;
+    order: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    problem: Schema.Attribute.Relation<'manyToOne', 'api::problem.problem'>;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiUserEntitlementUserEntitlement
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'user_entitlements';
+  info: {
+    displayName: 'userEntitlement';
+    pluralName: 'user-entitlements';
+    singularName: 'user-entitlement';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    content_types: Schema.Attribute.Enumeration<['course', 'event', 'live']>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    duration: Schema.Attribute.DateTime;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::user-entitlement.user-entitlement'
+    > &
+      Schema.Attribute.Private;
+    productId: Schema.Attribute.String;
+    publishedAt: Schema.Attribute.DateTime;
+    strart: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    users_permissions_user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+    valid: Schema.Attribute.Enumeration<['pinding', 'successed', 'expired']>;
+  };
+}
+
 export interface ApiWeekWeek extends Struct.CollectionTypeSchema {
   collectionName: 'weeks';
   info: {
@@ -713,7 +1750,7 @@ export interface ApiWeekWeek extends Struct.CollectionTypeSchema {
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    lessons: Schema.Attribute.Relation<'manyToMany', 'api::lesson.lesson'>;
+    lessons: Schema.Attribute.Relation<'oneToMany', 'api::lesson.lesson'>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<'oneToMany', 'api::week.week'> &
       Schema.Attribute.Private;
@@ -722,6 +1759,10 @@ export interface ApiWeekWeek extends Struct.CollectionTypeSchema {
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    users_permissions_user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
   };
 }
 
@@ -1007,6 +2048,10 @@ export interface PluginUploadFile extends Struct.CollectionTypeSchema {
       Schema.Attribute.Private;
     mime: Schema.Attribute.String & Schema.Attribute.Required;
     name: Schema.Attribute.String & Schema.Attribute.Required;
+    owner: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
     previewUrl: Schema.Attribute.String;
     provider: Schema.Attribute.String & Schema.Attribute.Required;
     provider_metadata: Schema.Attribute.JSON;
@@ -1182,6 +2227,10 @@ export interface PluginUsersPermissionsUser
     draftAndPublish: false;
   };
   attributes: {
+    admin_conversations: Schema.Attribute.Relation<
+      'manyToMany',
+      'api::conversation.conversation'
+    >;
     avatar: Schema.Attribute.Media<'images'>;
     birthday: Schema.Attribute.Date;
     blocked: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
@@ -1192,6 +2241,11 @@ export interface PluginUsersPermissionsUser
       'manyToMany',
       'api::conversation.conversation'
     >;
+    courses: Schema.Attribute.Relation<'oneToMany', 'api::course.course'>;
+    created_conversations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::conversation.conversation'
+    >;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -1200,8 +2254,17 @@ export interface PluginUsersPermissionsUser
       Schema.Attribute.SetMinMaxLength<{
         minLength: 6;
       }>;
+    enroled_contents: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::enroled-content.enroled-content'
+    >;
+    events: Schema.Attribute.Relation<'oneToMany', 'api::event.event'>;
     firstname: Schema.Attribute.String;
+    interest_map: Schema.Attribute.JSON;
+    last_decay_date: Schema.Attribute.DateTime;
     lastname: Schema.Attribute.String;
+    lessons: Schema.Attribute.Relation<'oneToMany', 'api::lesson.lesson'>;
+    likes: Schema.Attribute.Relation<'oneToMany', 'api::like.like'>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
@@ -1215,23 +2278,40 @@ export interface PluginUsersPermissionsUser
         minLength: 6;
       }>;
     phone: Schema.Attribute.String;
+    posts: Schema.Attribute.Relation<'oneToMany', 'api::post.post'>;
     provider: Schema.Attribute.String;
     publishedAt: Schema.Attribute.DateTime;
+    rates: Schema.Attribute.Relation<'oneToMany', 'api::rate.rate'>;
     resetPasswordToken: Schema.Attribute.String & Schema.Attribute.Private;
     role: Schema.Attribute.Relation<
       'manyToOne',
       'plugin::users-permissions.role'
     >;
-    submition: Schema.Attribute.JSON;
+    scanners: Schema.Attribute.Relation<'oneToMany', 'api::scanner.scanner'>;
+    seen_history: Schema.Attribute.JSON;
+    service_buyers: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::service-buyer.service-buyer'
+    >;
+    submissions: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::submission.submission'
+    >;
+    university: Schema.Attribute.String;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    user_entitlements: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::user-entitlement.user-entitlement'
+    >;
     username: Schema.Attribute.String &
       Schema.Attribute.Required &
       Schema.Attribute.Unique &
       Schema.Attribute.SetMinMaxLength<{
         minLength: 3;
       }>;
+    weeks: Schema.Attribute.Relation<'oneToMany', 'api::week.week'>;
   };
 }
 
@@ -1245,15 +2325,42 @@ declare module '@strapi/strapi' {
       'admin::transfer-token': AdminTransferToken;
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
+      'api::article.article': ApiArticleArticle;
+      'api::blog.blog': ApiBlogBlog;
+      'api::code-template.code-template': ApiCodeTemplateCodeTemplate;
       'api::comment.comment': ApiCommentComment;
       'api::conversation.conversation': ApiConversationConversation;
       'api::course-type.course-type': ApiCourseTypeCourseType;
       'api::course.course': ApiCourseCourse;
+      'api::enroled-content.enroled-content': ApiEnroledContentEnroledContent;
+      'api::entitlement.entitlement': ApiEntitlementEntitlement;
+      'api::event-activity.event-activity': ApiEventActivityEventActivity;
+      'api::event.event': ApiEventEvent;
+      'api::faq.faq': ApiFaqFaq;
+      'api::global-tag.global-tag': ApiGlobalTagGlobalTag;
+      'api::help-center.help-center': ApiHelpCenterHelpCenter;
       'api::lesson.lesson': ApiLessonLesson;
+      'api::like.like': ApiLikeLike;
+      'api::live-chat.live-chat': ApiLiveChatLiveChat;
+      'api::live-stream.live-stream': ApiLiveStreamLiveStream;
       'api::message.message': ApiMessageMessage;
+      'api::post.post': ApiPostPost;
+      'api::postbox.postbox': ApiPostboxPostbox;
       'api::problem-type.problem-type': ApiProblemTypeProblemType;
       'api::problem.problem': ApiProblemProblem;
       'api::product.product': ApiProductProduct;
+      'api::rate.rate': ApiRateRate;
+      'api::recommendation.recommendation': ApiRecommendationRecommendation;
+      'api::report-type.report-type': ApiReportTypeReportType;
+      'api::report.report': ApiReportReport;
+      'api::roadmap.roadmap': ApiRoadmapRoadmap;
+      'api::scan-ticket.scan-ticket': ApiScanTicketScanTicket;
+      'api::scanner.scanner': ApiScannerScanner;
+      'api::service-buyer.service-buyer': ApiServiceBuyerServiceBuyer;
+      'api::speaker.speaker': ApiSpeakerSpeaker;
+      'api::submission.submission': ApiSubmissionSubmission;
+      'api::test-case.test-case': ApiTestCaseTestCase;
+      'api::user-entitlement.user-entitlement': ApiUserEntitlementUserEntitlement;
       'api::week.week': ApiWeekWeek;
       'plugin::content-releases.release': PluginContentReleasesRelease;
       'plugin::content-releases.release-action': PluginContentReleasesReleaseAction;

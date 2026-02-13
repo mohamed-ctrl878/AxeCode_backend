@@ -1,0 +1,38 @@
+{
+    "kind": "collectionType",
+    "collectionName": "test_cases",
+    "info": {
+        "singularName": "test-case",
+        "pluralName": "test-cases",
+        "displayName": "Test Case",
+        "description": "Test cases for problem validation"
+    },
+    "options": {
+        "draftAndPublish": false
+    },
+    "pluginOptions": {},
+    "attributes": {
+        "input": {
+            "type": "json",
+            "required": true
+        },
+        "expectedOutput": {
+            "type": "json",
+            "required": true
+        },
+        "isHidden": {
+            "type": "boolean",
+            "default": true
+        },
+        "order": {
+            "type": "integer",
+            "default": 0
+        },
+        "problem": {
+            "type": "relation",
+            "relation": "manyToOne",
+            "target": "api::problem.problem",
+            "inversedBy": "test_cases"
+        }
+    }
+}

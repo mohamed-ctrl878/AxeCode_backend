@@ -1,0 +1,39 @@
+{
+    "kind": "collectionType",
+    "collectionName": "live_chats",
+    "info": {
+        "singularName": "live-chat",
+        "pluralName": "live-chats",
+        "displayName": "Live Chat",
+        "description": "Chat messages for live streaming sessions"
+    },
+    "options": {
+        "draftAndPublish": false
+    },
+    "pluginOptions": {},
+    "attributes": {
+        "message": {
+            "type": "text",
+            "required": true
+        },
+        "stream": {
+            "type": "relation",
+            "relation": "manyToOne",
+            "target": "api::live-stream.live-stream"
+        },
+        "user": {
+            "type": "relation",
+            "relation": "manyToOne",
+            "target": "plugin::users-permissions.user"
+        },
+        "isModerated": {
+            "type": "boolean",
+            "default": false
+        },
+        "moderatedBy": {
+            "type": "relation",
+            "relation": "manyToOne",
+            "target": "plugin::users-permissions.user"
+        }
+    }
+}

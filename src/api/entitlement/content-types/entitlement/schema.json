@@ -1,0 +1,52 @@
+{
+  "kind": "collectionType",
+  "collectionName": "entitlements",
+  "info": {
+    "singularName": "entitlement",
+    "pluralName": "entitlements",
+    "displayName": "entitlement"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "content_types": {
+      "type": "enumeration",
+      "enum": [
+        "role",
+        "course",
+        "uplive",
+        "upevent",
+        "veiwlive",
+        "veiwevent"
+      ]
+    },
+    "decision": {
+      "type": "boolean"
+    },
+    "price": {
+      "type": "decimal"
+    },
+    "currency": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "duration": {
+      "type": "datetime"
+    },
+    "itemId": {
+      "type": "string"
+    },
+    "users_permissions_user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    }
+  }
+}

@@ -12,14 +12,24 @@
   },
   "pluginOptions": {},
   "attributes": {
-    "comment": {
-      "type": "text"
+    "parentId": {
+      "type": "string"
     },
-    "problem": {
-      "type": "relation",
-      "relation": "manyToOne",
-      "target": "api::problem.problem",
-      "inversedBy": "comments"
+    "docId": {
+      "type": "string"
+    },
+    "content_types": {
+      "type": "enumeration",
+      "enum": [
+        "lesson",
+        "blog",
+        "article",
+        "post",
+        "course",
+        "problem",
+        "live",
+        "event"
+      ]
     },
     "users_permissions_user": {
       "type": "relation",
@@ -27,11 +37,8 @@
       "target": "plugin::users-permissions.user",
       "inversedBy": "comments"
     },
-    "problemId": {
-      "type": "string"
-    },
-    "parentId": {
-      "type": "string"
+    "comment": {
+      "type": "blocks"
     }
   }
 }

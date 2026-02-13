@@ -1,0 +1,69 @@
+###############################################
+# MediaMTX Configuration for AxeCode Live Streaming
+###############################################
+
+# Log level (debug, info, warn, error)
+logLevel: info
+logDestinations: [stdout]
+
+# API for monitoring
+api: yes
+apiAddress: :9997
+
+# ==========================================
+# PROTOCOLS
+# ==========================================
+
+# RTMP server (for OBS/Streamlabs)
+rtmp: yes
+rtmpAddress: :1935
+
+# HLS server (for browser playback)
+hls: yes
+hlsAddress: :8888
+hlsAlwaysRemux: yes
+hlsSegmentCount: 7
+hlsSegmentDuration: 1s
+# Disable Low-Latency HLS (requires 7+ segments which causes delay)
+hlsPartDuration: 0s
+hlsAllowOrigins: ['*']
+
+# RTSP server (optional)
+rtsp: yes
+rtspAddress: :8554
+
+# WebRTC server (optional - for ultra-low latency)
+webrtc: yes
+webrtcAddress: :8889
+webrtcAllowOrigin: '*'
+
+# ==========================================
+# PATHS (Streams)
+# ==========================================
+
+paths:
+  # Default path that accepts all streams
+  all:
+    # Authentication (empty = no auth for testing)
+    publishUser: ""
+    publishPass: ""
+    readUser: ""
+    readPass: ""
+    
+    # Webhook notifications to Strapi
+    # Triggered when stream starts
+    runOnReady: >
+      curl -s -X POST "http://host.docker.internal:1337/api/live-streams/webhook/start" 
+      -H "Content-Type: application/json" 
+      -d "{\"streamKey\": \"$MTX_PATH\"}"
+    
+    # Triggered when stream ends
+    runOnNotReady: >
+      curl -s -X POST "http://host.docker.internal:1337/api/live-streams/webhook/end" 
+      -H "Content-Type: application/json" 
+      -d "{\"streamKey\": \"$MTX_PATH\"}"
+    
+    # Recording settings (optional)
+    # record: yes
+    # recordPath: /recordings/%path/%Y-%m-%d_%H-%M-%S.mp4
+    # recordFormat: fmp4

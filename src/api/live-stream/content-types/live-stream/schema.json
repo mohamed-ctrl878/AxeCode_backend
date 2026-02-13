@@ -1,0 +1,83 @@
+{
+    "kind": "collectionType",
+    "collectionName": "live_streams",
+    "info": {
+        "singularName": "live-stream",
+        "pluralName": "live-streams",
+        "displayName": "Live Stream",
+        "description": "Live streaming sessions with RTMP ingest and HLS playback"
+    },
+    "options": {
+        "draftAndPublish": false
+    },
+    "pluginOptions": {},
+    "attributes": {
+        "title": {
+            "type": "string",
+            "required": true
+        },
+        "description": {
+            "type": "text"
+        },
+        "status": {
+            "type": "enumeration",
+            "enum": [
+                "scheduled",
+                "live",
+                "ended",
+                "cancelled"
+            ],
+            "default": "scheduled"
+        },
+        "streamKey": {
+            "type": "string",
+            "unique": true,
+            "private": true
+        },
+        "playbackUrl": {
+            "type": "string"
+        },
+        "thumbnailUrl": {
+            "type": "string"
+        },
+        "scheduledAt": {
+            "type": "datetime"
+        },
+        "startedAt": {
+            "type": "datetime"
+        },
+        "endedAt": {
+            "type": "datetime"
+        },
+        "viewerCount": {
+            "type": "integer",
+            "default": 0
+        },
+        "peakViewers": {
+            "type": "integer",
+            "default": 0
+        },
+        "host": {
+            "type": "relation",
+            "relation": "manyToOne",
+            "target": "plugin::users-permissions.user"
+        },
+        "category": {
+            "type": "string"
+        },
+        "isRecorded": {
+            "type": "boolean",
+            "default": false
+        },
+        "recordingUrl": {
+            "type": "string"
+        },
+        "tags": {
+            "type": "json"
+        },
+        "engagement_score": {
+            "type": "integer",
+            "default": 0
+        }
+    }
+}

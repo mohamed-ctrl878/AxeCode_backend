@@ -1,0 +1,28 @@
+{
+    "kind": "collectionType",
+    "collectionName": "global_tags",
+    "info": {
+        "singularName": "global-tag",
+        "pluralName": "global-tags",
+        "displayName": "Global Tag",
+        "description": "Global repository of tags with usage frequency"
+    },
+    "options": {
+        "draftAndPublish": false
+    },
+    "pluginOptions": {},
+    "attributes": {
+        "name": {
+            "type": "string",
+            "unique": true,
+            "required": true
+        },
+        "count": {
+            "type": "integer",
+            "default": 1
+        },
+        "last_used": {
+            "type": "datetime"
+        }
+    }
+}

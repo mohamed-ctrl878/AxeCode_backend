@@ -1,0 +1,37 @@
+{
+  "kind": "collectionType",
+  "collectionName": "likes",
+  "info": {
+    "singularName": "like",
+    "pluralName": "likes",
+    "displayName": "like"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "users_permissions_user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "likes"
+    },
+    "content_types": {
+      "type": "enumeration",
+      "enum": [
+        "lesson",
+        "live",
+        "blog",
+        "message",
+        "post",
+        "course",
+        "problem",
+        "event"
+      ]
+    },
+    "docId": {
+      "type": "string"
+    }
+  }
+}

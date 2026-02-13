@@ -1,0 +1,46 @@
+{
+  "kind": "collectionType",
+  "collectionName": "user_entitlements",
+  "info": {
+    "singularName": "user-entitlement",
+    "pluralName": "user-entitlements",
+    "displayName": "userEntitlement"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "users_permissions_user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "user_entitlements"
+    },
+    "duration": {
+      "type": "datetime"
+    },
+    "strart": {
+      "type": "datetime"
+    },
+    "content_types": {
+      "type": "enumeration",
+      "enum": [
+        "course",
+        "event",
+        "live"
+      ]
+    },
+    "productId": {
+      "type": "string"
+    },
+    "valid": {
+      "type": "enumeration",
+      "enum": [
+        "pinding",
+        "successed",
+        "expired"
+      ]
+    }
+  }
+}
