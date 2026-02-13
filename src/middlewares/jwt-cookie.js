@@ -6,6 +6,6 @@ module.exports = (config, { strapi }) => {
     if (!ctx.request.header.authorization && ctx.cookies.get("jwt")) {
       ctx.request.header.authorization = `Bearer ${ctx.cookies.get("jwt")}`;
     }
-    await next();
+    await next(); 
   };
 };

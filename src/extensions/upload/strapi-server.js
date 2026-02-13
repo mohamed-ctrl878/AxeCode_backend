@@ -15,7 +15,7 @@ module.exports = (plugin) => {
   // Override content-api controller
   plugin.controllers['content-api'] = (ctx) => {
     const original = originalContentApiController(ctx);
-
+// return original;
     return {
       ...original,
 
