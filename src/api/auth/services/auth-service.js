@@ -61,7 +61,7 @@ module.exports = ({ strapi }) => {
       try {
         const payload = getSecurity().verifyToken(token);
         if (!payload) return null;
-        
+
         const user = await strapi.db.query('plugin::users-permissions.user').findOne({
           where: { id: payload.id },
           populate: {
@@ -159,7 +159,7 @@ module.exports = ({ strapi }) => {
 
       if (!defaultRole) throw new Error("Registration configuration error");
 
-      const hashedPassword = await strapi.plugin('users-permissions').service('user').hashPassword(password);
+      const { password: hashedPassword } = await strapi.plugin('users-permissions').service('user').ensureHashedPasswords({ password });
 
       const newUser = await strapi.db.query('plugin::users-permissions.user').create({
         data: {
@@ -206,7 +206,7 @@ module.exports = ({ strapi }) => {
 
       if (!user || user.blocked) throw new Error("Invalid user");
 
-      const hashedPassword = await strapi.plugin('users-permissions').service('user').hashPassword(password);
+      const { password: hashedPassword } = await strapi.plugin('users-permissions').service('user').ensureHashedPasswords({ password });
       await strapi.db.query('plugin::users-permissions.user').update({
         where: { id: user.id },
         data: { password: hashedPassword, resetPasswordToken: null }

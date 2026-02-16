@@ -1,8 +1,8 @@
-# 🔥 Code Execution API - Strapi Application
+# Code Execution API - Strapi Application
 
 A powerful Strapi-based headless CMS application with integrated Docker code execution capabilities. This application allows developers to execute and test code snippets in a secure, containerized environment.
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Overview](#overview)
 - [Features](#features)
@@ -18,7 +18,7 @@ A powerful Strapi-based headless CMS application with integrated Docker code exe
 - [Deployment](#deployment)
 - [Contributing](#contributing)
 
-## 🎯 Overview
+## Overview
 
 This application is built on **Strapi v5.16.0** and includes:
 - **Headless CMS**: Full-featured content management
@@ -28,17 +28,17 @@ This application is built on **Strapi v5.16.0** and includes:
 - **SQLite Database**: Lightweight database for development
 - **PostgreSQL Support**: Production-ready database option
 
-## ✨ Features
+## Features
 
-- 🔐 **Secure Code Execution**: Containerized environment for running C++ code
-- 📊 **Performance Monitoring**: Built-in performance tracking
-- 🛡️ **Security Configuration**: Advanced security settings
-- 📧 **Email Integration**: Nodemailer support for notifications
-- 🔧 **Extensible API**: Easy to extend and customize
-- 📱 **Admin Dashboard**: React-based admin interface
-- 🔄 **Auto-reload**: Development mode with hot reloading
+- **Secure Code Execution**: Containerized environment for running C++ code
+- **Performance Monitoring**: Built-in performance tracking
+- **Security Configuration**: Advanced security settings
+- **Email Integration**: Nodemailer support for notifications
+- **Extensible API**: Easy to extend and customize
+- **Admin Dashboard**: React-based admin interface
+- **Auto-reload**: Development mode with hot reloading
 
-## 🔧 Prerequisites
+## Prerequisites
 
 Before you begin, ensure you have the following installed:
 
@@ -56,7 +56,7 @@ Before you begin, ensure you have the following installed:
 - **RAM**: Minimum 4GB, Recommended 8GB
 - **Storage**: At least 1GB free space
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
 # Clone the repository
@@ -78,7 +78,7 @@ npm run dev
 # Visit http://localhost:1337/admin to create your admin user
 ```
 
-## 📖 Detailed Setup
+## Detailed Setup
 
 ### Step 1: Node.js Version Check
 
@@ -135,7 +135,7 @@ TRANSFER_TOKEN_SALT=your-transfer-token-salt
 JWT_SECRET=your-jwt-secret
 ```
 
-> **⚠️ Important**: For production, generate secure random strings for all secret values!
+> **Important**: For production, generate secure random strings for all secret values!
 
 ### Step 5: Start the Application
 
@@ -158,7 +158,7 @@ npm run start
    - Password (minimum 8 characters)
 3. Click "Let's start"
 
-## ⚙️ Configuration
+## Configuration
 
 ### Database Configuration
 
@@ -190,7 +190,7 @@ SMTP_USERNAME=your_username
 SMTP_PASSWORD=your_password
 ```
 
-## 📊 Usage
+## Usage
 
 ### Admin Panel
 
@@ -202,7 +202,7 @@ SMTP_PASSWORD=your_password
 - **Base URL**: `http://localhost:1337/api`
 - **Documentation**: Available at `http://localhost:1337/documentation` (if enabled)
 
-## 🔗 API Endpoints
+## API Endpoints
 
 ### Core Endpoints
 
@@ -239,7 +239,7 @@ Content-Type: application/json
 }
 ```
 
-## 🐳 Docker Integration
+## Docker Integration
 
 The application includes Docker integration for secure code execution:
 
@@ -273,7 +273,7 @@ WORKDIR /home/coderunner/workspace
 - No new privileges
 - Process limit: 50
 
-## 🛠️ Development
+## Development
 
 ### Available Scripts
 
@@ -320,7 +320,7 @@ npm run strapi generate api <name>
 
 3. **Customize admin**: Modify files in `src/admin/`
 
-## 🚨 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -375,7 +375,7 @@ Application logs are available in:
 - Development: Console output
 - Production: `logs/` directory
 
-## 🌐 Deployment
+## Deployment
 
 ### Production Build
 
@@ -416,7 +416,7 @@ DATABASE_PASSWORD=your-password
 4. **AWS**: EC2, ECS, or Lambda
 5. **Vercel**: Serverless deployment
 
-## 📚 Additional Resources
+## Additional Resources
 
 ### Official Documentation
 - [Strapi Documentation](https://docs.strapi.io) - Complete Strapi guide
@@ -429,7 +429,7 @@ DATABASE_PASSWORD=your-password
 - [GitHub](https://github.com/strapi/strapi) - Source code
 - [Blog](https://strapi.io/blog) - Latest updates and tutorials
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create your feature branch: `git checkout -b feature/amazing-feature`
@@ -437,11 +437,11 @@ DATABASE_PASSWORD=your-password
 4. Push to the branch: `git push origin feature/amazing-feature`
 5. Open a Pull Request
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 👨‍💻 Support
+## Support
 
 If you encounter any issues or need help:
 
@@ -452,6 +452,6 @@ If you encounter any issues or need help:
 
 ---
 
-⭐ **Star this repository if you found it helpful!**
+Star this repository if you found it helpful!
 
-<sub>Made with ❤️ using Strapi v5.16.0</sub>
+Made with love using Strapi v5.16.0
