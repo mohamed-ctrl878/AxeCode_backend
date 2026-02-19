@@ -13,7 +13,7 @@ const validator = require('validator');
 // Basic Sanitization: Escape dangerous HTML/Script characters
 const sanitizeObject = (obj) => {
   if (!obj || typeof obj !== 'object') return obj;
-  
+
   const sanitized = Array.isArray(obj) ? [] : {};
   for (const [key, value] of Object.entries(obj)) {
     // skip sanitization for sensitive fields like passwords to avoid corruption
@@ -70,12 +70,12 @@ module.exports = ({ strapi }) => ({
     const ip = ctx.ip;
     const path = ctx.request.path || '';
     const now = Date.now();
-    
+
     // Skip rate limiting for admin panel requests (they make many parallel requests)
     if (path.startsWith('/admin') || path.startsWith('/content-manager')) {
       return;
     }
-    
+
     const limit = 200; // requests per minute (increased for development)
     const window = 60 * 1000;
 
@@ -127,12 +127,25 @@ module.exports = ({ strapi }) => ({
   async authenticate(ctx) {
     try {
       const securityLogic = strapi.service('api::auth.security-logic');
-      const token = ctx.cookies.get('jwt');
+      let token = ctx.cookies.get('jwt');
+      console.log("[SECURITY DEBUG] Cookie JWT present:", !!token);
 
-      if (!token) return;
+      if (!token && ctx.request.header.authorization) {
+        const parts = ctx.request.header.authorization.split(' ');
+        if (parts.length === 2 && parts[0].toLowerCase() === 'bearer') {
+          token = parts[1];
+          console.log("[SECURITY DEBUG] Token extracted from Header");
+        }
+      }
+
+      if (!token) {
+        console.log("[SECURITY DEBUG] No token found in Cookie or Header");
+        return;
+      }
 
       const payload = securityLogic.verifyToken(token);
-      // Ensure payload exists and has an ID to avoid "Undefined binding" errors in DB
+      console.log("[SECURITY DEBUG] Payload verified:", !!payload);
+
       if (!payload || !payload.id) {
         strapi.log.debug('[Security] Malformed or incompatible JWT payload detected');
         return;
@@ -142,14 +155,17 @@ module.exports = ({ strapi }) => ({
         where: { id: payload.id },
         populate: { role: true }
       });
+      console.log("[SECURITY DEBUG] User found in DB:", !!user);
 
       if (user && !user.blocked) {
         ctx.state.user = user;
+        console.log("[SECURITY DEBUG] Auth successful for user ID:", user.id);
+      } else if (user?.blocked) {
+        console.log("[SECURITY DEBUG] User is blocked");
       }
     } catch (err) {
       strapi.log.error(`[Security] Authentication error: ${err.message}`);
-      // We don't throw here to avoid crashing the whole request if DB is temporarily unstable
-      // Authenticated state simply won't be set.
+      console.error("[SECURITY DEBUG] Exception:", err);
     }
   }
 });

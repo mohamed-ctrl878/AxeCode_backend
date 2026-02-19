@@ -11,16 +11,16 @@ module.exports = ({ strapi }) => ({
    */
   setAuthCookie(ctx, jwt) {
     const isProd = process.env.NODE_ENV === 'production';
-    
+
     ctx.cookies.set('jwt', jwt, {
       httpOnly: true,
       secure: isProd,
-      sameSite: 'strict',
+      sameSite: 'lax', // تم التغيير من strict لضمان عملها بين المنافذ المختلفة في التطوير
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       path: '/',
       domain: process.env.COOKIE_DOMAIN || undefined,
     });
-    
+
     strapi.log.debug(`[Security] Auth cookie set for user`);
   },
 
@@ -36,7 +36,7 @@ module.exports = ({ strapi }) => ({
       path: '/',
       domain: process.env.COOKIE_DOMAIN || undefined,
     });
-    
+
     strapi.log.debug(`[Security] Auth cookie cleared`);
   },
 

@@ -110,11 +110,18 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
     /**
      * Helper to be called from content type lifecycles (beforeCreate, beforeUpdate).
      */
+    /**
+     * Helper to be called from content type lifecycles (beforeCreate, beforeUpdate).
+     */
     async handleLifecycleEvent(event) {
-      if (!event.params || !event.params.data) return;
-      const { data } = event.params;
-      const contentType = event.model.singularName;
-      await service.processContentTags(data, contentType);
+      try {
+        if (!event.params || !event.params.data) return;
+        const { data } = event.params;
+        const contentType = event.model.singularName;
+        await service.processContentTags(data, contentType);
+      } catch (error) {
+        strapi.log.error(`[Recommendation] Lifecycle hook failed for ${event.model.singularName}:`, error.message);
+      }
     },
 
     /**
@@ -138,8 +145,8 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
         if (score === 0) return;
 
         // Fetch content to get tags
-        const content = await strapi.db.query(`api::${contentType}.${contentType}`).findOne({
-          where: { documentId: contentId },
+        const content = await strapi.documents(`api::${contentType}.${contentType}`).findOne({
+          documentId: contentId,
         });
 
         if (!content || !content.tags || content.tags.length === 0) return;
@@ -169,10 +176,10 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
         // Update seen history (circular buffer of 500)
         let seenHistory = user.seen_history || [];
         const contentRef = `${contentType}:${contentId}`;
-        
+
         seenHistory = seenHistory.filter(id => id !== contentRef);
         seenHistory.push(contentRef);
-        
+
         if (seenHistory.length > 500) {
           seenHistory.shift();
         }
@@ -188,8 +195,8 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
 
         // Increment content engagement score
         if (action === "click" || action === "like") {
-          await strapi.db.query(`api::${contentType}.${contentType}`).update({
-            where: { documentId: contentId },
+          await strapi.documents(`api::${contentType}.${contentType}`).update({
+            documentId: contentId,
             data: {
               engagement_score: (content.engagement_score || 0) + Math.abs(score),
             },
@@ -200,6 +207,10 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
       }
     },
 
+    /**
+     * Get personalized feed for a user.
+     * Supports filtering by type or returning a grouped object.
+     */
     /**
      * Get personalized feed for a user.
      * Supports filtering by type or returning a grouped object.
@@ -230,9 +241,9 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
 
       const personalizedFeed = personalizedCandidates.slice(0, personalizedCount);
       const personalizedRefs = personalizedFeed.map(i => `${i.contentType}:${i.documentId}`);
-      
+
       const discoveryCandidates = await service.getTrendingContent(discoveryCount, seenHistory, personalizedRefs, contentTypes);
-      
+
       let finalFeed = [...personalizedFeed, ...discoveryCandidates];
 
       // Phase 5: Scarcity handling (Backfill if needed)
@@ -244,6 +255,9 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
 
       // Final shuffle
       const sortedFeed = finalFeed.sort(() => Math.random() - 0.5);
+
+      // Phase 6: Enrichment with Permissions (Entitlements)
+      await service.enrichWithPermissions(sortedFeed, user.id);
 
       // If a specific type was requested, return flat list
       if (type) return sortedFeed;
@@ -262,29 +276,65 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
     },
 
     /**
-     * Fetch candidates from all participating content types.
+     * Enrich content items with price and access status using Entitlement system.
+     */
+    async enrichWithPermissions(items, userId = null) {
+      if (!items || !Array.isArray(items)) return items;
+
+      const mapping = {
+        'course': 'course',
+        'live-stream': 'uplive',
+        'event': 'upevent',
+      };
+
+      const facade = strapi.service('api::entitlement.content-access-facade');
+      if (!facade) return items;
+
+      await Promise.all(items.map(async (item) => {
+        const entitlementType = mapping[item.contentType];
+        if (entitlementType) {
+          try {
+            const details = await facade.getFullDetails(item.documentId, entitlementType, userId);
+            item.price = details.price;
+            item.hasAccess = details.hasAccess;
+            item.student_count = details.studentCount;
+            item.entitlementsId = details.entitlementId;
+          } catch (error) {
+            strapi.log.error(`[Recommendation] Enrichment failed for ${item.contentType} ${item.documentId}:`, error.message);
+            item.hasAccess = false;
+          }
+        } else {
+          // Default for non-entitlement content (articles, blogs, etc.)
+          item.hasAccess = true;
+        }
+      }));
+
+      return items;
+    },
+
+    /**
+     * Fetch candidates from all participating content types in parallel.
      */
     async getCandidateContents(tags, seenHistory, contentTypes) {
-      let allCandidates = [];
+      const results = await Promise.all(
+        contentTypes.map(async (type) => {
+          try {
+            const candidates = await strapi.documents(`api::${type}.${type}`).findMany({
+              filters: {
+                tags: { $contains: tags },
+              },
+              populate: "*",
+              limit: 50,
+            });
+            return candidates.map(c => ({ ...c, contentType: type }));
+          } catch (e) {
+            strapi.log.warn(`Candidate fetch failed for ${type}: ${e.message}`);
+            return [];
+          }
+        })
+      );
 
-      for (const type of contentTypes) {
-        try {
-          const candidates = await strapi.documents(`api::${type}.${type}`).findMany({
-            filters: {
-              tags: { $contains: tags },
-            },
-            limit: 50,
-          });
-
-          allCandidates = allCandidates.concat(candidates.map(c => ({
-            ...c,
-            contentType: type,
-          })));
-        } catch (e) {
-          strapi.log.warn(`Candidate fetch failed for ${type}: ${e.message}`);
-        }
-      }
-
+      const allCandidates = results.flat();
       return allCandidates.filter(c => !seenHistory.has(`${c.contentType}:${c.documentId}`));
     },
 
@@ -305,84 +355,104 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
     },
 
     /**
-     * Get trending content for discovery.
+     * Get trending content for discovery in parallel.
      */
     async getTrendingContent(limit, seenHistory, excludeRefs, contentTypes) {
-      let allTrending = [];
+      const results = await Promise.all(
+        contentTypes.map(async (type) => {
+          try {
+            const items = await strapi.documents(`api::${type}.${type}`).findMany({
+              sort: [{ engagement_score: "desc" }],
+              populate: "*",
+              limit: 10,
+            });
+            return items.map(i => ({ ...i, contentType: type }));
+          } catch (e) {
+            return [];
+          }
+        })
+      );
 
-      for (const type of contentTypes) {
-        try {
-          const items = await strapi.documents(`api::${type}.${type}`).findMany({
-            sort: [{ engagement_score: "desc" }],
-            limit: 10,
-          });
-          allTrending = allTrending.concat(items.map(i => ({ ...i, contentType: type })));
-        } catch (e) {}
-      }
-
-      return allTrending
+      return results.flat()
         .filter(i => !seenHistory.has(`${i.contentType}:${i.documentId}`) && !excludeRefs.includes(`${i.contentType}:${i.documentId}`))
         .sort((a, b) => (b.engagement_score || 0) - (a.engagement_score || 0))
         .slice(0, limit);
     },
 
     /**
-     * Get latest content for backfill.
+     * Get latest content for backfill in parallel.
      */
     async getLatestContent(limit, seenHistory, excludeRefs, contentTypes) {
-      let allLatest = [];
+      const results = await Promise.all(
+        contentTypes.map(async (type) => {
+          try {
+            const items = await strapi.documents(`api::${type}.${type}`).findMany({
+              sort: [{ createdAt: "desc" }],
+              populate: "*",
+              limit: 10,
+            });
+            return items.map(i => ({ ...i, contentType: type }));
+          } catch (e) {
+            return [];
+          }
+        })
+      );
 
-      for (const type of contentTypes) {
-        try {
-          const items = await strapi.documents(`api::${type}.${type}`).findMany({
-            sort: [{ createdAt: "desc" }],
-            limit: 10,
-          });
-          allLatest = allLatest.concat(items.map(i => ({ ...i, contentType: type })));
-        } catch (e) {}
-      }
-
-      return allLatest
+      return results.flat()
         .filter(i => !seenHistory.has(`${i.contentType}:${i.documentId}`) && !excludeRefs.includes(`${i.contentType}:${i.documentId}`))
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
         .slice(0, limit);
     },
 
     /**
-     * Apply time decay to all users' interest maps.
-     * Usually called by a weekly cron job.
+     * Apply time decay to user interest maps using batch processing.
+     * Prevents memory overflow and database locking on large user bases.
      */
-    async applyTimeDecay(decayFactor = 0.9) {
-      const users = await strapi.db.query("plugin::users-permissions.user").findMany();
-      
-      for (const user of users) {
-        if (!user.interest_map) continue;
+    async applyTimeDecay(decayFactor = 0.9, batchSize = 100) {
+      let offset = 0;
+      let totalProcessed = 0;
 
-        let interestMap = user.interest_map;
-        let changed = false;
+      while (true) {
+        const users = await strapi.db.query("plugin::users-permissions.user").findMany({
+          limit: batchSize,
+          offset: offset,
+        });
 
-        for (const [tag, score] of Object.entries(interestMap)) {
-          const newScore = score * decayFactor;
-          if (newScore < 0.1) {
-            delete interestMap[tag]; // Remove low-interest noise
-            changed = true;
-          } else {
-            interestMap[tag] = newScore;
-            changed = true;
+        if (!users || users.length === 0) break;
+
+        for (const user of users) {
+          if (!user.interest_map) continue;
+
+          let interestMap = { ...user.interest_map };
+          let changed = false;
+
+          for (const [tag, score] of Object.entries(interestMap)) {
+            const newScore = score * decayFactor;
+            if (newScore < 0.1) {
+              delete interestMap[tag];
+              changed = true;
+            } else {
+              interestMap[tag] = newScore;
+              changed = true;
+            }
+          }
+
+          if (changed) {
+            await strapi.db.query("plugin::users-permissions.user").update({
+              where: { id: user.id },
+              data: {
+                interest_map: interestMap,
+                last_decay_date: new Date(),
+              },
+            });
           }
         }
 
-        if (changed) {
-          await strapi.db.query("plugin::users-permissions.user").update({
-            where: { id: user.id },
-            data: {
-              interest_map: interestMap,
-              last_decay_date: new Date(),
-            },
-          });
-        }
+        totalProcessed += users.length;
+        offset += batchSize;
       }
-      strapi.log.info(`[Recommendation] Time decay applied to ${users.length} users.`);
+
+      strapi.log.info(`[Recommendation] Time decay applied to ${totalProcessed} users.`);
     },
 
     /**
@@ -390,9 +460,9 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
      */
     async getSuggestions(query, limit = 10) {
       if (!query) return [];
-      
+
       const normalizedQuery = service.normalizeTag(query);
-      
+
       return await strapi.db.query("api::global-tag.global-tag").findMany({
         where: {
           name: { $contains: normalizedQuery },

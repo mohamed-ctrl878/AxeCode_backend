@@ -8,6 +8,8 @@
 class StrapiMock {
   constructor() {
     this.services = new Map();
+    this.queryInstances = new Map();
+    this.documentInstances = new Map();
     this.plugins = {
       'users-permissions': {
         services: {
@@ -18,28 +20,33 @@ class StrapiMock {
         }
       }
     };
-    
+
     this.db = {
-      query: (uid) => ({
-        findOne: async () => ({ id: 1, username: 'tester', role: { type: 'authenticated' } }),
-        findMany: async () => [],
-        update: async () => ({ id: 1 }),
-        create: async () => ({ id: 1 }),
-        delete: async () => ({ id: 1 }),
-      })
+      query: (uid) => {
+        if (!this.queryInstances.has(uid)) {
+          this.queryInstances.set(uid, {
+            findOne: async () => ({ id: 1, username: 'tester', role: { type: 'authenticated' } }),
+            findMany: async () => [],
+            update: async () => ({ id: 1 }),
+            create: async () => ({ id: 1 }),
+            delete: async () => ({ id: 1 }),
+          });
+        }
+        return this.queryInstances.get(uid);
+      }
     };
 
     this.log = {
-      info: () => {},
-      error: () => {},
-      warn: () => {},
-      debug: () => {}
+      info: () => { },
+      error: () => { },
+      warn: () => { },
+      debug: () => { }
     };
 
     // Placeholder for socket.io
     this.io = {
-      emit: () => {},
-      to: () => ({ emit: () => {} })
+      emit: () => { },
+      to: () => ({ emit: () => { } })
     };
   }
 
@@ -63,23 +70,26 @@ class StrapiMock {
         register: async () => ({}),
         getFullDetails: async () => ({}),
         getMetricsAndAccess: async () => ({}),
-        notifyStatusChange: () => {},
+        notifyStatusChange: () => { },
         handleFailure: async () => ({}),
-        notifyComplete: () => {}
+        notifyComplete: () => { }
       };
     }
     return this.services.get(uid);
   }
 
   documents(uid) {
-    return {
-      findOne: async (p) => ({ id: 1, documentId: p.documentId || 'doc-1', title: 'Mock' }),
-      findMany: async () => [{ id: 1, documentId: 'doc-1' }],
-      findFirst: async () => ({ id: 1 }),
-      create: async (p) => ({ id: 1, ...p.data }),
-      update: async (p) => ({ id: 1, ...p.data }),
-      delete: async () => ({ id: 1 }),
-    };
+    if (!this.documentInstances.has(uid)) {
+      this.documentInstances.set(uid, {
+        findOne: async (p) => ({ id: 1, documentId: p?.documentId || 'doc-1', title: 'Mock' }),
+        findMany: async () => [{ id: 1, documentId: 'doc-1' }],
+        findFirst: async () => ({ id: 1 }),
+        create: async (p) => ({ id: 1, ...p?.data }),
+        update: async (p) => ({ id: 1, ...p?.data }),
+        delete: async () => ({ id: 1 }),
+      });
+    }
+    return this.documentInstances.get(uid);
   }
 
   mockContext(options = {}) {
@@ -89,11 +99,12 @@ class StrapiMock {
         method: options.method || 'GET',
         path: options.path || '/'
       },
+      query: options.query || {},
       ip: options.ip || '127.0.0.1',
       state: {},
       cookies: {
         get: (name) => options.cookies?.[name] || null,
-        set: () => {}
+        set: () => { }
       },
       badRequest: (msg) => new Error(msg),
       tooManyRequests: (msg) => new Error(msg),

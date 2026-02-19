@@ -10,17 +10,48 @@ const { createCoreController } = require('@strapi/strapi').factories;
 const { LIVE_STREAM_POPULATE } = require('../constants');
 
 module.exports = createCoreController('api::live-stream.live-stream', ({ strapi }) => ({
-  
+
+  // GET /live-streams - Get all streams with entitlement enrichment
+  async find(ctx) {
+    ctx.query.populate = ctx.query.populate || { ...LIVE_STREAM_POPULATE };
+
+    const response = await super.find(ctx);
+
+    if (response.data && Array.isArray(response.data)) {
+      const userId = ctx.state.user?.id || null;
+      const enrichment = strapi.service('api::live-stream.live-stream-enrichment');
+      await enrichment.enrichMany(response.data, userId);
+    }
+
+    return response;
+  },
+
+  // GET /live-streams/:id - Get single stream with entitlement enrichment
+  async findOne(ctx) {
+    ctx.query.populate = ctx.query.populate || { ...LIVE_STREAM_POPULATE };
+
+    const response = await super.findOne(ctx);
+
+    if (response.data) {
+      const userId = ctx.state.user?.id || null;
+      const enrichment = strapi.service('api::live-stream.live-stream-enrichment');
+      await enrichment.enrichStream(response.data, userId);
+    }
+
+    return response;
+  },
+
+
   // POST /lives-streams - Create a new stream session
   async create(ctx) {
     const user = ctx.state.user;
     if (!user) return ctx.unauthorized('Authentication required');
 
     const logicService = strapi.service('api::live-stream.live-stream-logic');
-    
+
     // Delegate metadata generation (keys, URLs) to logic service
     const metadata = logicService.generateStreamMetadata();
-    
+
     ctx.request.body.data = {
       ...ctx.request.body.data,
       ...metadata,
@@ -105,7 +136,7 @@ module.exports = createCoreController('api::live-stream.live-stream', ({ strapi 
     if (!stream) return ctx.notFound('Stream not found');
     if (stream.host?.id !== user?.id) return ctx.forbidden('Restricted info');
 
-    return { 
+    return {
       streamKey: stream.streamKey,
       rtmpUrl: process.env.MEDIAMTX_RTMP_URL || 'rtmp://localhost:1935',
     };

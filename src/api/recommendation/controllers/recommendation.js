@@ -13,7 +13,7 @@ module.exports = createCoreController("api::recommendation.recommendation", ({ s
     if (!user) {
       return ctx.unauthorized("Authentication required for personalized feed");
     }
-    
+
     const { type, limit } = ctx.query;
     const feed = await strapi.service("api::recommendation.recommendation").getFeed(user, limit ? parseInt(limit) : 20, type);
     return { data: feed };
@@ -23,7 +23,7 @@ module.exports = createCoreController("api::recommendation.recommendation", ({ s
   async getArticles(ctx) {
     const user = ctx.state.user;
     if (!user) return ctx.unauthorized("Authentication required");
-    
+
     const { limit } = ctx.query;
     const feed = await strapi.service("api::recommendation.recommendation").getFeed(user, limit ? parseInt(limit) : 20, "article");
     return { data: feed };
@@ -32,7 +32,7 @@ module.exports = createCoreController("api::recommendation.recommendation", ({ s
   async getBlogs(ctx) {
     const user = ctx.state.user;
     if (!user) return ctx.unauthorized("Authentication required");
-    
+
     const { limit } = ctx.query;
     const feed = await strapi.service("api::recommendation.recommendation").getFeed(user, limit ? parseInt(limit) : 20, "blog");
     return { data: feed };
@@ -41,7 +41,7 @@ module.exports = createCoreController("api::recommendation.recommendation", ({ s
   async getPosts(ctx) {
     const user = ctx.state.user;
     if (!user) return ctx.unauthorized("Authentication required");
-    
+
     const { limit } = ctx.query;
     const feed = await strapi.service("api::recommendation.recommendation").getFeed(user, limit ? parseInt(limit) : 20, "post");
     return { data: feed };
@@ -50,7 +50,7 @@ module.exports = createCoreController("api::recommendation.recommendation", ({ s
   async getCourses(ctx) {
     const user = ctx.state.user;
     if (!user) return ctx.unauthorized("Authentication required");
-    
+
     const { limit } = ctx.query;
     const feed = await strapi.service("api::recommendation.recommendation").getFeed(user, limit ? parseInt(limit) : 20, "course");
     return { data: feed };
@@ -59,7 +59,7 @@ module.exports = createCoreController("api::recommendation.recommendation", ({ s
   async getProblems(ctx) {
     const user = ctx.state.user;
     if (!user) return ctx.unauthorized("Authentication required");
-    
+
     const { limit } = ctx.query;
     const feed = await strapi.service("api::recommendation.recommendation").getFeed(user, limit ? parseInt(limit) : 20, "problem");
     return { data: feed };
@@ -68,7 +68,7 @@ module.exports = createCoreController("api::recommendation.recommendation", ({ s
   async getLiveStreams(ctx) {
     const user = ctx.state.user;
     if (!user) return ctx.unauthorized("Authentication required");
-    
+
     const { limit } = ctx.query;
     const feed = await strapi.service("api::recommendation.recommendation").getFeed(user, limit ? parseInt(limit) : 20, "live-stream");
     return { data: feed };
@@ -77,7 +77,7 @@ module.exports = createCoreController("api::recommendation.recommendation", ({ s
   async getEvents(ctx) {
     const user = ctx.state.user;
     if (!user) return ctx.unauthorized("Authentication required");
-    
+
     const { limit } = ctx.query;
     const feed = await strapi.service("api::recommendation.recommendation").getFeed(user, limit ? parseInt(limit) : 20, "event");
     return { data: feed };
