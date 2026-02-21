@@ -133,18 +133,21 @@ async function validateFileOwnership(context, userId, strapi) {
     for (const fileId of fileIds) {
       const file = await strapi.db.query('plugin::upload.file').findOne({
         where: { id: fileId },
-        select: ['id', 'owner'],
+        populate: ['owner'],
       });
 
       if (!file) {
         throw new Error(`File with id ${fileId} not found.`);
       }
 
+      // استخراج owner ID من الكائن المُحمّل (populated)
+      const fileOwnerId = typeof file.owner === 'object' ? file.owner?.id : file.owner;
+
       // ملفات بدون owner (قديمة) — allow
-      if (!file.owner) continue;
+      if (!fileOwnerId) continue;
 
       // تحقق من الملكية
-      if (file.owner !== userId) {
+      if (fileOwnerId !== userId) {
         throw new Error(
           `Unauthorized: You do not own file ${fileId}. Cannot attach it to ${context.uid}.`
         );
