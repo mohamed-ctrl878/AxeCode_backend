@@ -143,10 +143,14 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
       try {
         const score = service.getActionScore(action);
         if (score === 0) return;
+        console.debug("userId", userId);
+        console.debug("contentId", contentId);
+        console.debug("contentType", contentType);
+        console.debug("action", action);
 
-        // Fetch content to get tags
-        const content = await strapi.documents(`api::${contentType}.${contentType}`).findOne({
-          documentId: contentId,
+        // Fetch content to get tags (interactions store the numeric DB ID in docId)
+        const content = await strapi.db.query(`api::${contentType}.${contentType}`).findOne({
+          where: { id: contentId },
         });
 
         if (!content || !content.tags || content.tags.length === 0) return;
@@ -194,9 +198,9 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
         });
 
         // Increment content engagement score
-        if (action === "click" || action === "like") {
+        if ((action === "click" || action === "like") && content.documentId) {
           await strapi.documents(`api::${contentType}.${contentType}`).update({
-            documentId: contentId,
+            documentId: content.documentId,
             data: {
               engagement_score: (content.engagement_score || 0) + Math.abs(score),
             },
@@ -259,6 +263,9 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
       // Phase 6: Enrichment with Permissions (Entitlements)
       await service.enrichWithPermissions(sortedFeed, user.id);
 
+      // Phase 7: Enrichment with Interactions (Likes, Comments, Ratings)
+      await service.enrichWithInteractions(sortedFeed, user.id);
+
       // If a specific type was requested, return flat list
       if (type) return sortedFeed;
 
@@ -306,6 +313,36 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
         } else {
           // Default for non-entitlement content (articles, blogs, etc.)
           item.hasAccess = true;
+        }
+      }));
+
+      return items;
+    },
+
+    /**
+     * Enrich content items with Interaction metadata (Likes, Comments, User status)
+     */
+    async enrichWithInteractions(items, userId = null) {
+      if (!items || !Array.isArray(items)) return items;
+
+      const facade = strapi.service('api::rate.interaction-facade');
+      if (!facade) return items;
+
+      await Promise.all(items.map(async (item) => {
+        try {
+          // Facade uses the content type (e.g. 'blog') and the sequential numeric ID (as a string)
+          const numericId = item.id ? item.id.toString() : item.documentId;
+          const metadata = await facade.getMetadata(item.contentType, numericId, userId);
+          item.likesCount = metadata.likesCount || 0;
+          item.commentsCount = metadata.commentsCount || 0;
+          item.isLikedByMe = metadata.isLikedByMe || false;
+          item.ratingSummary = metadata.rating || null;
+          item.myRating = metadata.myRating || 0;
+        } catch (error) {
+          strapi.log.error(`[Recommendation] Interaction enrichment failed for ${item.contentType} ${item.documentId}:`, error.message);
+          item.likesCount = 0;
+          item.commentsCount = 0;
+          item.isLikedByMe = false;
         }
       }));
 

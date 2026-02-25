@@ -6,11 +6,11 @@ module.exports = {
     const { data } = params;
 
     // Get userId from relation or direct ID
-    const userId = result.users_permissions_user?.id || 
-                   (data.users_permissions_user && typeof data.users_permissions_user === 'object' 
-                     ? data.users_permissions_user.id 
-                     : data.users_permissions_user);
-    
+    const userId = result.users_permissions_user?.id ||
+      (data.users_permissions_user && typeof data.users_permissions_user === 'object'
+        ? data.users_permissions_user.id
+        : data.users_permissions_user);
+
     const docId = result.docId || data.docId;
     const contentType = result.content_types || data.content_types;
 
