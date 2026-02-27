@@ -25,6 +25,25 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
     },
 
     /**
+     * Extracts raw text from Strapi Rich Text blocks (arrays of objects).
+     */
+    extractRawTextFromBlocks(content) {
+      if (typeof content === 'string') return content;
+      if (!Array.isArray(content)) return '';
+
+      let text = '';
+      for (const node of content) {
+        if (node.type === 'text' && node.text) {
+          text += node.text + ' ';
+        }
+        if (node.children && Array.isArray(node.children)) {
+          text += service.extractRawTextFromBlocks(node.children) + ' ';
+        }
+      }
+      return text.trim();
+    },
+
+    /**
      * Auto-tagging fallback logic.
      * Extracts tags from text using stop-words removal and frequency analysis.
      */
@@ -93,7 +112,8 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
 
       // If still empty, try auto-tagging
       if (!tags || tags.length === 0) {
-        const sourceText = data.body_text || data.description || data.caption || data.title || "";
+        const sourceContent = data.body_text || data.description || data.caption || data.title || "";
+        const sourceText = service.extractRawTextFromBlocks(sourceContent);
         tags = service.extractTagsFromText(sourceText);
       }
 
@@ -148,18 +168,28 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
         console.debug("contentType", contentType);
         console.debug("action", action);
 
-        // Fetch content to get tags (interactions store the numeric DB ID in docId)
+        // Safely determine if contentId is a numeric id or string documentId
+        const contentCondition = typeof contentId === 'string' && !/^\d+$/.test(contentId)
+          ? { documentId: contentId }
+          : { id: Number(contentId) };
+
+        // Fetch content to get tags
         const content = await strapi.db.query(`api::${contentType}.${contentType}`).findOne({
-          where: { id: contentId },
+          where: contentCondition,
         });
 
         if (!content || !content.tags || content.tags.length === 0) return;
 
         const pointsPerTag = score / content.tags.length;
 
+        // Safely determine if userId is a numeric id or string documentId
+        const userCondition = typeof userId === 'string' && !/^\d+$/.test(userId)
+          ? { documentId: userId }
+          : { id: Number(userId) };
+
         // Fetch user
         const user = await strapi.db.query("plugin::users-permissions.user").findOne({
-          where: { id: userId },
+          where: userCondition,
         });
 
         if (!user) return;
@@ -190,7 +220,7 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
 
         // Update User
         await strapi.db.query("plugin::users-permissions.user").update({
-          where: { id: userId },
+          where: userCondition,
           data: {
             interest_map: interestMap,
             seen_history: seenHistory,
@@ -219,8 +249,14 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
      * Get personalized feed for a user.
      * Supports filtering by type or returning a grouped object.
      */
-    async getFeed(user, limit = 20, type = null) {
+    async getFeed(user, limit = 20, type = null, excludeIds = []) {
       if (!user) return type ? [] : {};
+
+      const parsedLimit = parseInt(limit, 10) || 20;
+
+      // Safety check: ensure excludeIds is an array
+      const safeExcludeIds = Array.isArray(excludeIds) ? excludeIds : [];
+      console.log('🚨 getFeed EXCLUDE IDS PAYLOAD:', safeExcludeIds.length, safeExcludeIds.slice(0, 5));
 
       const interestMap = user.interest_map || {};
       const seenHistory = new Set(user.seen_history || []);
@@ -233,29 +269,32 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
         .map(([tag]) => tag);
 
       // Phase 2 & 3: Candidate Generation & Ranking
+      console.debug("queryTags", queryTags);
       let personalizedCandidates = [];
       if (queryTags.length > 0) {
-        personalizedCandidates = await service.getCandidateContents(queryTags, seenHistory, contentTypes);
+        personalizedCandidates = await service.getCandidateContents(queryTags, seenHistory, contentTypes, safeExcludeIds);
         personalizedCandidates = service.rankContents(personalizedCandidates, interestMap);
       }
 
       // Phase 4: Diversity & Mixing (80/20 Rule)
-      const personalizedCount = Math.floor(limit * 0.8);
-      const discoveryCount = limit - personalizedCount;
+      const personalizedCount = Math.floor(parsedLimit * 0.8);
+      const discoveryCount = parsedLimit - personalizedCount;
 
       const personalizedFeed = personalizedCandidates.slice(0, personalizedCount);
       const personalizedRefs = personalizedFeed.map(i => `${i.contentType}:${i.documentId}`);
 
-      const discoveryCandidates = await service.getTrendingContent(discoveryCount, seenHistory, personalizedRefs, contentTypes);
+      const discoveryCandidates = await service.getTrendingContent(discoveryCount, seenHistory, personalizedRefs, contentTypes, safeExcludeIds);
 
       let finalFeed = [...personalizedFeed, ...discoveryCandidates];
 
       // Phase 5: Scarcity handling (Backfill if needed)
-      if (finalFeed.length < limit) {
+      if (finalFeed.length < parsedLimit) {
         const currentRefs = finalFeed.map(i => `${i.contentType}:${i.documentId}`);
-        const backfill = await service.getLatestContent(limit - finalFeed.length, seenHistory, currentRefs, contentTypes);
+        const backfill = await service.getLatestContent(parsedLimit - finalFeed.length, seenHistory, currentRefs, contentTypes, safeExcludeIds);
         finalFeed = [...finalFeed, ...backfill];
       }
+
+      console.log('✅ getFeed RETURN COUNT:', finalFeed.length, finalFeed.map(f => f.documentId).slice(0, 5));
 
       // Final shuffle
       const sortedFeed = finalFeed.sort(() => Math.random() - 0.5);
@@ -352,18 +391,29 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
     /**
      * Fetch candidates from all participating content types in parallel.
      */
-    async getCandidateContents(tags, seenHistory, contentTypes) {
+    async getCandidateContents(tags, seenHistory, contentTypes, excludeIds = []) {
       const results = await Promise.all(
         contentTypes.map(async (type) => {
           try {
+            const filters = {};
+            if (excludeIds.length > 0) {
+              filters.documentId = { $notIn: excludeIds };
+            }
+
             const candidates = await strapi.documents(`api::${type}.${type}`).findMany({
-              filters: {
-                tags: { $contains: tags },
-              },
+              filters: filters,
               populate: "*",
-              limit: 50,
+              limit: 200, // Fetch a wide pool of recent items
+              sort: [{ createdAt: "desc" }]
             });
-            return candidates.map(c => ({ ...c, contentType: type }));
+
+            // In-Memory Tag Intersection to bypass Postgres JSONB 500 Errors
+            return candidates
+              .filter(c => {
+                if (!c.tags || !Array.isArray(c.tags)) return false;
+                return c.tags.some(t => tags.includes(t));
+              })
+              .map(c => ({ ...c, contentType: type }));
           } catch (e) {
             strapi.log.warn(`Candidate fetch failed for ${type}: ${e.message}`);
             return [];
@@ -394,14 +444,21 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
     /**
      * Get trending content for discovery in parallel.
      */
-    async getTrendingContent(limit, seenHistory, excludeRefs, contentTypes) {
+    async getTrendingContent(limit, seenHistory, excludeRefs, contentTypes, excludeIds = []) {
+      const safeExcludeLength = excludeRefs && Array.isArray(excludeRefs) ? excludeRefs.length : 0;
       const results = await Promise.all(
         contentTypes.map(async (type) => {
           try {
+            const filters = {};
+            if (excludeIds.length > 0) {
+              filters.documentId = { $notIn: excludeIds };
+            }
+
             const items = await strapi.documents(`api::${type}.${type}`).findMany({
+              filters: filters,
               sort: [{ engagement_score: "desc" }],
               populate: "*",
-              limit: 10,
+              limit: limit + safeExcludeLength + 10, // Fetch extra from DB to survive deduplication filters
             });
             return items.map(i => ({ ...i, contentType: type }));
           } catch (e) {
@@ -419,14 +476,21 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
     /**
      * Get latest content for backfill in parallel.
      */
-    async getLatestContent(limit, seenHistory, excludeRefs, contentTypes) {
+    async getLatestContent(limit, seenHistory, excludeRefs, contentTypes, excludeIds = []) {
+      const safeExcludeLength = excludeRefs && Array.isArray(excludeRefs) ? excludeRefs.length : 0;
       const results = await Promise.all(
         contentTypes.map(async (type) => {
           try {
+            const filters = {};
+            if (excludeIds.length > 0) {
+              filters.documentId = { $notIn: excludeIds };
+            }
+
             const items = await strapi.documents(`api::${type}.${type}`).findMany({
+              filters: filters,
               sort: [{ createdAt: "desc" }],
               populate: "*",
-              limit: 10,
+              limit: limit + safeExcludeLength + 10, // Fetch extra from DB to survive deduplication filters
             });
             return items.map(i => ({ ...i, contentType: type }));
           } catch (e) {

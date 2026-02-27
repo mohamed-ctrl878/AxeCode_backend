@@ -14,6 +14,7 @@ module.exports = createCoreController('api::like.like', ({ strapi }) => ({
   async toggle(ctx) {
     const user = ctx.state.user;
     if (!user) return ctx.unauthorized('Authentication required');
+    console.debug("user", user);
 
     const { content_types, docId } = ctx.request.body.data;
     if (!content_types || !docId) return ctx.badRequest('contentType and docId are required');
@@ -24,7 +25,7 @@ module.exports = createCoreController('api::like.like', ({ strapi }) => ({
         filters: {
           content_types: content_types,
           docId: docId,
-          users_permissions_user: { id: user.id }
+          users_permissions_user: { documentId: user.documentId }
         },
         status: 'published'
       });
@@ -41,7 +42,7 @@ module.exports = createCoreController('api::like.like', ({ strapi }) => ({
           data: {
             content_types: content_types,
             docId: docId,
-            users_permissions_user: user.id,
+            users_permissions_user: user.documentId,
             publishedAt: new Date(),
           },
           status: 'published'
