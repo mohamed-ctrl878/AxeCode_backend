@@ -22,6 +22,81 @@ module.exports = {
   },
 
   bootstrap({ strapi }) {
+    // ── Layer: Patch fs.unlink for Windows EPERM Errors ──
+    // Strapi sometimes tries to unlink files in Temp before Windows releases the lock.
+    const fs = require('fs');
+    const isEpermOnTemp = (err, path) => err && err.code === 'EPERM' && String(path).includes('Temp');
+
+    const originalUnlink = fs.unlink;
+    fs.unlink = Object.assign((path, cb) => {
+      originalUnlink(path, (err) => {
+        if (isEpermOnTemp(err, path)) {
+          strapi.log.warn(`[Bootstrap] Ignored EPERM on fs.unlink for ${path}`);
+          if (cb) cb(null);
+        } else if (cb) {
+          cb(err);
+        }
+      });
+    }, { __promisify__: originalUnlink.__promisify__ });
+
+    const originalPromisesUnlink = fs.promises.unlink;
+    fs.promises.unlink = async (path) => {
+      try {
+        await originalPromisesUnlink(path);
+      } catch (err) {
+        if (isEpermOnTemp(err, path)) {
+          strapi.log.warn(`[Bootstrap] Ignored EPERM on fs.promises.unlink for ${path}`);
+        } else {
+          throw err;
+        }
+      }
+    };
+
+    const originalUnlinkSync = fs.unlinkSync;
+    fs.unlinkSync = (path) => {
+      try {
+        originalUnlinkSync(path);
+      } catch (err) {
+        if (isEpermOnTemp(err, path)) {
+          strapi.log.warn(`[Bootstrap] Ignored EPERM on fs.unlinkSync for ${path}`);
+        } else {
+          throw err;
+        }
+      }
+    };
+
+    // Also patch rmdir to handle ENOTEMPTY left behind by the suppressed unlinks
+    const isEnotemptyOnTemp = (err, path) => err && err.code === 'ENOTEMPTY' && String(path).includes('Temp');
+
+    const originalRmdir = fs.rmdir;
+    fs.rmdir = Object.assign((path, options, cb) => {
+      if (typeof options === 'function') {
+        cb = options;
+        options = {};
+      }
+      originalRmdir(path, options, (err) => {
+        if (isEnotemptyOnTemp(err, path)) {
+          strapi.log.warn(`[Bootstrap] Ignored ENOTEMPTY on fs.rmdir for ${path}`);
+          if (cb) cb(null);
+        } else if (cb) {
+          cb(err);
+        }
+      });
+    }, { __promisify__: originalRmdir.__promisify__ });
+
+    const originalPromisesRmdir = fs.promises.rmdir;
+    fs.promises.rmdir = async (path, options) => {
+      try {
+        await originalPromisesRmdir(path, options);
+      } catch (err) {
+        if (isEnotemptyOnTemp(err, path)) {
+          strapi.log.warn(`[Bootstrap] Ignored ENOTEMPTY on fs.promises.rmdir for ${path}`);
+        } else {
+          throw err;
+        }
+      }
+    };
+
     // ── Layer 4: Register Access Strategies ──
     const registry = strapi.service('api::upload-security.access-strategy-registry');
     registry.register('api::lesson.lesson', createLessonAccessStrategy(strapi));
@@ -36,7 +111,7 @@ module.exports = {
     registry.register('plugin::users-permissions.user', authStrategy);  // avatar
 
     strapi.log.info('[Upload Security] All access strategies registered');
-    
+
     // ── Layer 5: Make upload.findOne public to allow <img> tags to work ──
     // We rely on our custom findOne override for actual security logic.
     (async () => {
@@ -62,7 +137,7 @@ module.exports = {
     // Initialize Socket.io
     const io = new Server(strapi.server.httpServer, {
       cors: {
-        origin:"http://192.168.1.5:5173" ,//|| process.env.FRONTEND_URL || 'http://localhost:5173'
+        origin: "http://192.168.1.5:5173",//|| process.env.FRONTEND_URL || 'http://localhost:5173'
         methods: ['GET', 'POST'],
         credentials: true,
       },
@@ -72,13 +147,13 @@ module.exports = {
 
     // Use specialized messenger service for WS logic
     strapi.service('api::conversation.messenger').initialize(io);
-    
+
     // Initialize live stream socket handlers
     strapi.service('api::live-stream.live-stream-socket').initialize(io);
-    
+
     // Initialize submission socket handlers
     strapi.service('api::submission.submission-socket').initialize(io);
-    
+
     strapi.log.info('[Socket.io] WebSocket server initialized (messenger + live-stream + submission)');
   },
 };
