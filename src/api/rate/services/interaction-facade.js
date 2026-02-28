@@ -9,7 +9,7 @@ module.exports = ({ strapi }) => ({
   /**
    * Get all interaction metadata for a piece of content
    */
-  async getMetadata(contentType, docId, userId = null) {
+  async getMetadata(contentType, docId, userDocumentId = null) {
     // 1. Get Rating Summary (Skip for events)
     let ratingSummary = { average: 0, count: 0 };
     if (contentType !== 'event') {
@@ -27,26 +27,25 @@ module.exports = ({ strapi }) => ({
 
     // 3. Check if user liked it (Skip for articles and lessons)
     let isLikedByMe = false;
-    if (userId && contentType !== 'article' && contentType !== 'lesson') {
-      const userLike = await strapi.documents('api::like.like').findFirst({
-        filters: { 
-          content_types: contentType, 
-          docId: docId, 
-          users_permissions_user: { id: userId } 
-        },
-        status: 'published'
+    if (userDocumentId && contentType !== 'article' && contentType !== 'lesson') {
+      const userLike = await strapi.db.query('api::like.like').findOne({
+        where: {
+          content_types: contentType,
+          docId: String(docId),
+          users_permissions_user: { documentId: userDocumentId }
+        }
       });
       isLikedByMe = !!userLike;
     }
 
     // 4. Get My Rating (Skip for events)
     let myRating = 0;
-    if (userId && contentType !== 'event') {
+    if (userDocumentId && contentType !== 'event') {
       const userRate = await strapi.documents('api::rate.rate').findFirst({
         filters: {
           content_types: contentType,
           docId: docId,
-          users_permissions_user: { id: userId }
+          users_permissions_user: { documentId: { $eq: userDocumentId } }
         },
         fields: ['rate'],
         status: 'published'

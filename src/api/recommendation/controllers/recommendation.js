@@ -17,15 +17,26 @@ module.exports = createCoreController("api::recommendation.recommendation", ({ s
     const query = ctx.query || {};
     const type = query.type;
     const limit = query.limit;
-    const excludeStr = String(query.excludeIds || '');
-    const excludeIdsArray = excludeStr.length > 0 ? excludeStr.split(',') : [];
+    const feedType = query.feedType || 'recommend';
 
-    const feed = await strapi.service("api::recommendation.recommendation").getFeed(
-      user,
-      limit ? parseInt(String(limit), 10) : 20,
-      type,
-      excludeIdsArray
-    );
+    let feed;
+    if (feedType === 'trend') {
+      feed = await strapi.service("api::recommendation.trend").getTrendingFeed(
+        user,
+        limit ? parseInt(String(limit), 10) : 20,
+        type
+      );
+    } else {
+      const excludeStr = String(query.excludeIds || '');
+      const excludeIdsArray = excludeStr.length > 0 ? excludeStr.split(',') : [];
+
+      feed = await strapi.service("api::recommendation.recommendation").getFeed(
+        user,
+        limit ? parseInt(String(limit), 10) : 20,
+        type,
+        excludeIdsArray
+      );
+    }
     return { data: feed };
   },
 
@@ -36,15 +47,26 @@ module.exports = createCoreController("api::recommendation.recommendation", ({ s
 
     const query = ctx.query || {};
     const limit = query.limit;
-    const excludeStr = String(query.excludeIds || '');
-    const excludeIdsArray = excludeStr.length > 0 ? excludeStr.split(',') : [];
+    const feedType = query.feedType || 'recommend';
 
-    const feed = await strapi.service("api::recommendation.recommendation").getFeed(
-      user,
-      limit ? parseInt(String(limit), 10) : 20,
-      "article",
-      excludeIdsArray
-    );
+    let feed;
+    if (feedType === 'trend') {
+      feed = await strapi.service("api::recommendation.trend").getTrendingFeed(
+        user,
+        limit ? parseInt(String(limit), 10) : 20,
+        "article"
+      );
+    } else {
+      const excludeStr = String(query.excludeIds || '');
+      const excludeIdsArray = excludeStr.length > 0 ? excludeStr.split(',') : [];
+
+      feed = await strapi.service("api::recommendation.recommendation").getFeed(
+        user,
+        limit ? parseInt(String(limit), 10) : 20,
+        "article",
+        excludeIdsArray
+      );
+    }
     return { data: feed };
   },
 
@@ -54,15 +76,26 @@ module.exports = createCoreController("api::recommendation.recommendation", ({ s
 
     const query = ctx.query || {};
     const limit = query.limit;
-    const excludeStr = String(query.excludeIds || '');
-    const excludeIdsArray = excludeStr.length > 0 ? excludeStr.split(',') : [];
+    const feedType = query.feedType || 'recommend';
 
-    const feed = await strapi.service("api::recommendation.recommendation").getFeed(
-      user,
-      limit ? parseInt(String(limit), 10) : 20,
-      "blog",
-      excludeIdsArray
-    );
+    let feed;
+    if (feedType === 'trend') {
+      feed = await strapi.service("api::recommendation.trend").getTrendingFeed(
+        user,
+        limit ? parseInt(String(limit), 10) : 20,
+        "blog"
+      );
+    } else {
+      const excludeStr = String(query.excludeIds || '');
+      const excludeIdsArray = excludeStr.length > 0 ? excludeStr.split(',') : [];
+
+      feed = await strapi.service("api::recommendation.recommendation").getFeed(
+        user,
+        limit ? parseInt(String(limit), 10) : 20,
+        "blog",
+        excludeIdsArray
+      );
+    }
     return { data: feed };
   },
 
@@ -72,15 +105,26 @@ module.exports = createCoreController("api::recommendation.recommendation", ({ s
 
     const query = ctx.query || {};
     const limit = query.limit;
-    const excludeStr = String(query.excludeIds || '');
-    const excludeIdsArray = excludeStr.length > 0 ? excludeStr.split(',') : [];
+    const feedType = query.feedType || 'recommend';
 
-    const feed = await strapi.service("api::recommendation.recommendation").getFeed(
-      user,
-      limit ? parseInt(String(limit), 10) : 20,
-      "post",
-      excludeIdsArray
-    );
+    let feed;
+    if (feedType === 'trend') {
+      feed = await strapi.service("api::recommendation.trend").getTrendingFeed(
+        user,
+        limit ? parseInt(String(limit), 10) : 20,
+        "post"
+      );
+    } else {
+      const excludeStr = String(query.excludeIds || '');
+      const excludeIdsArray = excludeStr.length > 0 ? excludeStr.split(',') : [];
+
+      feed = await strapi.service("api::recommendation.recommendation").getFeed(
+        user,
+        limit ? parseInt(String(limit), 10) : 20,
+        "post",
+        excludeIdsArray
+      );
+    }
     return { data: feed };
   },
 
@@ -90,15 +134,26 @@ module.exports = createCoreController("api::recommendation.recommendation", ({ s
 
     const query = ctx.query || {};
     const limit = query.limit;
-    const excludeStr = String(query.excludeIds || '');
-    const excludeIdsArray = excludeStr.length > 0 ? excludeStr.split(',') : [];
+    const feedType = query.feedType || 'recommend';
 
-    const feed = await strapi.service("api::recommendation.recommendation").getFeed(
-      user,
-      limit ? parseInt(String(limit), 10) : 20,
-      "course",
-      excludeIdsArray
-    );
+    let feed;
+    if (feedType === 'trend') {
+      feed = await strapi.service("api::recommendation.trend").getTrendingFeed(
+        user,
+        limit ? parseInt(String(limit), 10) : 20,
+        "course"
+      );
+    } else {
+      const excludeStr = String(query.excludeIds || '');
+      const excludeIdsArray = excludeStr.length > 0 ? excludeStr.split(',') : [];
+
+      feed = await strapi.service("api::recommendation.recommendation").getFeed(
+        user,
+        limit ? parseInt(String(limit), 10) : 20,
+        "course",
+        excludeIdsArray
+      );
+    }
     return { data: feed };
   },
 
@@ -108,15 +163,26 @@ module.exports = createCoreController("api::recommendation.recommendation", ({ s
 
     const query = ctx.query || {};
     const limit = query.limit;
-    const excludeStr = String(query.excludeIds || '');
-    const excludeIdsArray = excludeStr.length > 0 ? excludeStr.split(',') : [];
+    const feedType = query.feedType || 'recommend';
 
-    const feed = await strapi.service("api::recommendation.recommendation").getFeed(
-      user,
-      limit ? parseInt(String(limit), 10) : 20,
-      "problem",
-      excludeIdsArray
-    );
+    let feed;
+    if (feedType === 'trend') {
+      feed = await strapi.service("api::recommendation.trend").getTrendingFeed(
+        user,
+        limit ? parseInt(String(limit), 10) : 20,
+        "problem"
+      );
+    } else {
+      const excludeStr = String(query.excludeIds || '');
+      const excludeIdsArray = excludeStr.length > 0 ? excludeStr.split(',') : [];
+
+      feed = await strapi.service("api::recommendation.recommendation").getFeed(
+        user,
+        limit ? parseInt(String(limit), 10) : 20,
+        "problem",
+        excludeIdsArray
+      );
+    }
     return { data: feed };
   },
 
@@ -126,15 +192,26 @@ module.exports = createCoreController("api::recommendation.recommendation", ({ s
 
     const query = ctx.query || {};
     const limit = query.limit;
-    const excludeStr = String(query.excludeIds || '');
-    const excludeIdsArray = excludeStr.length > 0 ? excludeStr.split(',') : [];
+    const feedType = query.feedType || 'recommend';
 
-    const feed = await strapi.service("api::recommendation.recommendation").getFeed(
-      user,
-      limit ? parseInt(String(limit), 10) : 20,
-      "live-stream",
-      excludeIdsArray
-    );
+    let feed;
+    if (feedType === 'trend') {
+      feed = await strapi.service("api::recommendation.trend").getTrendingFeed(
+        user,
+        limit ? parseInt(String(limit), 10) : 20,
+        "live-stream"
+      );
+    } else {
+      const excludeStr = String(query.excludeIds || '');
+      const excludeIdsArray = excludeStr.length > 0 ? excludeStr.split(',') : [];
+
+      feed = await strapi.service("api::recommendation.recommendation").getFeed(
+        user,
+        limit ? parseInt(String(limit), 10) : 20,
+        "live-stream",
+        excludeIdsArray
+      );
+    }
     return { data: feed };
   },
 
@@ -144,15 +221,26 @@ module.exports = createCoreController("api::recommendation.recommendation", ({ s
 
     const query = ctx.query || {};
     const limit = query.limit;
-    const excludeStr = String(query.excludeIds || '');
-    const excludeIdsArray = excludeStr.length > 0 ? excludeStr.split(',') : [];
+    const feedType = query.feedType || 'recommend';
 
-    const feed = await strapi.service("api::recommendation.recommendation").getFeed(
-      user,
-      limit ? parseInt(limit) : 20,
-      "event",
-      excludeIdsArray
-    );
+    let feed;
+    if (feedType === 'trend') {
+      feed = await strapi.service("api::recommendation.trend").getTrendingFeed(
+        user,
+        limit ? parseInt(limit) : 20,
+        "event"
+      );
+    } else {
+      const excludeStr = String(query.excludeIds || '');
+      const excludeIdsArray = excludeStr.length > 0 ? excludeStr.split(',') : [];
+
+      feed = await strapi.service("api::recommendation.recommendation").getFeed(
+        user,
+        limit ? parseInt(limit) : 20,
+        "event",
+        excludeIdsArray
+      );
+    }
     return { data: feed };
   },
 

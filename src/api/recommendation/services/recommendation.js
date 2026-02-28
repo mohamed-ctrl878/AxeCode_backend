@@ -161,7 +161,7 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
      */
     async updateUserInterests(userId, contentId, contentType, action) {
       try {
-        const score = service.getActionScore(action);
+        const score = action === "unlike" ? -2 : service.getActionScore(action);
         if (score === 0) return;
         console.debug("userId", userId);
         console.debug("contentId", contentId);
@@ -228,11 +228,11 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
         });
 
         // Increment content engagement score
-        if ((action === "click" || action === "like") && content.documentId) {
+        if ((action === "click" || action === "like" || action === "unlike") && content.documentId) {
           await strapi.documents(`api::${contentType}.${contentType}`).update({
             documentId: content.documentId,
             data: {
-              engagement_score: (content.engagement_score || 0) + Math.abs(score),
+              engagement_score: Math.max(0, (content.engagement_score || 0) + score),
             },
           });
         }
@@ -303,7 +303,7 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
       await service.enrichWithPermissions(sortedFeed, user.id);
 
       // Phase 7: Enrichment with Interactions (Likes, Comments, Ratings)
-      await service.enrichWithInteractions(sortedFeed, user.id);
+      await service.enrichWithInteractions(sortedFeed, user.documentId || user.id);
 
       // If a specific type was requested, return flat list
       if (type) return sortedFeed;
@@ -369,9 +369,10 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
 
       await Promise.all(items.map(async (item) => {
         try {
-          // Facade uses the content type (e.g. 'blog') and the sequential numeric ID (as a string)
-          const numericId = item.id ? item.id.toString() : item.documentId;
-          const metadata = await facade.getMetadata(item.contentType, numericId, userId);
+          // Facade needs the docId which we save inside the like/comment 'docId' string column.
+          // Strapi 5 uses documentId as the primary string reference across content types.
+          const referenceId = item.documentId || (item.id ? item.id.toString() : null);
+          const metadata = await facade.getMetadata(item.contentType, referenceId, userId);
           item.likesCount = metadata.likesCount || 0;
           item.commentsCount = metadata.commentsCount || 0;
           item.isLikedByMe = metadata.isLikedByMe || false;
