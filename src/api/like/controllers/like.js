@@ -21,13 +21,12 @@ module.exports = createCoreController('api::like.like', ({ strapi }) => ({
 
     try {
       // 1. Check if like exists
-      const existing = await strapi.documents('api::like.like').findFirst({
-        filters: {
+      const existing = await strapi.db.query('api::like.like').findOne({
+        where: {
           content_types: content_types,
           docId: docId,
           users_permissions_user: { documentId: user.documentId }
-        },
-        status: 'published'
+        }
       });
 
       if (existing) {
@@ -51,7 +50,7 @@ module.exports = createCoreController('api::like.like', ({ strapi }) => ({
 
       // 2. Get fresh interaction metadata via Facade
       const facade = strapi.service('api::rate.interaction-facade');
-      const metadata = await facade.getMetadata(content_types, docId, user.id);
+      const metadata = await facade.getMetadata(content_types, docId, user.documentId);
 
       return ctx.send({
         liked: !existing,
