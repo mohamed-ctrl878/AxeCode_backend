@@ -11,7 +11,7 @@ module.exports = createCoreController('api::article.article', ({ strapi }) => ({
   async create(ctx) {
     // Get the authenticated user
     const user = ctx.state.user;
-    
+
     if (!user) {
       return ctx.unauthorized('You must be logged in to create an article');
     }
@@ -30,7 +30,7 @@ module.exports = createCoreController('api::article.article', ({ strapi }) => ({
   // Override update to ensure only author can edit
   async update(ctx) {
     const user = ctx.state.user;
-    
+
     if (!user) {
       return ctx.unauthorized('You must be logged in to update an article');
     }
@@ -41,7 +41,8 @@ module.exports = createCoreController('api::article.article', ({ strapi }) => ({
 
   // GET /articles - Enriched with interactions (using Strapi default find)
   async find(ctx) {
-    const userId = ctx.state.user?.id || null;
+    // IMPORTANT: getMetadata filters by users_permissions_user.documentId, not numeric id
+    const userDocumentId = ctx.state.user?.documentId || null;
 
     // Use Strapi default find
     const response = await super.find(ctx);
@@ -49,9 +50,9 @@ module.exports = createCoreController('api::article.article', ({ strapi }) => ({
 
     // Enrich with interactions
     const enriched = await Promise.all(
-      response.data.map(article => strapi.service('api::article.article').enrichArticle(article, userId))
+      response.data.map(article => strapi.service('api::article.article').enrichArticle(article, userDocumentId))
     );
-    
+
     return ctx.send({
       data: enriched,
       meta: response.meta,
@@ -60,13 +61,14 @@ module.exports = createCoreController('api::article.article', ({ strapi }) => ({
 
   // GET /articles/:id - Enriched with interactions (using Strapi default findOne)
   async findOne(ctx) {
-    const userId = ctx.state.user?.id || null;
+    // IMPORTANT: getMetadata filters by users_permissions_user.documentId, not numeric id
+    const userDocumentId = ctx.state.user?.documentId || null;
 
     // Use Strapi default findOne
     const response = await super.findOne(ctx);
     if (!response || !response.data) return response;
 
-    const enriched = await strapi.service('api::article.article').enrichArticle(response.data, userId);
+    const enriched = await strapi.service('api::article.article').enrichArticle(response.data, userDocumentId);
 
     return ctx.send({ data: enriched });
   }
