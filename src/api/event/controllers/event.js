@@ -20,13 +20,13 @@ module.exports = createCoreController('api::event.event', ({ strapi }) => {
       };
 
       const response = await super.find(ctx);
-      
+
       if (response.data && Array.isArray(response.data)) {
-        const userId = ctx.state.user?.id || null;
+        const userId = ctx.state.user?.documentId || null;
         await getLogic().enrichMany(response.data, userId);
       }
-      
-      return response;
+
+      return ctx.send({ data: response.data, meta: response.meta });
     },
 
     async findOne(ctx) {
@@ -39,18 +39,18 @@ module.exports = createCoreController('api::event.event', ({ strapi }) => {
       };
 
       const response = await super.findOne(ctx);
-      
+
       if (response.data) {
-        const userId = ctx.state.user?.id || null;
+        const userId = ctx.state.user?.documentId || null;
         await getLogic().enrichEvent(response.data, userId);
       }
-      
-      return response;
+
+      return ctx.send({ data: response.data, meta: response.meta });
     },
 
     async create(ctx) {
       const { event, entitlement: entitlementData } = ctx.request.body;
-      
+
       if (!ctx.state.user) return ctx.unauthorized('You must be logged in to create an event.');
       if (!event) return ctx.badRequest('Event data is required.');
 

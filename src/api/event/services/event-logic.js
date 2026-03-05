@@ -66,7 +66,7 @@ module.exports = ({ strapi }) => ({
     const details = await facade.getFullDetails(event.documentId, CONTENT_TYPES.EVENT, userId);
 
     const isPublisher = userId && (
-      event.users_permissions_user?.id == userId || 
+      event.users_permissions_user?.id == userId ||
       event.users_permissions_user?.documentId == userId
     );
 
@@ -77,6 +77,6 @@ module.exports = ({ strapi }) => ({
 
     // Enrich with Interactions
     const interactionFacade = strapi.service('api::rate.interaction-facade');
-    event.interactions = await interactionFacade.getMetadata(CONTENT_TYPES.EVENT, event.documentId, userId);
+    event.interactions = await interactionFacade.getMetadata('event', event.documentId, userId);
   }
 });
