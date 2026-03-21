@@ -47,7 +47,7 @@
     "difficulty": {
       "type": "enumeration",
       "enum": [
-        "Rasy",
+        "Easy",
         "Medium",
         "Advanced"
       ]

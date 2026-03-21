@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const { SUBMISSION_POPULATE } = require('../constants');
 const queueManager = require('./queue-manager');
 
@@ -11,19 +12,19 @@ module.exports = ({ strapi }) => ({
    */
   async queueSubmission(submissionId) {
     strapi.log.info(`[SubmissionLogic] Queuing submission ${submissionId}...`);
-    
+
     try {
       await queueManager.addTask(async () => {
         return await this.processSubmission(submissionId);
       });
     } catch (error) {
       strapi.log.error(`[SubmissionLogic] Failed to queue submission ${submissionId}:`, error);
-      
+
       await strapi.documents('api::submission.submission').update({
         documentId: submissionId,
-        data: { 
-          verdict: 'runtime_error', 
-          judgeOutput: { error: 'Queue full or system error' } 
+        data: {
+          verdict: 'runtime_error',
+          judgeOutput: { error: 'Queue full or system error' }
         }
       });
     }
@@ -47,9 +48,11 @@ module.exports = ({ strapi }) => ({
 
     // 1. Prepare Code
     const template = problem.code_templates.find(t => t.language === language);
+    const execDelimiter = `AXECODE_${crypto.randomUUID()}`;
+
     let fullCode;
     try {
-      fullCode = wrapper.wrap(code, template);
+      fullCode = wrapper.wrap(code, template, execDelimiter, problem);
     } catch (e) {
       return await this.handleFailure(submissionId, 'runtime_error', e.message);
     }
@@ -66,10 +69,14 @@ module.exports = ({ strapi }) => ({
 
     try {
       // 3. Execute
-      const batchResults = await judge0.executeBatch(batchSubmissions);
-      
+      const batchResults = await judge0.executeBatch(batchSubmissions, {
+        cpu_time_limit: problem.timeLimit ? problem.timeLimit / 1000 : 2, // Default 2s
+        memory_limit: problem.memoryLimit || 256000, // Default 256MB/256000KB
+        max_output_size: 128 // 128KB limit for protection
+      });
+
       // 4. Grade
-      const results = batchResults.map((exec, idx) => grader.evaluateTestCase(exec, testCases[idx]));
+      const results = batchResults.map((exec, idx) => grader.evaluateTestCase(exec, testCases[idx], execDelimiter));
       const finalStats = grader.calculateFinalVerdict(results, testCases.length);
 
       // 5. Persist
@@ -102,13 +109,13 @@ module.exports = ({ strapi }) => ({
       documentId: submissionId,
       data: { verdict, judgeOutput: { error } }
     });
-    
+
     // Auto-populate user if needed for notification
     const submission = await strapi.documents('api::submission.submission').findOne({
-        documentId: submissionId,
-        populate: ['user']
+      documentId: submissionId,
+      populate: ['user']
     });
-    
+
     this.notifySubmissionComplete(submission);
     return updated;
   },
@@ -120,13 +127,13 @@ module.exports = ({ strapi }) => ({
     // DRY + SRP: Use the specialized socket service
     const socketService = strapi.service('api::submission.submission-socket');
     if (socketService.notifyComplete) {
-       socketService.notifyComplete(submission);
+      socketService.notifyComplete(submission);
     } else {
-       // Manual emit if service is not fully migrated yet
-       strapi.log.warn('[SubmissionLogic] notifyComplete not found in socket service, using fallback');
-       if (strapi.io) {
-          strapi.io.to(`submission:${submission.documentId}`).emit('submission:complete', submission);
-       }
+      // Manual emit if service is not fully migrated yet
+      strapi.log.warn('[SubmissionLogic] notifyComplete not found in socket service, using fallback');
+      if (strapi.io) {
+        strapi.io.to(`submission:${submission.documentId}`).emit('submission:complete', submission);
+      }
     }
   }
 });

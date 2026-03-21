@@ -624,7 +624,7 @@ export interface ApiCourseCourse extends Struct.CollectionTypeSchema {
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     description: Schema.Attribute.Blocks;
-    difficulty: Schema.Attribute.Enumeration<['Rasy', 'Medium', 'Advanced']>;
+    difficulty: Schema.Attribute.Enumeration<['Easy', 'Medium', 'Advanced']>;
     engagement_score: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<

@@ -56,6 +56,18 @@ module.exports = createCoreController("api::recommendation.recommendation", ({ s
         limit ? parseInt(String(limit), 10) : 20,
         "article"
       );
+    } else if (feedType === 'top') {
+      const topItems = await strapi.documents('api::article.article').findMany({
+        sort: { engagement_score: 'desc' },
+        limit: limit ? parseInt(String(limit), 10) : 20,
+        status: 'published',
+        populate: '*'
+      });
+
+      const userDocId = user.documentId || user.id;
+      feed = await Promise.all(
+        topItems.map(item => strapi.service('api::article.article').enrichArticle(item, userDocId))
+      );
     } else {
       const excludeStr = String(query.excludeIds || '');
       const excludeIdsArray = excludeStr.length > 0 ? excludeStr.split(',') : [];
