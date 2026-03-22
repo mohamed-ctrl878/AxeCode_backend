@@ -17,11 +17,11 @@
     },
     "type_of_lesson": {
       "type": "enumeration",
+      "default": "video",
       "enum": [
         "video",
         "article"
-      ],
-      "default": "video"
+      ]
     },
     "isCompleted": {
       "type": "boolean",
@@ -29,16 +29,6 @@
     },
     "video": {
       "type": "media",
-      "conditions": {
-        "visible": {
-          "==": [
-            {
-              "var": "public"
-            },
-            true
-          ]
-        }
-      },
       "multiple": false,
       "required": false,
       "allowedTypes": [

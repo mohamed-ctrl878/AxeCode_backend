@@ -12,29 +12,73 @@ const { CONTENT_TYPES } = require('../../entitlement/constants');
 module.exports = createCoreController('api::user-entitlement.user-entitlement', ({ strapi }) => {
   const getFacade = () => strapi.service('api::entitlement.content-access-facade');
 
+  /**
+   * Helper: Verifies if a user owns the content associated with a product (entitlement).
+   * DRY & Secure.
+   */
+  const verifyOwnership = async (productId, userId) => {
+    const entitlement = await strapi.documents('api::entitlement.entitlement').findOne({
+      documentId: productId
+    });
+
+    if (!entitlement) return { error: 'notFound', message: 'Product (Entitlement) not found' };
+
+    const contentTypeMap = {
+      'course': 'api::course.course',
+      'event': 'api::event.event',
+      'uplive': 'api::live-stream.live-stream'
+    };
+    const targetApi = contentTypeMap[entitlement.content_types] || `api::${entitlement.content_types}.${entitlement.content_types}`;
+
+    const item = await strapi.documents(targetApi).findOne({
+      documentId: entitlement.itemId,
+      populate: ['users_permissions_user']
+    });
+
+    if (!item) return { error: 'notFound', message: 'Associated content item not found' };
+
+    const isOwner = item.users_permissions_user?.id === userId;
+    return { authorized: isOwner, entitlement, item };
+  };
+
   return {
     async create(ctx) {
       if (!ctx.state.user) return ctx.unauthorized('Not authenticated');
 
-      const { productId, content_types } = ctx.request?.body?.data || ctx.request?.body;
+      const body = ctx.request?.body?.data || ctx.request?.body || {};
+      const { productId, content_types, users_permissions_user: targetUserId } = body;
+      
       if (!productId || !content_types) return ctx.badRequest('productId and content_types are required');
 
-      // Check existence
+      // 1. Ownership Check (Is this a manual grant by the owner?)
+      const { authorized, entitlement, error, message } = await verifyOwnership(productId, ctx.state.user.id);
+      
+      if (error === 'notFound') return ctx.notFound(message);
+      
+      // Ownership check for Granting (Teachers/Owners)
+      const isManualGrant = authorized;
+      
+      // If not the owner, check if the student is enrolling themselves in a free course
+      if (!isManualGrant) {
+         const isSelfEnrollment = (targetUserId === ctx.state.user.id || !targetUserId);
+         const isFree = parseFloat(String(entitlement.price || 0)) === 0;
+         
+         if (!isSelfEnrollment) return ctx.forbidden('Access denied: Only the content owner can grant access to others');
+         if (!isFree) return ctx.badRequest('This product requires payment for self-enrollment');
+      }
+
+      // 2. Check existence for the TARGET user
+      const finalTargetUserId = targetUserId || ctx.state.user.id;
       const existing = await strapi.db.query("api::user-entitlement.user-entitlement").findOne({
-        where: { productId, users_permissions_user: ctx.state.user.id, content_types }
+        where: { productId, users_permissions_user: finalTargetUserId, content_types }
       });
-      if (existing) return ctx.badRequest("You already have this content!");
+      if (existing) return ctx.badRequest("Target user already has this content!");
 
-      const entitlement = await strapi.documents('api::entitlement.entitlement').findOne({ documentId: productId });
-      if (!entitlement) return ctx.notFound('Product not found');
-
-      // Payment check (Only allow free via this endpoint)
-      if (parseFloat(entitlement.price) !== 0) return ctx.badRequest('This product requires payment');
-
+      // 3. Create record
       const userEntitlement = await strapi.documents('api::user-entitlement.user-entitlement').create({
         data: {
           productId,
-          users_permissions_user: ctx.state.user.id,
+          users_permissions_user: finalTargetUserId,
           duration: entitlement.duration,
           strart: new Date().toISOString(),
           content_types,
@@ -43,8 +87,7 @@ module.exports = createCoreController('api::user-entitlement.user-entitlement', 
         status: 'published',
       });
 
-      // Use Facade for enrichment (DRY!)
-      const enriched = await getFacade().getFullDetails(entitlement.itemId, content_types, ctx.state.user.id);
+      const enriched = await getFacade().getFullDetails(entitlement.itemId, content_types, finalTargetUserId);
       
       return ctx.send({
         message: 'Success',
@@ -64,7 +107,6 @@ module.exports = createCoreController('api::user-entitlement.user-entitlement', 
       if (!userEntitlement) return ctx.notFound('Not found');
       if (userEntitlement.users_permissions_user?.id !== ctx.state.user.id) return ctx.forbidden();
 
-      // Get associated entitlement to find itemId
       const entitlements = await strapi.documents('api::entitlement.entitlement').findMany({
         filters: { documentId: userEntitlement.productId }
       });
@@ -81,24 +123,58 @@ module.exports = createCoreController('api::user-entitlement.user-entitlement', 
     async find(ctx) {
       if (!ctx.state.user) return ctx.unauthorized('Not authenticated');
 
+      const queryParams = ctx.query || {};
+      const filters = queryParams.filters || {};
+      const populate = queryParams.populate;
+      const productId = filters.productId?.$eq || filters.productId;
+
+      if (!productId) {
+        return ctx.badRequest('productId filter is required to view subscribers');
+      }
+
+      // Ownership Check via Helper
+      const { authorized, entitlement, error, message } = await verifyOwnership(productId, ctx.state.user.id);
+      
+      if (error === 'notFound') return ctx.notFound(message);
+      if (!authorized) return ctx.forbidden('Access denied: You are not the owner of this content');
+
       const userEntitlements = await strapi.documents('api::user-entitlement.user-entitlement').findMany({
-        filters: { users_permissions_user: { id: ctx.state.user.id } },
+        filters: { 
+            ...filters,
+            productId: productId
+        },
+        populate: populate || ['users_permissions_user']
       });
 
-      // Simple enrichment (can be optimized further with an enrichMany in Facade for this specific join)
       const data = await Promise.all(userEntitlements.map(async (ue) => {
-          const entitlements = await strapi.documents('api::entitlement.entitlement').findMany({
-              filters: { documentId: ue.productId }
-          });
-          const entitlement = entitlements[0];
-          let content = null;
-          if (entitlement) {
-              content = await getFacade().getFullDetails(entitlement.itemId, entitlement.content_types, ctx.state.user.id);
-          }
+          const content = await getFacade().getFullDetails(entitlement.itemId, entitlement.content_types, ctx.state.user.id);
           return { ...ue, content };
       }));
 
       return ctx.send({ data });
+    },
+
+    async delete(ctx) {
+      if (!ctx.state.user) return ctx.unauthorized('Not authenticated');
+      const { id } = ctx.params;
+
+      const userEntitlement = await strapi.documents('api::user-entitlement.user-entitlement').findOne({
+        documentId: id
+      });
+
+      if (!userEntitlement) return ctx.notFound('Enrollment record not found');
+
+      // Ownership Check via Helper
+      const { authorized, error, message } = await verifyOwnership(userEntitlement.productId, ctx.state.user.id);
+      
+      if (error === 'notFound') return ctx.notFound(message);
+      if (!authorized) return ctx.forbidden('Access denied: You are not the owner of this content');
+
+      await strapi.documents('api::user-entitlement.user-entitlement').delete({
+        documentId: id
+      });
+
+      return ctx.send({ message: 'Enrollment revoked successfully' });
     },
   };
 });
