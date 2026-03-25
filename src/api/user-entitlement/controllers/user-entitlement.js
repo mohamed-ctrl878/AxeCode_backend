@@ -22,10 +22,10 @@ module.exports = createCoreController('api::user-entitlement.user-entitlement', 
     });
 
     if (!entitlement) return { error: 'notFound', message: 'Product (Entitlement) not found' };
-
+console.debug("entitlement",entitlement)
     const contentTypeMap = {
       'course': 'api::course.course',
-      'event': 'api::event.event',
+      'upevent': 'api::event.event',
       'uplive': 'api::live-stream.live-stream'
     };
     const targetApi = contentTypeMap[entitlement.content_types] || `api::${entitlement.content_types}.${entitlement.content_types}`;
@@ -34,6 +34,7 @@ module.exports = createCoreController('api::user-entitlement.user-entitlement', 
       documentId: entitlement.itemId,
       populate: ['users_permissions_user']
     });
+    console.debug("item",item)
 
     if (!item) return { error: 'notFound', message: 'Associated content item not found' };
 
