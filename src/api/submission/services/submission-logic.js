@@ -41,6 +41,11 @@ module.exports = ({ strapi }) => ({
     const { problem, code, language } = submission;
     const testCases = problem.test_cases || [];
 
+    if (testCases.length === 0) {
+      strapi.log.warn(`[SubmissionLogic] Problem ${problem.documentId} has no test cases.`);
+      return await this.handleFailure(submissionId, 'runtime_error', 'No test cases configured for this problem. Please contact an administrator.');
+    }
+
     // specialized services
     const wrapper = strapi.service('api::submission.code-wrapper');
     const grader = strapi.service('api::submission.submission-grader');

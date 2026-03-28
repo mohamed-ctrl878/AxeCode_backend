@@ -4,6 +4,41 @@ const { createCoreController } = require("@strapi/strapi").factories;
 
 module.exports = createCoreController("api::submission.submission", ({ strapi }) => ({
   /**
+   * Securely find submissions for the current user
+   */
+  /**
+   * Securely find submissions for the current user bypassing strict REST query validators.
+   */
+  async find(ctx) {
+    const user = ctx.state.user;
+    if (!user) return ctx.unauthorized('You must be logged in');
+
+    // Extract custom query params
+    let problemDocId = null;
+    if (ctx.query.filters && ctx.query.filters.problem && ctx.query.filters.problem.documentId) {
+        problemDocId = ctx.query.filters.problem.documentId;
+    }
+
+    // Build the query object for the Service API directly
+    const serviceQuery = { ...ctx.query };
+    
+    serviceQuery.filters = {
+      user: { id: user.id }
+    };
+
+    if (problemDocId) {
+      serviceQuery.filters.problem = { documentId: problemDocId };
+    }
+
+    // Call the Service layer directly -> Avoids super.find() REST Validation
+    const { results, pagination } = await strapi.service('api::submission.submission').find(serviceQuery);
+    
+    // Sanitize and transform to standard REST format
+    const sanitizedResults = await this.sanitizeOutput(results, ctx);
+    return this.transformResponse(sanitizedResults, { pagination });
+  },
+
+  /**
    * Handle code submission
    */
   async create(ctx) {
