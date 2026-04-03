@@ -16,8 +16,8 @@ const sanitizeObject = (obj) => {
 
   const sanitized = Array.isArray(obj) ? [] : {};
   for (const [key, value] of Object.entries(obj)) {
-    // skip sanitization for sensitive fields like passwords to avoid corruption
-    if (key.toLowerCase().includes('password')) {
+    // skip sanitization for sensitive fields like passwords, and literal source code blocks
+    if (key.toLowerCase().includes('password') || key === 'code') {
       sanitized[key] = value;
       continue;
     }

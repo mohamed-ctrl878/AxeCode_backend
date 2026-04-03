@@ -46,6 +46,14 @@ module.exports = createCoreController('api::like.like', ({ strapi }) => ({
           },
           status: 'published'
         });
+
+        // Trigger notification
+        await strapi.service('api::notification.notification-emitter').emit({
+          interactionType: 'like',
+          contentType: content_types,
+          docId,
+          actorDocumentId: user.documentId,
+        });
       }
 
       // 2. Get fresh interaction metadata via Facade

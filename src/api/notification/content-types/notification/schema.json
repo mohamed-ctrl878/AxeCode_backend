@@ -1,0 +1,54 @@
+{
+  "kind": "collectionType",
+  "collectionName": "notifications",
+  "info": {
+    "singularName": "notification",
+    "pluralName": "notifications",
+    "displayName": "Notification"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "type": {
+      "type": "enumeration",
+      "enum": ["like", "rate", "comment", "report"],
+      "required": true
+    },
+    "content_type": {
+      "type": "enumeration",
+      "enum": ["course", "event", "article", "blog"],
+      "required": true
+    },
+    "content_doc_id": {
+      "type": "string",
+      "required": true
+    },
+    "actor": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "owner": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "message_ar": {
+      "type": "string"
+    },
+    "message_en": {
+      "type": "string"
+    },
+    "action_url": {
+      "type": "string"
+    },
+    "extra": {
+      "type": "json"
+    },
+    "read": {
+      "type": "boolean",
+      "default": false
+    }
+  }
+}

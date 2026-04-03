@@ -259,6 +259,7 @@ public class Main {
         // Separation Logic
         System.out.println("\\n{DELIMITER}");
         
+        {PARAM_ASSIGNMENTS}
         Object result = {INVOCATION};
         System.out.println(serialize(result));
     }
@@ -302,6 +303,7 @@ int main() {
     // Separation Logic
     cout << "\\n{DELIMITER}" << endl;
     
+    {PARAM_ASSIGNMENTS}
     auto result = {INVOCATION};
     cout << serialize(result) << endl;
     return 0;

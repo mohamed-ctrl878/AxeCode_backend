@@ -578,11 +578,11 @@ public class Main {
         Solution solution = new Solution();
         
         try {
-            ${paramDeclarations}
+            {PARAM_ASSIGNMENTS}
             
-            ${retType} result = solution.${functionName}(${paramNames});
+            Object result = {INVOCATION};
             
-            ${generateJavaResultSerialization(returnType)}
+            System.out.println(serialize(result));
         } catch (Exception e) {
             System.out.println("Error: " + e.getMessage());
         }

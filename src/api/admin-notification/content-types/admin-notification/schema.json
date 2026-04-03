@@ -1,0 +1,51 @@
+{
+  "kind": "collectionType",
+  "collectionName": "admin_notifications",
+  "info": {
+    "singularName": "admin-notification",
+    "pluralName": "admin-notifications",
+    "displayName": "Admin Notification"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "type": {
+      "type": "enumeration",
+      "enum": ["content_reported"],
+      "required": true
+    },
+    "content_type": {
+      "type": "enumeration",
+      "enum": ["course", "event", "article", "blog"],
+      "required": true
+    },
+    "content_doc_id": {
+      "type": "string",
+      "required": true
+    },
+    "actor": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "message_ar": {
+      "type": "string"
+    },
+    "message_en": {
+      "type": "string"
+    },
+    "extra": {
+      "type": "json"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["PENDING", "RESOLVED"],
+      "default": "PENDING"
+    },
+    "read": {
+      "type": "boolean",
+      "default": false
+    }
+  }
+}

@@ -79,6 +79,9 @@ module.exports = {
     // Initialize submission socket handlers
     strapi.service('api::submission.submission-socket').initialize(io);
     
-    strapi.log.info('[Socket.io] WebSocket server initialized (messenger + live-stream + submission)');
+    // Initialize notification socket handlers
+    strapi.service('api::notification.notification-socket').initialize(io);
+    
+    strapi.log.info('[Socket.io] WebSocket server initialized (messenger + live-stream + submission + notification)');
   },
 };

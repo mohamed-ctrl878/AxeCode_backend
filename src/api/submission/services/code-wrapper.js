@@ -94,7 +94,7 @@ def linkedlist_to_list(head):
         head = head.next
     return result
 def tree_to_list(root):
-    if (!root): return []
+    if not root: return []
     result, queue = [], [root]
     while queue:
         node = queue.pop(0)

@@ -1,0 +1,38 @@
+{
+  "kind": "collectionType",
+  "collectionName": "push_subscriptions",
+  "info": {
+    "singularName": "push-subscription",
+    "pluralName": "push-subscriptions",
+    "displayName": "Push Subscription"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "endpoint": {
+      "type": "text",
+      "required": true
+    },
+    "p256dh_key": {
+      "type": "text",
+      "required": true
+    },
+    "auth_key": {
+      "type": "text",
+      "required": true
+    },
+    "browser_type": {
+      "type": "string"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  }
+}

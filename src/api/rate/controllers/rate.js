@@ -72,6 +72,15 @@ module.exports = createCoreController('api::rate.rate', ({ strapi }) => ({
           status: 'published'
         });
 
+        // Trigger notification
+        await strapi.service('api::notification.notification-emitter').emit({
+          interactionType: 'rate',
+          contentType: content_types,
+          docId,
+          actorDocumentId: user.documentId,
+          extra: { rate: Number(rate) },
+        });
+
         // Cleanup: Delete any other duplicate ratings
         if (existingRates.length > 1) {
           for (let i = 1; i < existingRates.length; i++) {
@@ -96,6 +105,15 @@ module.exports = createCoreController('api::rate.rate', ({ strapi }) => ({
         publishedAt: new Date()
       },
       status: 'published'
+    });
+    
+    // Trigger notification
+    await strapi.service('api::notification.notification-emitter').emit({
+      interactionType: 'rate',
+      contentType: content_types,
+      docId,
+      actorDocumentId: user.documentId,
+      extra: { rate: Number(rate) },
     });
     
     return ctx.send({ data: created, message: 'Rating created' });
