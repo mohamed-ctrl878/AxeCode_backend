@@ -75,17 +75,17 @@ module.exports = {
       },
     },
     {
-      method: "GET",
-      path: "/auth/confirm-email",
-      handler: "auth.confirmEmail",
+      method: "POST",
+      path: "/auth/confirm-otp",
+      handler: "auth.confirmOtp",
       config: {
         auth: false,
       },
     },
     {
-      method: "GET",
-      path: "/auth/email-confirmation",
-      handler: "auth.confirmEmail",
+      method: "POST",
+      path: "/auth/resend-otp",
+      handler: "auth.resendOtp",
       config: {
         auth: false,
       },

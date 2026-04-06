@@ -23,6 +23,80 @@ module.exports = {
 
   bootstrap({ strapi }) {
     // ── Layer 4: Register Access Strategies ──
+       // ── Layer: Patch fs.unlink for Windows EPERM Errors ──
+    // Strapi sometimes tries to unlink files in Temp before Windows releases the lock.
+    const fs = require('fs');
+    const isEpermOnTemp = (err, path) => err && err.code === 'EPERM' && String(path).includes('Temp');
+
+    const originalUnlink = fs.unlink;
+    fs.unlink = Object.assign((path, cb) => {
+      originalUnlink(path, (err) => {
+        if (isEpermOnTemp(err, path)) {
+          strapi.log.warn(`[Bootstrap] Ignored EPERM on fs.unlink for ${path}`);
+          if (cb) cb(null);
+        } else if (cb) {
+          cb(err);
+        }
+      });
+    }, { __promisify__: originalUnlink.__promisify__ });
+
+    const originalPromisesUnlink = fs.promises.unlink;
+    fs.promises.unlink = async (path) => {
+      try {
+        await originalPromisesUnlink(path);
+      } catch (err) {
+        if (isEpermOnTemp(err, path)) {
+          strapi.log.warn(`[Bootstrap] Ignored EPERM on fs.promises.unlink for ${path}`);
+        } else {
+          throw err;
+        }
+      }
+    };
+
+    const originalUnlinkSync = fs.unlinkSync;
+    fs.unlinkSync = (path) => {
+      try {
+        originalUnlinkSync(path);
+      } catch (err) {
+        if (isEpermOnTemp(err, path)) {
+          strapi.log.warn(`[Bootstrap] Ignored EPERM on fs.unlinkSync for ${path}`);
+        } else {
+          throw err;
+        }
+      }
+    };
+
+    // Also patch rmdir to handle ENOTEMPTY left behind by the suppressed unlinks
+    const isEnotemptyOnTemp = (err, path) => err && err.code === 'ENOTEMPTY' && String(path).includes('Temp');
+
+    const originalRmdir = fs.rmdir;
+    fs.rmdir = Object.assign((path, options, cb) => {
+      if (typeof options === 'function') {
+        cb = options;
+        options = {};
+      }
+      originalRmdir(path, options, (err) => {
+        if (isEnotemptyOnTemp(err, path)) {
+          strapi.log.warn(`[Bootstrap] Ignored ENOTEMPTY on fs.rmdir for ${path}`);
+          if (cb) cb(null);
+        } else if (cb) {
+          cb(err);
+        }
+      });
+    }, { __promisify__: originalRmdir.__promisify__ });
+
+    const originalPromisesRmdir = fs.promises.rmdir;
+    fs.promises.rmdir = async (path, options) => {
+      try {
+        await originalPromisesRmdir(path, options);
+      } catch (err) {
+        if (isEnotemptyOnTemp(err, path)) {
+          strapi.log.warn(`[Bootstrap] Ignored ENOTEMPTY on fs.promises.rmdir for ${path}`);
+        } else {
+          throw err;
+        }
+      }
+    };
     const registry = strapi.service('api::upload-security.access-strategy-registry');
     registry.register('api::lesson.lesson', createLessonAccessStrategy(strapi));
 

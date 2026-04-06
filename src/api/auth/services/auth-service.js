@@ -159,6 +159,9 @@ module.exports = ({ strapi }) => {
 
       if (!defaultRole) throw new Error("Registration configuration error");
 
+      // Generate 6-digit OTP code
+      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+
       const { password: hashedPassword } = await strapi.plugin('users-permissions').service('user').ensureHashedPasswords({ password });
 
       const newUser = await strapi.db.query('plugin::users-permissions.user').create({
@@ -169,14 +172,100 @@ module.exports = ({ strapi }) => {
           role: defaultRole.id,
           confirmed: false,
           blocked: false,
+          confirmationToken: otpCode, // Store OTP here
           firstname, lastname, phone, birthday, university
         }
       });
 
-      const jwt = getSecurity().issueToken(newUser);
+      // Send OTP via Email (non-blocking for UI speed)
+      this.sendOtpEmail(newUser.email, otpCode);
+
+      // Note: No JWT issued yet because confirmed is false
+      return { user: { id: newUser.id, email: newUser.email, confirmed: false }, message: "OTP sent to email" };
+    },
+
+    // إعادة إرسال الكود
+    async resendOtp(email) {
+      if (!email) throw new Error("Email is required");
+      
+      const user = await strapi.db.query('plugin::users-permissions.user').findOne({
+        where: { email: email.toLowerCase() }
+      });
+
+      if (!user) throw new Error("User not found");
+      if (user.confirmed) throw new Error("User already confirmed");
+
+      const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
+      
+      await strapi.db.query('plugin::users-permissions.user').update({
+        where: { id: user.id },
+        data: { confirmationToken: newOtp }
+      });
+
+      this.sendOtpEmail(user.email, newOtp);
+      return { message: "New OTP sent to email" };
+    },
+
+    // التحقق من الكود
+    async verifyOtp(ctx, email, code) {
+      if (!email || !code) throw new Error("Email and code are required");
+
+      const user = await strapi.db.query('plugin::users-permissions.user').findOne({
+        where: { email: email.toLowerCase() },
+        populate: { role: true }
+      });
+
+      if (!user) throw new Error("User not found");
+      if (user.confirmed) throw new Error("User already confirmed");
+
+      if (user.confirmationToken !== code) {
+        throw new Error("Invalid activation code");
+      }
+
+      const updatedUser = await strapi.db.query('plugin::users-permissions.user').update({
+        where: { id: user.id },
+        data: { confirmed: true, confirmationToken: null }
+      });
+
+      // Issue JWT after success
+      const jwt = getSecurity().issueToken(updatedUser);
       getSecurity().setAuthCookie(ctx, jwt);
 
-      return { jwt, user: newUser };
+      return { 
+        jwt, 
+        user: {
+          id: updatedUser.id,
+          username: updatedUser.username,
+          email: updatedUser.email,
+          role: user.role,
+          confirmed: true
+        }
+      };
+    },
+    // Helper to send OTP email
+    async sendOtpEmail(email, code) {
+      try {
+        const fromEmail = process.env.GMAIL_USER || 'no-reply@axecode.com';
+        await strapi.plugins['email'].services.email.send({
+          to: email,
+          from: fromEmail,
+          subject: 'AxeCode | Identity Initialization Code',
+          text: `Your identity initialization code is: ${code}`,
+          html: `
+            <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; background: #0b0f19; color: #ffffff; border-radius: 12px; border: 1px solid #1e293b;">
+                <h2 style="color: #34d399; margin-bottom: 20px;">Identity Verification Protocol</h2>
+                <p style="font-size: 14px; opacity: 0.8;">We've initialized your identity profile. Use the following code to authorize access:</p>
+                <div style="background: #1e293b; padding: 15px; border-radius: 8px; text-align: center; margin: 25px 0;">
+                    <span style="font-size: 28px; font-weight: bold; letter-spacing: 5px; color: #34d399;">${code}</span>
+                </div>
+                <p style="font-size: 10px; opacity: 0.5;">If you didn't initiate this request, please ignore this transmission.</p>
+            </div>
+          `,
+        });
+        strapi.log.info(`[AuthService] OTP email dispatched to ${email}`);
+      } catch (err) {
+        strapi.log.error(`[AuthService] Failed to send OTP email: ${err.message}`);
+      }
     },
 
     async forgotPassword(email) {

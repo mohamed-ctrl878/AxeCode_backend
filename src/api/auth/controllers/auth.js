@@ -132,43 +132,29 @@ module.exports = {
     }
   },
 
-  // Email confirmation endpoint
-  async confirmEmail(ctx) {
-    strapi.log.info('=== EMAIL CONFIRMATION FUNCTION CALLED ===');
-    
+  // Email confirmation endpoint (Updated for OTP)
+  async confirmOtp(ctx) {
+    strapi.log.info('=== OTP CONFIRMATION CALLED ===');
     try {
-      const token = ctx.request.body.token || ctx.query.token || ctx.query.confirmation;
-      
-      if (!token) {
-        return ctx.badRequest("Confirmation token is required");
-      }
-      
-      // Verify confirmation token (SOLID: Could move this to service too in future)
-      const decoded = await strapi.plugins['users-permissions'].services.jwt.verify(token);
-      
-      if (!decoded || !decoded.id) {
-        return ctx.badRequest("Invalid token payload");
-      }
-      
-      const user = await strapi.db.query('plugin::users-permissions.user').findOne({
-        where: { id: decoded.id }
-      });
-      
-      if (!user) return ctx.notFound("User not found");
-      if (user.blocked) return ctx.forbidden("User account is blocked");
-      
-      if (!user.confirmed) {
-        await strapi.db.query('plugin::users-permissions.user').update({
-          where: { id: user.id },
-          data: { confirmed: true, confirmationToken: null }
-        });
-      }
-      
-      return ctx.send({ message: "Email confirmed successfully" });
-      
+      const { email, code } = ctx.request.body;
+      const authService = strapi.service("api::auth.auth-service");
+      const result = await authService.verifyOtp(ctx, email, code);
+      return ctx.send({ ...result, message: "Email confirmed successfully" });
     } catch (error) {
-      strapi.log.error('Email confirmation error:', error.message);
-      return ctx.badRequest("Email confirmation failed");
+      strapi.log.error('OTP confirmation error:', error.message);
+      return ctx.badRequest(error.message || "Email confirmation failed");
+    }
+  },
+
+  // Resend OTP
+  async resendOtp(ctx) {
+    try {
+      const { email } = ctx.request.body;
+      const authService = strapi.service("api::auth.auth-service");
+      const result = await authService.resendOtp(email);
+      return ctx.send(result);
+    } catch (error) {
+      return ctx.badRequest(error.message);
     }
   },
 };
