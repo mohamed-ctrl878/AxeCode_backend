@@ -124,8 +124,8 @@ module.exports = {
   // Reset Password
   async resetPassword(ctx) {
     try {
-      const { code, password } = ctx.request.body;
-      const result = await strapi.service("api::auth.auth-service").resetPassword(code, password);
+      const { email, code, password } = ctx.request.body;
+      const result = await strapi.service("api::auth.auth-service").resetPassword(email, code, password);
       return ctx.send(result);
     } catch (error) {
       return ctx.badRequest(error.message);
@@ -154,6 +154,21 @@ module.exports = {
       const result = await authService.resendOtp(email);
       return ctx.send(result);
     } catch (error) {
+      return ctx.badRequest(error.message);
+    }
+  },
+
+  // GitHub OAuth Cookie Exchange
+  async githubExchange(ctx) {
+    try {
+      const { jwt } = ctx.request.body;
+      console.log("[GitHub Exchange] Received JWT:", jwt ? `${jwt.substring(0, 50)}... (length: ${jwt.length})` : "NULL/UNDEFINED");
+      console.log("[GitHub Exchange] Full body keys:", Object.keys(ctx.request.body));
+      const authService = strapi.service("api::auth.auth-service");
+      const result = await authService.githubExchange(ctx, jwt);
+      return ctx.send(result);
+    } catch (error) {
+      console.log("[GitHub Exchange] Error:", error.message);
       return ctx.badRequest(error.message);
     }
   },

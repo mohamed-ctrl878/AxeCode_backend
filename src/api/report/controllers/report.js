@@ -14,14 +14,26 @@ module.exports = createCoreController('api::report.report', ({ strapi }) => ({
     }
 
     if (!ctx.request.body.data) {
-      ctx.request.body = { data: ctx.request.body };
+        ctx.request.body = { data: ctx.request.body };
     }
 
-    // Assign the reporter safely
-    ctx.request.body.data.users_permissions_user = user.documentId;
-    ctx.request.body.data.publishedAt = new Date();
+    // Prevent the client from setting the users relation manually and avoid Zod typing errors
+    if (ctx.request.body.data.users_permissions_user) {
+        delete ctx.request.body.data.users_permissions_user;
+    }
+
+    // Ensure review status starts as pending
+    ctx.request.body.data.review_status = 'pending';
 
     const response = await super.create(ctx);
+
+    // Attach user natively behind the API verification
+    await strapi.db.query('api::report.report').update({
+        where: { id: response.data.id },
+        data: {
+            users_permissions_user: user.id
+        }
+    });
 
     const { content_type, docId, description } = ctx.request.body.data;
 

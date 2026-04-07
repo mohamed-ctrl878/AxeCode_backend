@@ -133,6 +133,55 @@ module.exports = {
       }
     })();
 
+    // ── Layer 6: Grant GitHub OAuth permissions to Public + Authenticated roles ──
+    // Strapi only auto-creates these on fresh DBs. Existing projects need them explicitly.
+    // IMPORTANT: jwt-cookie middleware authenticates users on ALL requests, so the
+    // Authenticated role also needs connect/callback permissions for OAuth to work.
+    (async () => {
+      try {
+        const roles = await strapi.db.query('plugin::users-permissions.role').findMany({
+          where: { type: { $in: ['public', 'authenticated'] } },
+        });
+
+        const oauthActions = [
+          'plugin::users-permissions.auth.connect',
+          'plugin::users-permissions.auth.callback',
+        ];
+
+        for (const role of roles) {
+          for (const action of oauthActions) {
+            const exists = await strapi.db.query('plugin::users-permissions.permission').findOne({
+              where: { action, role: role.id },
+            });
+
+            if (!exists) {
+              await strapi.db.query('plugin::users-permissions.permission').create({
+                data: { action, role: role.id },
+              });
+              strapi.log.info(`[OAuth] Permission granted to ${role.type}: ${action}`);
+            }
+          }
+
+          // ONLY grant user.me to Authenticated role
+          if (role.type === 'authenticated') {
+            const meAction = 'plugin::users-permissions.user.me';
+            const meExists = await strapi.db.query('plugin::users-permissions.permission').findOne({
+              where: { action: meAction, role: role.id },
+            });
+
+            if (!meExists) {
+              await strapi.db.query('plugin::users-permissions.permission').create({
+                data: { action: meAction, role: role.id },
+              });
+              strapi.log.info(`[OAuth] Permission granted to ${role.type}: ${meAction}`);
+            }
+          }
+        }
+      } catch (err) {
+        strapi.log.warn(`[OAuth] Permission grant skipped: ${err.message}`);
+      }
+    })();
+
     // Initialize Socket.io
     const io = new Server(strapi.server.httpServer, {
       cors: {

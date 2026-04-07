@@ -20,31 +20,32 @@ module.exports = createCoreController('api::like.like', ({ strapi }) => ({
     if (!content_types || !docId) return ctx.badRequest('contentType and docId are required');
 
     try {
-      // 1. Check if like exists
+      // 1. Check if like exists using the numeric user.id (because DB mapping table explicitly joins on the integer ID)
       const existing = await strapi.db.query('api::like.like').findOne({
         where: {
-          content_types: content_types,
-          docId: docId,
-          users_permissions_user: { documentId: user.documentId }
+          content_types,
+          docId,
+          users_permissions_user: user.id
         }
       });
 
+      let updatedLike;
+
       if (existing) {
-        // Remove like
-        await strapi.documents('api::like.like').delete({
-          documentId: existing.documentId,
-          status: 'published'
+        // Unlike (Delete)
+        await strapi.db.query('api::like.like').delete({
+          where: { id: existing.id }
         });
+        updatedLike = null;
       } else {
-        // Add like
-        await strapi.documents('api::like.like').create({
+        // Like (Create) - Use user.id for native DB creation
+        updatedLike = await strapi.db.query('api::like.like').create({
           data: {
-            content_types: content_types,
-            docId: docId,
-            users_permissions_user: user.documentId,
+            content_types,
+            docId,
+            users_permissions_user: user.id,
             publishedAt: new Date(),
-          },
-          status: 'published'
+          }
         });
 
         // Trigger notification

@@ -11,6 +11,7 @@ module.exports = ({ strapi }) => ({
    */
   setAuthCookie(ctx, jwt) {
     const isProd = process.env.NODE_ENV === 'production';
+    const domain = process.env.COOKIE_DOMAIN === 'localhost' ? undefined : process.env.COOKIE_DOMAIN;
 
     ctx.cookies.set('jwt', jwt, {
       httpOnly: true,
@@ -18,7 +19,7 @@ module.exports = ({ strapi }) => ({
       sameSite: 'lax', // تم التغيير من strict لضمان عملها بين المنافذ المختلفة في التطوير
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       path: '/',
-      domain: process.env.COOKIE_DOMAIN || undefined,
+      domain: domain || undefined,
     });
 
     strapi.log.debug(`[Security] Auth cookie set for user`);
@@ -28,13 +29,15 @@ module.exports = ({ strapi }) => ({
    * Clear authentication cookie
    */
   clearAuthCookie(ctx) {
+    const domain = process.env.COOKIE_DOMAIN === 'localhost' ? undefined : process.env.COOKIE_DOMAIN;
+
     ctx.cookies.set('jwt', null, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       maxAge: 0,
       path: '/',
-      domain: process.env.COOKIE_DOMAIN || undefined,
+      domain: domain || undefined,
     });
 
     strapi.log.debug(`[Security] Auth cookie cleared`);
@@ -52,9 +55,9 @@ module.exports = ({ strapi }) => ({
   /**
    * Verify a JWT token from cookie
    */
-  verifyToken(token) {
+  async verifyToken(token) {
     try {
-      return strapi.plugins['users-permissions'].services.jwt.verify(token);
+      return await strapi.plugins['users-permissions'].services.jwt.verify(token);
     } catch (err) {
       return null;
     }

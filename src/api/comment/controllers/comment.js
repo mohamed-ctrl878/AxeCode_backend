@@ -19,15 +19,26 @@ module.exports = createCoreController('api::comment.comment', ({ strapi }) => ({
             ctx.request.body = { data: ctx.request.body };
         }
 
-        // 3. SECURE OVERRIDE: Ignore any client-provided user IDs.
-        // Forcefully connect the verified server-side user ID to the comment.
-        ctx.request.body.data.users_permissions_user = user.documentId;
+        // 3. SECURE OVERRIDE: Prevent client from setting the user ID directly.
+        // We delete it so Zod validation doesn't throw 'Invalid key users_permissions_user'.
+        if (ctx.request.body.data.users_permissions_user) {
+            delete ctx.request.body.data.users_permissions_user;
+        }
 
         // Ensure it gets published immediately
         ctx.request.body.data.publishedAt = new Date();
 
-        // 4. Call the default core action with the tampered secure payload
+        // 4. Call the default core action to cleanly validate and create the comment
         const response = await super.create(ctx);
+        
+        // 4.5. Securely attach the user to the newly created comment via DB Query API
+        // This cleanly avoids ANY Zod validation errors about relations format and accepts raw numeric IDs natively.
+        await strapi.db.query('api::comment.comment').update({
+            where: { id: response.data.id },
+            data: {
+                users_permissions_user: user.id
+            }
+        });
         
         // 5. Trigger notification
         try {

@@ -90,5 +90,13 @@ module.exports = {
         auth: false,
       },
     },
+    {
+      method: "POST",
+      path: "/auth/github-exchange",
+      handler: "auth.githubExchange",
+      config: {
+        auth: false,
+      },
+    },
   ],
 };
