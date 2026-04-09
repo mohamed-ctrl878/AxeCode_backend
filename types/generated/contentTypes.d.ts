@@ -1955,6 +1955,44 @@ export interface ApiUserEntitlementUserEntitlement
   };
 }
 
+export interface ApiUserProgressUserProgress
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'user_progresses';
+  info: {
+    description: 'Tracks user progress for lessons and courses';
+    displayName: 'User Progress';
+    pluralName: 'user-progresses';
+    singularName: 'user-progress';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    course: Schema.Attribute.Relation<'manyToOne', 'api::course.course'>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    last_watched: Schema.Attribute.Decimal & Schema.Attribute.DefaultTo<0>;
+    lesson: Schema.Attribute.Relation<'manyToOne', 'api::lesson.lesson'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::user-progress.user-progress'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    status: Schema.Attribute.Enumeration<['completed', 'in-progress']> &
+      Schema.Attribute.DefaultTo<'in-progress'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    users_permissions_user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+  };
+}
+
 export interface ApiWeekWeek extends Struct.CollectionTypeSchema {
   collectionName: 'weeks';
   info: {
@@ -2587,6 +2625,7 @@ declare module '@strapi/strapi' {
       'api::submission.submission': ApiSubmissionSubmission;
       'api::test-case.test-case': ApiTestCaseTestCase;
       'api::user-entitlement.user-entitlement': ApiUserEntitlementUserEntitlement;
+      'api::user-progress.user-progress': ApiUserProgressUserProgress;
       'api::week.week': ApiWeekWeek;
       'plugin::content-releases.release': PluginContentReleasesRelease;
       'plugin::content-releases.release-action': PluginContentReleasesReleaseAction;

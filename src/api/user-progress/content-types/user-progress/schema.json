@@ -1,0 +1,43 @@
+{
+  "kind": "collectionType",
+  "collectionName": "user_progresses",
+  "info": {
+    "singularName": "user-progress",
+    "pluralName": "user-progresses",
+    "displayName": "User Progress",
+    "description": "Tracks user progress for lessons and courses"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "users_permissions_user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "lesson": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::lesson.lesson"
+    },
+    "course": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::course.course"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": [
+        "completed",
+        "in-progress"
+      ],
+      "default": "in-progress"
+    },
+    "last_watched": {
+      "type": "decimal",
+      "default": 0
+    }
+  }
+}

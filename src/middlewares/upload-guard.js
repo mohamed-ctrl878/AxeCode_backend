@@ -11,7 +11,28 @@ module.exports = (config, { strapi }) => {
     // Only intercept requests for files in the /uploads directory
     if (ctx.url.startsWith('/uploads/') || ctx.url.startsWith('/uploads\\')) {
       try {
-        const userId = ctx.state?.user?.id;
+        let userId = ctx.state?.user?.id;
+        
+        // Manual verification for static files where Strapi's auth pipeline doesn't run
+        if (!userId) {
+          const authHeader = ctx.request.header.authorization;
+          let token;
+
+          if (authHeader && authHeader.startsWith('Bearer ')) {
+            token = authHeader.substring(7);
+          } else if (ctx.cookies.get('jwt')) {
+            token = ctx.cookies.get('jwt');
+          }
+
+          if (token) {
+            try {
+              const { id } = await strapi.plugins['users-permissions'].services.jwt.verify(token);
+              userId = id;
+            } catch (err) {
+              // Invalid token, ignore and proceed as guest
+            }
+          }
+        }
         
         // 1. Find the file in the database by its URL
         // In Strapi, the 'url' field typically starts with /uploads/

@@ -28,7 +28,8 @@ module.exports = createCoreController('api::course.course', ({ strapi }) => ({
 
   // GET /courses - Get all published courses with enrichment
   async find(ctx) {
-    const userId = ctx.state.user?.id || null;
+    const user = ctx.state.user;
+    const userInfo = user ? { id: user.id, documentId: user.documentId } : null;
     
     // Use Strapi default find (handles published/draft automatically)
     const response = await super.find(ctx);
@@ -36,7 +37,7 @@ module.exports = createCoreController('api::course.course', ({ strapi }) => ({
 
     // Enrich with Entitlements & Interactions
     const enriched = await strapi.service('api::course.course')
-      .filterAndEnrichCourses(response.data, userId);
+      .filterAndEnrichCourses(response.data, userInfo);
 
     return ctx.send({
       data: enriched,
@@ -46,7 +47,8 @@ module.exports = createCoreController('api::course.course', ({ strapi }) => ({
 
   // GET /courses/:id - Get single course with enrichment
   async findOne(ctx) {
-    const userId = ctx.state.user?.id || null;
+    const user = ctx.state.user;
+    const userInfo = user ? { id: user.id, documentId: user.documentId } : null;
 
     // Use Strapi default findOne (handles published/draft automatically)
     const response = await super.findOne(ctx);
@@ -56,13 +58,14 @@ module.exports = createCoreController('api::course.course', ({ strapi }) => ({
 
     // Enrich with Entitlements & Interactions
     const enriched = await strapi.service('api::course.course')
-      .enrichCourse(course, userId);
+      .enrichCourse(course, userInfo);
 
     if (!enriched) return ctx.notFound('Course not found');
 
-    const isPublisher = userId && (
-      enriched.users_permissions_user?.id == userId ||
-      enriched.users_permissions_user?.documentId == userId
+    // Robust Publisher Check (v4 id & v5 documentId)
+    const isPublisher = userInfo && (
+      (userInfo.id && enriched.users_permissions_user?.id == userInfo.id) || 
+      (userInfo.documentId && enriched.users_permissions_user?.documentId == userInfo.documentId)
     );
 
     return ctx.send({

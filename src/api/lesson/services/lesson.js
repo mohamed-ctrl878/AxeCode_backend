@@ -16,9 +16,23 @@ module.exports = createCoreService('api::lesson.lesson', ({ strapi }) => ({
     const interactionFacade = strapi.service('api::rate.interaction-facade');
     const socialMetadata = await interactionFacade.getMetadata('lesson', lesson.documentId, userId);
 
+    // Check completion status
+    let isCompleted = false;
+    if (userId) {
+      const progress = await strapi.documents('api::user-progress.user-progress').findFirst({
+        filters: {
+          users_permissions_user: { documentId: userId },
+          lesson: { documentId: lesson.documentId },
+          status: 'completed'
+        }
+      });
+      isCompleted = !!progress;
+    }
+
     return {
       ...lesson,
-      interactions: socialMetadata
+      interactions: socialMetadata,
+      isCompleted
     };
   }
 }));
