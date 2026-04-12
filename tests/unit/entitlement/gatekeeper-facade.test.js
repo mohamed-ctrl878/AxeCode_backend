@@ -28,62 +28,62 @@ describe('GatekeeperFacade Service', () => {
     });
 
     it('should fail if product is not an event ticket', async () => {
-        vi.spyOn(strapiMock, 'documents').mockReturnValue({
-            findOne: async () => ({ valid: 'valid', productId: 'p-1' }),
-            findMany: async () => [{ documentId: 'p-1', content_types: 'course' }] // Not upevent
-        });
+      vi.spyOn(strapiMock, 'documents').mockReturnValue({
+        findOne: async () => ({ valid: 'valid', productId: 'p-1' }),
+        findMany: async () => [{ documentId: 'p-1', content_types: 'course' }] // Not event
+      });
 
-        const result = await gatekeeper.validateEventAccess('ticket-1', 1);
-        expect(result.success).toBe(false);
-        expect(result.code).toBe('INVALID_PRODUCT');
+      const result = await gatekeeper.validateEventAccess('ticket-1', 1);
+      expect(result.success).toBe(false);
+      expect(result.code).toBe('INVALID_PRODUCT');
     });
 
     it('should fail if event does not exist', async () => {
-        vi.spyOn(strapiMock, 'documents').mockReturnValue({
-            findOne: async (params) => {
-                if (params.documentId === 'ticket-1') return { valid: 'valid', productId: 'p-1' };
-                return null; // Event not found
-            },
-            findMany: async () => [{ documentId: 'p-1', itemId: 'e-1', content_types: 'upevent' }]
-        });
+      vi.spyOn(strapiMock, 'documents').mockReturnValue({
+        findOne: async (params) => {
+          if (params.documentId === 'ticket-1') return { valid: 'valid', productId: 'p-1' };
+          return null; // Event not found
+        },
+        findMany: async () => [{ documentId: 'p-1', itemId: 'e-1', content_types: 'event' }]
+      });
 
-        const result = await gatekeeper.validateEventAccess('ticket-1', 1);
-        expect(result.success).toBe(false);
-        expect(result.code).toBe('EVENT_NOT_FOUND');
+      const result = await gatekeeper.validateEventAccess('ticket-1', 1);
+      expect(result.success).toBe(false);
+      expect(result.code).toBe('EVENT_NOT_FOUND');
     });
 
     it('should fail if scanner is not authorized for the event', async () => {
-        vi.spyOn(strapiMock, 'documents').mockReturnValue({
-            findOne: async (params) => {
-                if (params.documentId === 'ticket-1') return { valid: 'valid', productId: 'p-1' };
-                if (params.documentId === 'e-1') return { title: 'Event', scanners: [{ users_permissions_user: { id: 99 } }] };
-                return null;
-            },
-            findMany: async () => [{ documentId: 'p-1', itemId: 'e-1', content_types: 'upevent' }]
-        });
+      vi.spyOn(strapiMock, 'documents').mockReturnValue({
+        findOne: async (params) => {
+          if (params.documentId === 'ticket-1') return { valid: 'valid', productId: 'p-1' };
+          if (params.documentId === 'e-1') return { title: 'Event', scanners: [{ users_permissions_user: { id: 99 } }] };
+          return null;
+        },
+        findMany: async () => [{ documentId: 'p-1', itemId: 'e-1', content_types: 'event' }]
+      });
 
-        const result = await gatekeeper.validateEventAccess('ticket-1', 1); // Scanner is 1, authorized is 99
-        expect(result.success).toBe(false);
-        expect(result.code).toBe('UNAUTHORIZED_SCANNER');
+      const result = await gatekeeper.validateEventAccess('ticket-1', 1); // Scanner is 1, authorized is 99
+      expect(result.success).toBe(false);
+      expect(result.code).toBe('UNAUTHORIZED_SCANNER');
     });
 
     it('should succeed and consume ticket if all valid', async () => {
-        const mockUpdate = vi.fn();
-        vi.spyOn(strapiMock, 'documents').mockReturnValue({
-            findOne: async (params) => {
-                if (params.documentId === 'ticket-1') return { valid: 'valid', productId: 'p-1', users_permissions_user: { username: 'bob' } };
-                if (params.documentId === 'e-1') return { title: 'Event', scanners: [{ users_permissions_user: { id: 1 } }] };
-                return null;
-            },
-            findMany: async () => [{ documentId: 'p-1', itemId: 'e-1', content_types: 'upevent' }],
-            update: mockUpdate
-        });
+      const mockUpdate = vi.fn();
+      vi.spyOn(strapiMock, 'documents').mockReturnValue({
+        findOne: async (params) => {
+          if (params.documentId === 'ticket-1') return { valid: 'valid', productId: 'p-1', users_permissions_user: { username: 'bob' } };
+          if (params.documentId === 'e-1') return { title: 'Event', scanners: [{ users_permissions_user: { id: 1 } }] };
+          return null;
+        },
+        findMany: async () => [{ documentId: 'p-1', itemId: 'e-1', content_types: 'event' }],
+        update: mockUpdate
+      });
 
-        const result = await gatekeeper.validateEventAccess('ticket-1', 1);
-        expect(result.success).toBe(true);
-        expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({
-            data: { valid: 'expired' }
-        }));
+      const result = await gatekeeper.validateEventAccess('ticket-1', 1);
+      expect(result.success).toBe(true);
+      expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({
+        data: { valid: 'expired' }
+      }));
     });
   });
 });

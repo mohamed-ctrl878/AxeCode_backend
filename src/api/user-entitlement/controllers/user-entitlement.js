@@ -22,10 +22,10 @@ module.exports = createCoreController('api::user-entitlement.user-entitlement', 
     });
 
     if (!entitlement) return { error: 'notFound', message: 'Product (Entitlement) not found' };
-console.debug("entitlement",entitlement)
+    console.debug("entitlement", entitlement)
     const contentTypeMap = {
       'course': 'api::course.course',
-      'upevent': 'api::event.event',
+      'event': 'api::event.event',
       'uplive': 'api::live-stream.live-stream'
     };
     const targetApi = contentTypeMap[entitlement.content_types] || `api::${entitlement.content_types}.${entitlement.content_types}`;
@@ -34,7 +34,7 @@ console.debug("entitlement",entitlement)
       documentId: entitlement.itemId,
       populate: ['users_permissions_user']
     });
-    console.debug("item",item)
+    console.debug("item", item)
 
     if (!item) return { error: 'notFound', message: 'Associated content item not found' };
 
@@ -48,24 +48,24 @@ console.debug("entitlement",entitlement)
 
       const body = ctx.request?.body?.data || ctx.request?.body || {};
       const { productId, content_types, users_permissions_user: targetUserId } = body;
-      
+
       if (!productId || !content_types) return ctx.badRequest('productId and content_types are required');
 
       // 1. Ownership Check (Is this a manual grant by the owner?)
       const { authorized, entitlement, error, message } = await verifyOwnership(productId, ctx.state.user.id);
-      
+
       if (error === 'notFound') return ctx.notFound(message);
-      
+
       // Ownership check for Granting (Teachers/Owners)
       const isManualGrant = authorized;
-      
+
       // If not the owner, check if the student is enrolling themselves in a free course
       if (!isManualGrant) {
-         const isSelfEnrollment = (targetUserId === ctx.state.user.id || !targetUserId);
-         const isFree = parseFloat(String(entitlement.price || 0)) === 0;
-         
-         if (!isSelfEnrollment) return ctx.forbidden('Access denied: Only the content owner can grant access to others');
-         if (!isFree) return ctx.badRequest('This product requires payment for self-enrollment');
+        const isSelfEnrollment = (targetUserId === ctx.state.user.id || !targetUserId);
+        const isFree = parseFloat(String(entitlement.price || 0)) === 0;
+
+        if (!isSelfEnrollment) return ctx.forbidden('Access denied: Only the content owner can grant access to others');
+        if (!isFree) return ctx.badRequest('This product requires payment for self-enrollment');
       }
 
       // 2. Check existence for the TARGET user
@@ -89,7 +89,7 @@ console.debug("entitlement",entitlement)
       });
 
       const enriched = await getFacade().getFullDetails(entitlement.itemId, content_types, finalTargetUserId);
-      
+
       return ctx.send({
         message: 'Success',
         data: { ...userEntitlement, content: enriched }
@@ -129,27 +129,47 @@ console.debug("entitlement",entitlement)
       const populate = queryParams.populate;
       const productId = filters.productId?.$eq || filters.productId;
 
-      if (!productId) {
-        return ctx.badRequest('productId filter is required to view subscribers');
-      }
+      // Case A: Owner viewing subscribers for a specific product
+      if (productId) {
+        const { authorized, entitlement, error, message } = await verifyOwnership(productId, ctx.state.user.id);
+        if (error === 'notFound') return ctx.notFound(message);
+        if (!authorized) return ctx.forbidden('Access denied: You are not the owner of this content');
 
-      // Ownership Check via Helper
-      const { authorized, entitlement, error, message } = await verifyOwnership(productId, ctx.state.user.id);
-      
-      if (error === 'notFound') return ctx.notFound(message);
-      if (!authorized) return ctx.forbidden('Access denied: You are not the owner of this content');
-
-      const userEntitlements = await strapi.documents('api::user-entitlement.user-entitlement').findMany({
-        filters: { 
+        const userEntitlements = await strapi.documents('api::user-entitlement.user-entitlement').findMany({
+          filters: {
             ...filters,
             productId: productId
+          },
+          populate: populate || ['users_permissions_user']
+        });
+
+        const data = await Promise.all(userEntitlements.map(async (ue) => {
+          const content = await getFacade().getFullDetails(entitlement.itemId, entitlement.content_types, ctx.state.user.id);
+          return { ...ue, content };
+        }));
+
+        return ctx.send({ data });
+      }
+
+      // Case B: Student viewing their own purchased content
+      const userEntitlements = await strapi.documents('api::user-entitlement.user-entitlement').findMany({
+        filters: {
+          users_permissions_user: ctx.state.user.id
         },
         populate: populate || ['users_permissions_user']
       });
 
       const data = await Promise.all(userEntitlements.map(async (ue) => {
-          const content = await getFacade().getFullDetails(entitlement.itemId, entitlement.content_types, ctx.state.user.id);
-          return { ...ue, content };
+        // We need to find the related entitlement to get the itemId
+        const entitlements = await strapi.documents('api::entitlement.entitlement').findMany({
+          filters: { documentId: ue.productId }
+        });
+        const entitlement = entitlements[0];
+
+        if (!entitlement) return { ...ue, content: null, targetDocumentId: null };
+
+        const content = await getFacade().getFullDetails(entitlement.itemId, entitlement.content_types, ctx.state.user.id);
+        return { ...ue, content, targetDocumentId: entitlement.itemId };
       }));
 
       return ctx.send({ data });
@@ -167,7 +187,7 @@ console.debug("entitlement",entitlement)
 
       // Ownership Check via Helper
       const { authorized, error, message } = await verifyOwnership(userEntitlement.productId, ctx.state.user.id);
-      
+
       if (error === 'notFound') return ctx.notFound(message);
       if (!authorized) return ctx.forbidden('Access denied: You are not the owner of this content');
 

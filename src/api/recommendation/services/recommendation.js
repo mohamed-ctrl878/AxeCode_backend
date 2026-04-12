@@ -16,6 +16,20 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
     },
 
     /**
+     * Helper to get precise populate maps for different content types.
+     */
+    getPopulateForType(type) {
+      if (type === 'blog') return ['*', 'publisher.avatar'];
+      if (type === 'article') return ['*', 'author.avatar'];
+      if (type === 'post') return ['*', 'users_permissions_user.avatar'];
+      if (type === 'course') return ['*', 'users_permissions_user.avatar'];
+      if (type === 'problem') return ['*'];
+      if (type === 'live-stream') return ['*', 'host.avatar'];
+      if (type === 'event') return ['*', 'users_permissions_user.avatar'];
+      return ['*'];
+    },
+
+    /**
      * Processes a list of tags: normalizes them and removes duplicates/empty strings.
      */
     processTags(tags) {
@@ -330,7 +344,7 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
       const mapping = {
         'course': 'course',
         'live-stream': 'uplive',
-        'event': 'upevent',
+        'event': 'event',
       };
 
       const facade = strapi.service('api::entitlement.content-access-facade');
@@ -403,7 +417,7 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
 
             const candidates = await strapi.documents(`api::${type}.${type}`).findMany({
               filters: filters,
-              populate: "*",
+              populate: service.getPopulateForType(type),
               limit: 200, // Fetch a wide pool of recent items
               sort: [{ createdAt: "desc" }]
             });
@@ -458,7 +472,7 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
             const items = await strapi.documents(`api::${type}.${type}`).findMany({
               filters: filters,
               sort: [{ engagement_score: "desc" }],
-              populate: "*",
+              populate: service.getPopulateForType(type),
               limit: limit + safeExcludeLength + 10, // Fetch extra from DB to survive deduplication filters
             });
             return items.map(i => ({ ...i, contentType: type }));
@@ -490,7 +504,7 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
             const items = await strapi.documents(`api::${type}.${type}`).findMany({
               filters: filters,
               sort: [{ createdAt: "desc" }],
-              populate: "*",
+              populate: service.getPopulateForType(type),
               limit: limit + safeExcludeLength + 10, // Fetch extra from DB to survive deduplication filters
             });
             return items.map(i => ({ ...i, contentType: type }));

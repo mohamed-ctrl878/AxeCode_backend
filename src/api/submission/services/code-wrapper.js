@@ -321,30 +321,48 @@ module.exports = ({ strapi }) => ({
         } else if (language === 'java') {
             const pm = params.map((p, i) => {
                 const t = p.type.toLowerCase();
-                if (t === 'int[]' || t === 'vector<int>') return `        int[] ${p.name} = parseArray(inputLines.get(${i}));`;
-                if (t === 'string[]') return `        String[] ${p.name} = parseStringArray(inputLines.get(${i}));`;
-                if (t === 'int') return `        int ${p.name} = Integer.parseInt(inputLines.get(${i}));`;
-                if (t === 'listnode') return `        ListNode ${p.name} = listToLinkedList(parseArray(inputLines.get(${i})));`;
-                if (t === 'treenode') return `        TreeNode ${p.name} = listToTree(parseArray(inputLines.get(${i})));`;
-                return `        Object ${p.name} = inputLines.get(${i});`;
+                const line = `inputLines.get(${i})`;
+                if (t === 'int[]' || t === 'vector<int>') return `        int[] ${p.name} = parseArray(${line});`;
+                if (t === 'string[]') return `        String[] ${p.name} = parseStringArray(${line});`;
+                if (t === 'int' || t === 'integer') return `        int ${p.name} = Integer.parseInt(${line});`;
+                if (t === 'boolean' || t === 'bool') return `        boolean ${p.name} = Boolean.parseBoolean(${line});`;
+                if (t === 'double') return `        double ${p.name} = Double.parseDouble(${line});`;
+                if (t === 'float') return `        float ${p.name} = Float.parseFloat(${line});`;
+                if (t === 'string') return `        String ${p.name} = ${line}.equals("null") ? null : (${line}.startsWith("\\\"") && ${line}.endsWith("\\\"") ? ${line}.substring(1, ${line}.length() - 1) : ${line});`;
+                if (t === 'listnode') return `        ListNode ${p.name} = listToLinkedList(parseArray(${line}));`;
+                if (t === 'treenode') return `        TreeNode ${p.name} = listToTree(parseArray(${line}));`;
+                return `        Object ${p.name} = ${line};`;
             }).join('\n');
             invocation = `sol.${functionName}(${params.map(p => p.name).join(', ')})`;
             paramAssignments = pm;
         } else if (language === 'cpp') {
             const pm = params.map((p, i) => {
                 const t = p.type.toLowerCase();
-                if (t === 'vector<int>') return `    vector<int> ${p.name} = parseVector(inputLines[${i}]);`;
-                if (t === 'vector<string>') return `    vector<string> ${p.name} = parseStringVector(inputLines[${i}]);`;
-                if (t === 'int') return `    int ${p.name} = stoi(inputLines[${i}]);`;
-                if (t === 'listnode') return `    ListNode* ${p.name} = listToLinkedList(parseVector(inputLines[${i}]));`;
-                if (t === 'treenode') return `    TreeNode* ${p.name} = listToTree(parseVector(inputLines[${i}]));`;
-                return `    auto ${p.name} = inputLines[${i}];`;
+                const line = `inputLines[${i}]`;
+                if (t === 'vector<int>') return `    vector<int> ${p.name} = parseVector(${line});`;
+                if (t === 'vector<string>') return `    vector<string> ${p.name} = parseStringVector(${line});`;
+                if (t === 'int' || t === 'integer') return `    int ${p.name} = stoi(${line});`;
+                if (t === 'boolean' || t === 'bool') return `    bool ${p.name} = (${line} == "true");`;
+                if (t === 'double') return `    double ${p.name} = stod(${line});`;
+                if (t === 'float') return `    float ${p.name} = stof(${line});`;
+                if (t === 'string') return `    string ${p.name} = (${line} == "null") ? "" : ((${line}.front() == '"' && ${line}.back() == '"') ? ${line}.substr(1, ${line}.length() - 2) : ${line});`;
+                if (t === 'listnode') return `    ListNode* ${p.name} = listToLinkedList(parseVector(${line}));`;
+                if (t === 'treenode') return `    TreeNode* ${p.name} = listToTree(parseVector(${line}));`;
+                return `    auto ${p.name} = ${line};`;
             }).join('\n');
             invocation = `sol.${functionName}(${params.map(p => p.name).join(', ')})`;
             paramAssignments = pm;
         }
 
-        return template.wrapperCode
+
+        const decodedWrapper = this.decode(template.wrapperCode);
+        const fixedWrapper = decodedWrapper
+            .replace('print(json.dumps(serialize_result(result)))', 'print("\\n" + json.dumps(serialize_result(result)))')
+            .replace('System.out.println(serialize(result))', 'System.out.println("\\n" + serialize(result))')
+            .replace('console.log(JSON.stringify(serialize(result)))', 'console.log("\\n" + JSON.stringify(serialize(result)))')
+            .replace('cout << serialize(result) << endl', 'cout << endl << serialize(result) << endl');
+
+        return fixedWrapper
             .replace(/{USER_CODE}/g, decodedUserCode)
             .replace(/{DELIMITER}/g, delimiter)
             .replace(/{IMPORTS}/g, langBoilerplate.imports)
@@ -353,6 +371,7 @@ module.exports = ({ strapi }) => ({
             .replace(/{FUNCTION_NAME}/g, functionName)
             .replace(/{INVOCATION}/g, invocation)
             .replace(/{PARAM_ASSIGNMENTS}/g, paramAssignments);
+
     },
 
     decode(code) {

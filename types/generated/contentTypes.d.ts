@@ -799,7 +799,7 @@ export interface ApiEntitlementEntitlement extends Struct.CollectionTypeSchema {
   };
   attributes: {
     content_types: Schema.Attribute.Enumeration<
-      ['role', 'course', 'uplive', 'upevent', 'veiwlive', 'veiwevent']
+      ['role', 'course', 'uplive', 'event', 'veiwlive', 'veiwevent']
     >;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
@@ -2491,6 +2491,7 @@ export interface PluginUsersPermissionsUser
       'api::conversation.conversation'
     >;
     avatar: Schema.Attribute.Media<'images'>;
+    bio: Schema.Attribute.String;
     birthday: Schema.Attribute.Date;
     blocked: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     comments: Schema.Attribute.Relation<'oneToMany', 'api::comment.comment'>;

@@ -15,6 +15,14 @@ module.exports = ({ strapi }) => ({
     const stderr = execution.stderr ? Buffer.from(execution.stderr, 'base64').toString('utf8').trim() : '';
     const compileOut = execution.compile_output ? Buffer.from(execution.compile_output, 'base64').toString('utf8').trim() : '';
 
+    strapi.log.info(`[Grader] TestCase ID: ${testCase.id || testCase.documentId}`);
+    strapi.log.info(`[Grader] Raw Stdout: \n${stdout}`);
+    if (stderr || compileOut) {
+      strapi.log.info(`[Grader] Raw Stderr/CompileOut: \n${stderr || compileOut}`);
+    }
+
+
+
     let verdict = 'wrong_answer';
     let actualOutput = null;
     let userStdout = stdout;

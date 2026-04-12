@@ -69,11 +69,26 @@ module.exports = createCoreService('api::course.course', ({ strapi }) => ({
       }
     }
 
+    // 4. Total Lessons Count
+    let totalLessonsCount = 0;
+    try {
+      totalLessonsCount = await strapi.documents('api::lesson.lesson').count({
+        filters: {
+          week: {
+            course: { documentId: course.documentId }
+          }
+        }
+      });
+    } catch (err) {
+      console.error('[CourseEnrich] Lesson count error:', err);
+    }
+
     // Prepare enriched weeks with isCompleted tags
     const result = {
       ...enriched,
       interactions: socialMetadata,
-      completedLessonsCount: completedLessonIds.length
+      completedLessonsCount: completedLessonIds.length,
+      lessonCount: totalLessonsCount
     };
 
     // Strip sensitive content AND inject isCompleted tags simultaneously 

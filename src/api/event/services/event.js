@@ -101,7 +101,7 @@ module.exports = createCoreService('api::event.event', ({ strapi }) => ({
     if (entitlementData) {
       // Map enum values if necessary
       if (entitlementData.content_types === 'events' || entitlementData.content_types === 'event') {
-        entitlementData.content_types = 'upevent';
+        entitlementData.content_types = 'event';
       }
       if (entitlementData.duration) entitlementData.duration = formatDate(entitlementData.duration);
 

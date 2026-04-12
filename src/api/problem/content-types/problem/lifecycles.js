@@ -174,17 +174,20 @@ function generatePythonWrapper(functionName, params, returnType) {
 {USER_CODE}
 # ==== END ====
 
+{SERIALIZERS}
+
 if __name__ == "__main__":
     {PARAM_ASSIGNMENTS}
-    {SERIALIZERS}
     
     # Separation Logic
     print("\\n{DELIMITER}")
     
     result = {INVOCATION}
-    print(json.dumps(serialize_result(result)))
+    print("\\n" + json.dumps(serialize_result(result)))
+
 `;
 }
+
 
 // JavaScript
 function generateJavaScriptStarter(functionName, params, returnType) {
@@ -221,7 +224,8 @@ process.stdin.on('end', () => {
     console.log("\\n{DELIMITER}");
     
     const result = {INVOCATION};
-    console.log(JSON.stringify(serialize(result)));
+    console.log("\\n" + JSON.stringify(serialize(result)));
+
 });
 `;
 }
@@ -261,7 +265,8 @@ public class Main {
         
         {PARAM_ASSIGNMENTS}
         Object result = {INVOCATION};
-        System.out.println(serialize(result));
+        System.out.println("\\n" + serialize(result));
+
     }
 
     {SERIALIZERS}
@@ -305,7 +310,8 @@ int main() {
     
     {PARAM_ASSIGNMENTS}
     auto result = {INVOCATION};
-    cout << serialize(result) << endl;
+    cout << endl << serialize(result) << endl;
+
     return 0;
 }
 `;

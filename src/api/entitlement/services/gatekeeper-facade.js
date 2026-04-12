@@ -32,7 +32,7 @@ module.exports = ({ strapi }) => ({
     });
     const entitlement = entitlements[0];
 
-    if (!entitlement || entitlement.content_types !== 'upevent') {
+    if (!entitlement || entitlement.content_types !== 'event') {
       return { success: false, message: 'Not an event ticket', code: 'INVALID_PRODUCT' };
     }
 
@@ -46,7 +46,7 @@ module.exports = ({ strapi }) => ({
 
     const isAuthorized = event.scanners?.some(s => s.users_permissions_user?.id === scannerUserId);
     if (!isAuthorized) {
-        return { success: false, message: 'You are not an authorized scanner for this event', code: 'UNAUTHORIZED_SCANNER' };
+      return { success: false, message: 'You are not an authorized scanner for this event', code: 'UNAUTHORIZED_SCANNER' };
     }
 
     // 5. Atomic Action: Consume Ticket

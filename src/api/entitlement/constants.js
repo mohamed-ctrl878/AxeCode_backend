@@ -6,7 +6,7 @@
  */
 
 const CONTENT_TYPES = {
-    EVENT: 'upevent',
+    EVENT: 'event',
     COURSE: 'course',
     LIVESTREAM: 'uplive',
     CHALLENGE: 'challenge',

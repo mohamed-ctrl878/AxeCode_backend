@@ -10,31 +10,50 @@ module.exports = createCoreController("api::submission.submission", ({ strapi })
    * Securely find submissions for the current user bypassing strict REST query validators.
    */
   async find(ctx) {
-    const user = ctx.state.user;
-    if (!user) return ctx.unauthorized('You must be logged in');
-
-    // Extract custom query params
-    let problemDocId = null;
-    if (ctx.query.filters && ctx.query.filters.problem && ctx.query.filters.problem.documentId) {
-        problemDocId = ctx.query.filters.problem.documentId;
-    }
-
-    // Build the query object for the Service API directly
-    const serviceQuery = { ...ctx.query };
+    const loggedInUser = ctx.state.user;
     
-    serviceQuery.filters = {
-      user: { id: user.id }
-    };
+    // Build the query object for the Service API
+    const serviceQuery = { ...ctx.query };
+    const incomingFilters = ctx.query.filters || {};
 
-    if (problemDocId) {
-      serviceQuery.filters.problem = { documentId: problemDocId };
+    // Logic: 
+    // 1. If user filter is explicitly provided (e.g., username in profile page), use it.
+    // 2. Otherwise, if logged in, default to current user.
+    
+    let activeFilters = { ...incomingFilters };
+
+    if (!activeFilters.user && loggedInUser) {
+        // Default to self if no specific user requested
+        activeFilters.user = { id: loggedInUser.id };
     }
 
-    // Call the Service layer directly -> Avoids super.find() REST Validation
+    if (!activeFilters.user && !loggedInUser) {
+        return ctx.badRequest('You must specify a user filter or be logged in to view submissions.');
+    }
+
+    serviceQuery.filters = activeFilters;
+
+    // Call the Service layer directly
     const { results, pagination } = await strapi.service('api::submission.submission').find(serviceQuery);
     
-    // Sanitize and transform to standard REST format
-    const sanitizedResults = await this.sanitizeOutput(results, ctx);
+    // 🛡️ Privacy Layer: Sanitize output and hide 'code' if requester is not author
+    const processedResults = results.map(item => {
+        // Note: Relation might be populated or just an ID depending on query
+        const ownerId = item.user?.id || item.user;
+        const isOwner = loggedInUser && (ownerId === loggedInUser.id);
+        
+        // If not owner, hide sensitive fields
+        if (!isOwner) {
+            return {
+                ...item,
+                code: '/* Private Code */',
+                judgeOutput: { results: [] } 
+            };
+        }
+        return item;
+    });
+
+    const sanitizedResults = await this.sanitizeOutput(processedResults, ctx);
     return this.transformResponse(sanitizedResults, { pagination });
   },
 

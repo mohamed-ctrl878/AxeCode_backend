@@ -204,6 +204,9 @@
     },
     "last_decay_date": {
       "type": "datetime"
+    },
+    "bio": {
+      "type": "string"
     }
   }
 }

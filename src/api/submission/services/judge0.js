@@ -33,7 +33,12 @@ module.exports = ({ strapi }) => ({
         max_output_size: options.max_output_size,
       };
 
+      strapi.log.info(`[Judge0] Payload Prepared. Source Code length: ${sourceCode.length}`);
+      strapi.log.info(`[Judge0] Full Source Code:\n${sourceCode}`);
+
+
       const response = await axios.post(`${this.getBaseUrl()}/submissions?wait=true&base64_encoded=true`, payload);
+
       return response.data;
     } catch (error) {
       strapi.log.error(`[Judge0] Error (executeCode): ${error.message}`);
@@ -53,6 +58,13 @@ module.exports = ({ strapi }) => ({
           max_output_size: options.max_output_size,
         }))
       };
+
+      if (submissions.length > 0) {
+        strapi.log.info(`[Judge0] Executing Batch (${submissions.length} tasks). First Source Code length: ${submissions[0].sourceCode.length}`);
+        strapi.log.info(`[Judge0] Full Source Code (First Task):\n${submissions[0].sourceCode}`);
+        strapi.log.info(`[Judge0] Stdin (First Task):\n${submissions[0].stdin}`);
+      }
+
 
       const response = await axios.post(`${this.getBaseUrl()}/submissions/batch?base64_encoded=true`, payload);
       const tokens = response.data.map(r => r.token);
