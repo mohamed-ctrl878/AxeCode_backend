@@ -55,6 +55,15 @@
     },
     "docId": {
       "type": "string"
+    },
+    "review_status": {
+      "type": "enumeration",
+      "enum": [
+        "pending",
+        "resolved",
+        "dismissed"
+      ],
+      "default": "pending"
     }
   }
 }

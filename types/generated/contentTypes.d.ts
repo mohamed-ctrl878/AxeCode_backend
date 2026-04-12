@@ -1656,6 +1656,10 @@ export interface ApiReportReport extends Struct.CollectionTypeSchema {
       'oneToOne',
       'plugin::users-permissions.user'
     >;
+    review_status: Schema.Attribute.Enumeration<
+      ['pending', 'resolved', 'dismissed']
+    > &
+      Schema.Attribute.DefaultTo<'pending'>;
     screans: Schema.Attribute.Media<
       'images' | 'files' | 'videos' | 'audios',
       true
