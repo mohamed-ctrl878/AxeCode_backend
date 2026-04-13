@@ -11,6 +11,13 @@ const LANGUAGE_MAP = {
   'cpp': 54,      // C++ (GCC 9.2.0)
 };
 
+const JDOODLE_MAP = {
+  'javascript': { language: 'nodejs', versionIndex: '4' },
+  'python': { language: 'python3', versionIndex: '4' },
+  'java': { language: 'java', versionIndex: '4' },
+  'cpp': { language: 'cpp17', versionIndex: '1' },
+};
+
 const SUBMISSION_POPULATE = {
   problem: {
     populate: {
@@ -25,5 +32,6 @@ const SUBMISSION_POPULATE = {
 
 module.exports = {
   LANGUAGE_MAP,
+  JDOODLE_MAP,
   SUBMISSION_POPULATE,
 };

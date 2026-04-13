@@ -16,7 +16,7 @@ module.exports = ({ strapi }) => ({
     ctx.cookies.set('jwt', jwt, {
       httpOnly: true,
       secure: isProd,
-      sameSite: 'lax', // تم التغيير من strict لضمان عملها بين المنافذ المختلفة في التطوير
+      sameSite: 'strict', // تم التغيير من strict لضمان عملها بين المنافذ المختلفة في التطوير
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       path: '/',
       domain: domain || undefined,

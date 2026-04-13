@@ -14,10 +14,10 @@ module.exports = ({ strapi }) => ({
    */
   generateStreamMetadata() {
     const streamKey = crypto.randomBytes(16).toString('hex');
-    const hlsBase = process.env.MEDIAMTX_HLS_URL || 'http://localhost:8888';
+    const hlsBase = process.env.MEDIAMTX_HLS_URL;
     
-    // MediaMTX Default HLS structure: base_url/stream_key/index.m3u8
-    const playbackUrl = `${hlsBase}/${streamKey}/index.m3u8`;
+    // If no URL configured, return null for playback
+    const playbackUrl = hlsBase ? `${hlsBase}/${streamKey}/index.m3u8` : null;
 
     return {
       streamKey,
