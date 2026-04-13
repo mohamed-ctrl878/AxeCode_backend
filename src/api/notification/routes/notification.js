@@ -1,5 +1,3 @@
-const { factories } = require('@strapi/strapi');
-
 module.exports = {
   routes: [
     {
@@ -7,7 +5,9 @@ module.exports = {
       path: '/notifications/mine',
       handler: 'api::notification.notification.mine',
       config: {
-        auth: true,
+        // In Strapi 5, config.auth should be an object or omitted. 
+        // Setting it to an empty object enables default authentication.
+        auth: {},
       },
     },
     {
@@ -15,7 +15,7 @@ module.exports = {
       path: '/notifications/unread-count',
       handler: 'api::notification.notification.unreadCount',
       config: {
-        auth: true,
+        auth: {},
       },
     },
     {
@@ -23,7 +23,7 @@ module.exports = {
       path: '/notifications/:id/read',
       handler: 'api::notification.notification.read',
       config: {
-        auth: true,
+        auth: {},
       },
     },
     {
@@ -31,19 +31,24 @@ module.exports = {
       path: '/notifications/read-all',
       handler: 'api::notification.notification.readAll',
       config: {
-        auth: true,
+        auth: {},
       },
     },
-    // Core routes (if needed, though usually they are in a separate core router file)
     {
       method: 'GET',
       path: '/notifications',
       handler: 'api::notification.notification.find',
+      config: {
+        auth: {},
+      },
     },
     {
       method: 'GET',
       path: '/notifications/:id',
       handler: 'api::notification.notification.findOne',
+      config: {
+        auth: {},
+      },
     }
   ]
 };
