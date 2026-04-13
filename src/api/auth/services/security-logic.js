@@ -26,39 +26,40 @@ module.exports = ({ strapi }) => {
       strapi.log.debug(`[Security] Auth cookie set for user`);
     },
 
-  /**
-   * Clear authentication cookie
-   */
-  clearAuthCookie(ctx) {
-    ctx.cookies.set('jwt', null, {
-      httpOnly: true,
-      secure: isProd,
-      sameSite: isProd ? 'none' : 'lax',
-      maxAge: 0,
-      path: '/',
-      domain: domain || undefined,
-    });
+    /**
+     * Clear authentication cookie
+     */
+    clearAuthCookie(ctx) {
+      ctx.cookies.set('jwt', null, {
+        httpOnly: true,
+        secure: isProd,
+        sameSite: isProd ? 'none' : 'lax',
+        maxAge: 0,
+        path: '/',
+        domain: domain || undefined,
+      });
 
-    strapi.log.debug(`[Security] Auth cookie cleared`);
-  },
+      strapi.log.debug(`[Security] Auth cookie cleared`);
+    },
 
-  /**
-   * Issue a new JWT token for a user
-   */
-  issueToken(user) {
-    return strapi.plugins['users-permissions'].services.jwt.issue({
-      id: user.id,
-    });
-  },
+    /**
+     * Issue a new JWT token for a user
+     */
+    issueToken(user) {
+      return strapi.plugins['users-permissions'].services.jwt.issue({
+        id: user.id,
+      });
+    },
 
-  /**
-   * Verify a JWT token from cookie
-   */
-  async verifyToken(token) {
-    try {
-      return await strapi.plugins['users-permissions'].services.jwt.verify(token);
-    } catch (err) {
-      return null;
+    /**
+     * Verify a JWT token from cookie
+     */
+    async verifyToken(token) {
+      try {
+        return await strapi.plugins['users-permissions'].services.jwt.verify(token);
+      } catch (err) {
+        return null;
+      }
     }
   };
 };
