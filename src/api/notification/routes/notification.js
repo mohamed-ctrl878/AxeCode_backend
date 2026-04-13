@@ -1,40 +1,49 @@
+const { factories } = require('@strapi/strapi');
+
 module.exports = {
   routes: [
     {
       method: 'GET',
       path: '/notifications/mine',
-      handler: 'notification.mine',
+      handler: 'api::notification.notification.mine',
       config: {
-        policies: [],
-        middlewares: [],
+        auth: true,
       },
     },
     {
       method: 'GET',
       path: '/notifications/unread-count',
-      handler: 'notification.unreadCount',
+      handler: 'api::notification.notification.unreadCount',
       config: {
-        policies: [],
-        middlewares: [],
+        auth: true,
       },
     },
     {
       method: 'PATCH',
       path: '/notifications/:id/read',
-      handler: 'notification.read',
+      handler: 'api::notification.notification.read',
       config: {
-        policies: [],
-        middlewares: [],
+        auth: true,
       },
     },
     {
       method: 'PATCH',
       path: '/notifications/read-all',
-      handler: 'notification.readAll',
+      handler: 'api::notification.notification.readAll',
       config: {
-        policies: [],
-        middlewares: [],
+        auth: true,
       },
+    },
+    // Core routes (if needed, though usually they are in a separate core router file)
+    {
+      method: 'GET',
+      path: '/notifications',
+      handler: 'api::notification.notification.find',
+    },
+    {
+      method: 'GET',
+      path: '/notifications/:id',
+      handler: 'api::notification.notification.findOne',
     }
   ]
 };
