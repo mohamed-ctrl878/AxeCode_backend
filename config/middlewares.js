@@ -1,4 +1,4 @@
-module.exports = [
+module.exports = ({ env }) => [
   { name: "global::security-pipeline" },
   { name: "global::jwt-cookie" },
   "strapi::logger",
