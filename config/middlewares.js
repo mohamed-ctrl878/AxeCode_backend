@@ -21,7 +21,12 @@ module.exports = ({ env }) => [
   "strapi::poweredBy",
   "strapi::query",
   "strapi::body",
-  "strapi::session",
+  {
+    name: "strapi::session",
+    config: {
+      secure: false,
+    },
+  },
   "strapi::favicon",
   { name: "global::upload-guard" },
   "strapi::public",
