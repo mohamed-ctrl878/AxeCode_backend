@@ -26,6 +26,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Load Environment Secrets
+        run: cp $HOME/axecode-backend/.env.production .env.production
+
       - name: Verify .env.production exists
         run: |
           if [ ! -f .env.production ]; then
