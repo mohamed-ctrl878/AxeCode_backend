@@ -117,6 +117,22 @@ services:
         max-size: "50m"
         max-file: "3"
 
+  # ============================================
+  # Cloudflare Tunnel (Quick Tunnel Mode)
+  # ============================================
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: axe-cloudflared
+    restart: unless-stopped
+    command: tunnel --url http://axe-strapi:1338
+    networks:
+      - axe-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
 # ============================================
 # Persistent Volumes
 # ============================================
