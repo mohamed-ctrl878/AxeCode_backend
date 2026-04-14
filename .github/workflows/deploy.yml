@@ -37,6 +37,41 @@ jobs:
             exit 1
           fi
 
+      - name: Auto-patch missing secrets
+        run: |
+          # Helper to generate and replace secrets
+          patch_secret() {
+            local key=$1
+            if ! grep -q "^${key}=" .env.production || grep -q "^${key}=CHANGE_ME" .env.production || grep -q "^${key}=\s*$" .env.production; then
+              echo "  --> Patching: ${key}"
+              local new_val=$(openssl rand -base64 32 | tr -d '\n')
+              if grep -q "^${key}=" .env.production; then
+                sed -i "s|^${key}=.*|${key}=${new_val}|" .env.production
+              else
+                echo "${key}=${new_val}" >> .env.production
+              fi
+            fi
+          }
+
+          echo "🔍 Checking environment secrets..."
+          
+          # Special handling for APP_KEYS (comma separated)
+          if ! grep -q "^APP_KEYS=" .env.production || grep -q "CHANGE_ME" <<< "$(grep "^APP_KEYS=" .env.production)"; then
+            echo "  --> Patching: APP_KEYS"
+            K1=$(openssl rand -base64 16); K2=$(openssl rand -base64 16); K3=$(openssl rand -base64 16); K4=$(openssl rand -base64 16)
+            APP_VAL="${K1},${K2},${K3},${K4}"
+            sed -i "s|^APP_KEYS=.*|APP_KEYS=${APP_VAL}|" .env.production || echo "APP_KEYS=${APP_VAL}" >> .env.production
+          fi
+
+          patch_secret "API_TOKEN_SALT"
+          patch_secret "ADMIN_JWT_SECRET"
+          patch_secret "TRANSFER_TOKEN_SALT"
+          patch_secret "JWT_SECRET"
+
+          # Sync back to VM storage so it persists
+          cp .env.production $HOME/axecode-backend/.env.production
+          echo "✅ Secrets verified and patched."
+
       - name: Stop existing containers
         run: docker compose --env-file .env.production down --remove-orphans || true
 
