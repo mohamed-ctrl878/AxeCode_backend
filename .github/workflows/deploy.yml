@@ -38,13 +38,13 @@ jobs:
           fi
 
       - name: Stop existing containers
-        run: docker compose down --remove-orphans || true
+        run: docker compose --env-file .env.production down --remove-orphans || true
 
       - name: Build Docker image
-        run: docker compose build strapi
+        run: docker compose --env-file .env.production build strapi
 
       - name: Start all services
-        run: docker compose up -d
+        run: docker compose --env-file .env.production up -d
 
       - name: Wait for health check
         run: |
