@@ -111,7 +111,7 @@ module.exports = {
     // Initialize Socket.io
     const io = new Server(strapi.server.httpServer, {
       cors: {
-        origin:"http://192.168.1.5:5173" ,//|| process.env.FRONTEND_URL || 'http://localhost:5173'
+        origin: process.env.FRONTEND_URL || 'http://localhost:5173',
         methods: ['GET', 'POST'],
         credentials: true,
       },

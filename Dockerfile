@@ -1,5 +1,5 @@
 # ============================================
-# Stage 1: Install dependencies
+# Stage 1: Install production dependencies
 # ============================================
 FROM node:20-alpine AS deps
 
@@ -9,9 +9,8 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 
-RUN npm ci --only=production --ignore-scripts && \
-    npm rebuild bcrypt --build-from-source && \
-    npm rebuild better-sqlite3 --build-from-source
+RUN npm ci --omit=dev --ignore-scripts && \
+    npm rebuild bcrypt --build-from-source
 
 # ============================================
 # Stage 2: Build Strapi admin panel
@@ -24,8 +23,7 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts && \
-    npm rebuild bcrypt --build-from-source && \
-    npm rebuild better-sqlite3 --build-from-source
+    npm rebuild bcrypt --build-from-source
 
 COPY . .
 
@@ -48,8 +46,7 @@ WORKDIR /app
 # Copy production node_modules from deps stage
 COPY --from=deps /app/node_modules ./node_modules
 
-# Copy built admin panel and source code from builder stage
-COPY --from=builder /app/dist ./dist
+# Copy built admin panel from builder stage
 COPY --from=builder /app/build ./build
 COPY --from=builder /app/config ./config
 COPY --from=builder /app/src ./src
