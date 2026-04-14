@@ -1,0 +1,67 @@
+# ============================================================
+# AxeCode Backend - Auto Deploy via GitHub Self-Hosted Runner
+# ============================================================
+# This workflow runs ON the VM itself (self-hosted runner).
+# It triggers on push to main, pulls the latest code, builds
+# the Docker image locally, and restarts the services.
+#
+# SECURITY: Only triggers on push (NOT pull_request) because
+# the repo is public and we don't want untrusted code running
+# on our server.
+# ============================================================
+
+name: Deploy Backend to VM
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # Allow manual trigger from GitHub UI
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Verify .env.production exists
+        run: |
+          if [ ! -f .env.production ]; then
+            echo "❌ ERROR: .env.production not found!"
+            echo "Please create it from .env.production.example"
+            exit 1
+          fi
+
+      - name: Stop existing containers
+        run: docker compose down --remove-orphans || true
+
+      - name: Build Docker image
+        run: docker compose build --no-cache strapi
+
+      - name: Start all services
+        run: docker compose up -d
+
+      - name: Wait for health check
+        run: |
+          echo "⏳ Waiting for Strapi to start (up to 120s)..."
+          for i in $(seq 1 24); do
+            if curl -sf http://localhost:1338/_health > /dev/null 2>&1; then
+              echo "✅ Strapi is healthy!"
+              exit 0
+            fi
+            echo "  Attempt $i/24 - waiting 5s..."
+            sleep 5
+          done
+          echo "❌ Strapi failed to start within 120s"
+          docker compose logs strapi --tail 50
+          exit 1
+
+      - name: Show running containers
+        if: always()
+        run: docker compose ps
+
+      - name: Cleanup old Docker images
+        if: success()
+        run: docker image prune -f

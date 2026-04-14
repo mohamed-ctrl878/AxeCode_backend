@@ -1,25 +1,113 @@
-version: "3.8"
-
 services:
+  # ============================================
+  # Strapi Backend
+  # ============================================
+  strapi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: axe-strapi
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      - NODE_ENV=production
+      - DATABASE_CLIENT=postgres
+      - DATABASE_HOST=db
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=axecode
+      - DATABASE_USERNAME=axecode
+      - DATABASE_SSL=false
+    ports:
+      - "1338:1338"
+    volumes:
+      - strapi-uploads:/app/public/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - axe-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:1338/_health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  # ============================================
+  # PostgreSQL Database
+  # ============================================
+  db:
+    image: postgres:16-alpine
+    container_name: axe-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=axecode
+      - POSTGRES_USER=axecode
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - axe-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U axecode -d axecode"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  # ============================================
+  # MediaMTX Streaming Server
+  # ============================================
   mediamtx:
     image: bluenviron/mediamtx:latest
     container_name: axe-media-server
+    restart: unless-stopped
     ports:
-      - "1935:1935"   # RTMP ingest (OBS streaming)
-      - "8888:8888"   # HLS playback
-      - "8554:8554"   # RTSP (optional)
-      - "8889:8889"   # WebRTC (optional)
-      - "8890:8890"   # SRT (optional)
-      - "9997:9997"   # API for monitoring
+      - "1935:1935"
+      - "8888:8888"
+      - "8554:8554"
+      - "8889:8889"
+      - "8890:8890"
+      - "9997:9997"
     volumes:
       - ./mediamtx.yml:/mediamtx.yml
-      - ./recordings:/recordings
+      - media-recordings:/recordings
     environment:
       - MTX_PROTOCOLS=tcp
-    restart: unless-stopped
     networks:
       - axe-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
 
+# ============================================
+# Persistent Volumes
+# ============================================
+volumes:
+  postgres-data:
+    driver: local
+  strapi-uploads:
+    driver: local
+  media-recordings:
+    driver: local
+
+# ============================================
+# Network
+# ============================================
 networks:
   axe-network:
     driver: bridge
