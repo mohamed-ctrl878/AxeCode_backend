@@ -17,6 +17,7 @@ services:
       - DATABASE_NAME=axecode
       - DATABASE_USERNAME=axecode
       - DATABASE_SSL=false
+      - PUBLIC_URL=https://axecode.duckdns.org
     ports:
       - "1338:1338"
     volumes:
@@ -94,6 +95,28 @@ services:
         max-size: "50m"
         max-file: "3"
 
+  # ============================================
+  # Nginx Proxy Manager (SSL & Proxy)
+  # ============================================
+  nginx-proxy-manager:
+    image: 'jc21/nginx-proxy-manager:latest'
+    container_name: axe-nginx-proxy
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '81:81'
+      - '443:443'
+    volumes:
+      - npm-data:/data
+      - npm-letsencrypt:/etc/letsencrypt
+    networks:
+      - axe-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
 # ============================================
 # Persistent Volumes
 # ============================================
@@ -103,6 +126,10 @@ volumes:
   strapi-uploads:
     driver: local
   media-recordings:
+    driver: local
+  npm-data:
+    driver: local
+  npm-letsencrypt:
     driver: local
 
 # ============================================
