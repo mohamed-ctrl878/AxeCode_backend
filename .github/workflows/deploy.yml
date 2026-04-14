@@ -63,7 +63,7 @@ jobs:
 
       - name: Show running containers
         if: always()
-        run: docker compose ps
+        run: docker compose --env-file .env.production ps
 
       - name: Cleanup old Docker images
         if: success()
