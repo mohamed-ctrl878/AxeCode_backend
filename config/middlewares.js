@@ -14,6 +14,7 @@ module.exports = ({ env }) => [
         "https://axe-code.vercel.app",
         env("CORS_ORIGIN", "*"),
       ],
+      headers: ["Content-Type", "Authorization", "Origin", "Accept", "cf-no-browser-warning"],
       credentials: true,
     },
   },
