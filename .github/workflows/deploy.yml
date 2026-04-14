@@ -81,6 +81,26 @@ jobs:
       - name: Start all services
         run: docker compose --env-file .env.production up -d
 
+      - name: Auto-update PUBLIC_URL from Cloudflare Tunnel
+        run: |
+          echo "⏳ Waiting for Cloudflare Tunnel to generate URL..."
+          sleep 15
+          TUNNEL_URL=$(docker compose --env-file .env.production logs cloudflared | grep -o 'https://[a-zA-Z0-9.-]*\.trycloudflare\.com' | head -n 1)
+          
+          if [ -n "$TUNNEL_URL" ]; then
+            echo "🚀 Found Tunnel URL: $TUNNEL_URL"
+            if grep -q "^PUBLIC_URL=" .env.production; then
+              sed -i "s|^PUBLIC_URL=.*|PUBLIC_URL=${TUNNEL_URL}|" .env.production
+            else
+              echo "PUBLIC_URL=${TUNNEL_URL}" >> .env.production
+            fi
+            cp .env.production $HOME/axecode-backend/.env.production
+            echo "♻️ Recreating Strapi with new PUBLIC_URL..."
+            docker compose --env-file .env.production up -d --force-recreate strapi
+          else
+            echo "⚠️ Could not find Cloudflare Tunnel URL in logs."
+          fi
+
       - name: Wait for health check
         run: |
           echo "⏳ Waiting for Strapi to start (up to 120s)..."
