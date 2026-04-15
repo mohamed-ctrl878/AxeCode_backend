@@ -120,6 +120,12 @@ jobs:
         if: always()
         run: docker compose --env-file .env.production ps
 
-      - name: Cleanup old Docker images
+      - name: Cleanup old Docker images & build cache
         if: success()
-        run: docker image prune -f
+        run: |
+          echo "🧹 Cleaning unused Docker images, containers, and networks..."
+          docker system prune -af
+          echo "🧹 Cleaning Docker build cache..."
+          docker builder prune -af
+          echo "📊 Current Docker disk usage:"
+          docker system df
