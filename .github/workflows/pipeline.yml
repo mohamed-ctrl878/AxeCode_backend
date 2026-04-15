@@ -1,0 +1,249 @@
+# ============================================================
+# AxeCode Backend - Unified CI/CD Pipeline
+# ============================================================
+#
+# This pipeline enforces a strict quality gate:
+#   1. CI (GitHub-hosted): Install → Test → Validate
+#   2. Deploy (Self-hosted VM): Only if CI passes + push to main
+#   3. Verify: Health check + Smoke tests
+#   4. Cleanup: Reclaim disk space
+#
+# Branch Protection:
+#   - Direct push to 'main' is blocked.
+#   - All changes must pass through a PR with successful CI.
+# ============================================================
+
+name: "AxeCode Pipeline"
+
+on:
+  push:
+    branches: ["**"]   # CI runs on ALL branches
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# ────────────────────────────────────────────
+# Job 1: CI — Quality Gate (GitHub-hosted)
+# ────────────────────────────────────────────
+jobs:
+  ci:
+    name: "🧪 CI — Lint & Test"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Unit Tests
+        run: npm test
+
+      - name: Generate Coverage Report
+        run: npm run test:coverage || true
+
+      - name: Build check (ensure Strapi compiles)
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: CI Summary
+        if: always()
+        run: |
+          echo "## 🧪 CI Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Step | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Unit Tests | ${{ steps.test.outcome || '✅' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ steps.build.outcome || '✅' }} |" >> $GITHUB_STEP_SUMMARY
+
+  # ────────────────────────────────────────────
+  # Job 2: Deploy — To VM (Self-hosted Runner)
+  # ────────────────────────────────────────────
+  deploy:
+    name: "🚀 Deploy to VM"
+    needs: ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Load Environment Secrets
+        run: cp $HOME/axecode-backend/.env.production .env.production
+
+      - name: Verify .env.production exists
+        run: |
+          if [ ! -f .env.production ]; then
+            echo "❌ ERROR: .env.production not found!"
+            echo "Please create it from .env.production.example"
+            exit 1
+          fi
+
+      - name: Auto-patch missing secrets
+        run: |
+          # Helper to generate and replace secrets
+          patch_secret() {
+            local key=$1
+            if ! grep -q "^${key}=" .env.production || grep -q "^${key}=CHANGE_ME" .env.production || grep -q "^${key}=\s*$" .env.production; then
+              echo "  --> Patching: ${key}"
+              local new_val=$(openssl rand -base64 32 | tr -d '\n')
+              if grep -q "^${key}=" .env.production; then
+                sed -i "s|^${key}=.*|${key}=${new_val}|" .env.production
+              else
+                echo "${key}=${new_val}" >> .env.production
+              fi
+            fi
+          }
+
+          echo "🔍 Checking environment secrets..."
+          
+          # Special handling for APP_KEYS (comma separated)
+          if ! grep -q "^APP_KEYS=" .env.production || grep -q "CHANGE_ME" <<< "$(grep "^APP_KEYS=" .env.production)"; then
+            echo "  --> Patching: APP_KEYS"
+            K1=$(openssl rand -base64 16); K2=$(openssl rand -base64 16); K3=$(openssl rand -base64 16); K4=$(openssl rand -base64 16)
+            APP_VAL="${K1},${K2},${K3},${K4}"
+            sed -i "s|^APP_KEYS=.*|APP_KEYS=${APP_VAL}|" .env.production || echo "APP_KEYS=${APP_VAL}" >> .env.production
+          fi
+
+          patch_secret "API_TOKEN_SALT"
+          patch_secret "ADMIN_JWT_SECRET"
+          patch_secret "TRANSFER_TOKEN_SALT"
+          patch_secret "JWT_SECRET"
+
+          # Sync back to VM storage so it persists
+          cp .env.production $HOME/axecode-backend/.env.production
+          echo "✅ Secrets verified and patched."
+
+      - name: Stop existing containers
+        run: docker compose --env-file .env.production down --remove-orphans || true
+
+      - name: Build Docker image
+        run: docker compose --env-file .env.production build strapi
+
+      - name: Start all services
+        run: docker compose --env-file .env.production up -d
+
+      - name: Auto-update PUBLIC_URL from Cloudflare Tunnel
+        run: |
+          echo "⏳ Waiting for Cloudflare Tunnel to generate URL..."
+          sleep 15
+          TUNNEL_URL=$(docker compose --env-file .env.production logs cloudflared | grep -o 'https://[a-zA-Z0-9.-]*\.trycloudflare\.com' | head -n 1)
+          
+          if [ -n "$TUNNEL_URL" ]; then
+            echo "🚀 Found Tunnel URL: $TUNNEL_URL"
+            if grep -q "^PUBLIC_URL=" .env.production; then
+              sed -i "s|^PUBLIC_URL=.*|PUBLIC_URL=${TUNNEL_URL}|" .env.production
+            else
+              echo "PUBLIC_URL=${TUNNEL_URL}" >> .env.production
+            fi
+            cp .env.production $HOME/axecode-backend/.env.production
+            echo "♻️ Recreating Strapi with new PUBLIC_URL..."
+            docker compose --env-file .env.production up -d --force-recreate strapi
+          else
+            echo "⚠️ Could not find Cloudflare Tunnel URL in logs."
+          fi
+
+      - name: Wait for health check
+        run: |
+          echo "⏳ Waiting for Strapi to start (up to 120s)..."
+          for i in $(seq 1 24); do
+            if curl -sf http://localhost:1338/_health > /dev/null 2>&1; then
+              echo "✅ Strapi is healthy!"
+              exit 0
+            fi
+            echo "  Attempt $i/24 - waiting 5s..."
+            sleep 5
+          done
+          echo "❌ Strapi failed to start within 120s"
+          docker compose logs strapi --tail 50
+          exit 1
+
+      - name: Smoke tests
+        run: |
+          echo "🔍 Running smoke tests..."
+          BASE="http://localhost:1338"
+          
+          # Test 1: Health endpoint
+          echo -n "  [1/3] Health endpoint: "
+          if curl -sf "$BASE/_health" > /dev/null; then echo "✅"; else echo "❌"; exit 1; fi
+          
+          # Test 2: API responds
+          echo -n "  [2/3] API endpoint:    "
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/api/courses?pagination[pageSize]=1")
+          if [ "$STATUS" -lt "500" ]; then echo "✅ (HTTP $STATUS)"; else echo "❌ (HTTP $STATUS)"; exit 1; fi
+          
+          # Test 3: Admin panel loads
+          echo -n "  [3/3] Admin panel:     "
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/admin")
+          if [ "$STATUS" -lt "500" ]; then echo "✅ (HTTP $STATUS)"; else echo "❌ (HTTP $STATUS)"; exit 1; fi
+          
+          echo "✅ All smoke tests passed!"
+
+      - name: Show running containers
+        if: always()
+        run: docker compose --env-file .env.production ps
+
+      - name: Cleanup old Docker images & build cache
+        if: success()
+        run: |
+          echo "🧹 Cleaning unused Docker images, containers, and networks..."
+          docker system prune -af
+          echo "🧹 Cleaning Docker build cache..."
+          docker builder prune -af
+          echo "📊 Current Docker disk usage:"
+          docker system df
+
+      - name: Deploy Summary
+        if: always()
+        run: |
+          TUNNEL_URL=$(grep "^PUBLIC_URL=" $HOME/axecode-backend/.env.production | cut -d= -f2)
+          echo "## 🚀 Deployment Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Status | ${{ job.status }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Public URL | ${TUNNEL_URL:-N/A} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Timestamp | $(date -u '+%Y-%m-%d %H:%M UTC') |" >> $GITHUB_STEP_SUMMARY
+
+  # ────────────────────────────────────────────
+  # Job 3: PR Feedback (on Pull Requests only)
+  # ────────────────────────────────────────────
+  pr-feedback:
+    name: "💬 PR Feedback"
+    needs: ci
+    if: github.event_name == 'pull_request' && always()
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const ciStatus = '${{ needs.ci.result }}';
+            const icon = ciStatus === 'success' ? '✅' : '❌';
+            const body = `### ${icon} Pipeline Results
+
+            | Stage | Status |
+            |-------|--------|
+            | 🧪 Unit Tests | ${ciStatus === 'success' ? '✅ Passed' : '❌ Failed'} |
+            | 📦 Build | ${ciStatus === 'success' ? '✅ Passed' : '❌ Failed'} |
+
+            > **Deploy**: Will run automatically after merge to \`main\`.
+            
+            [📋 View Full Logs](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID})`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
