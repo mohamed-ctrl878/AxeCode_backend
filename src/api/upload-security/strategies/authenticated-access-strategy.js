@@ -22,9 +22,10 @@ function createAuthenticatedAccessStrategy() {
    * @returns {Promise<boolean>}
    */
   return async function authenticatedAccessStrategy(_documentId, userId) {
-    // تم تحويل هذه الاستراتيجية للسماح بالوصول العام (userId قد يكون null)
-    // لأن وسم <img> لا يرسل Token. الأمان يعتمد الآن على كون الملف مربوطاً بمحتوى صالح.
-    return true;
+    // We require a valid userId for this strategy.
+    // Logic for public/guest access should be handled by specific strategies (e.g. lesson-access) 
+    // or by checking content sensitivity.
+    return !!userId;
   };
 }
 

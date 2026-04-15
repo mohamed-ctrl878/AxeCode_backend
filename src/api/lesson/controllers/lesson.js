@@ -35,6 +35,10 @@ module.exports = createCoreController('api::lesson.lesson', ({ strapi }) => ({
 
   // GET /lessons - جلب الدروس المتاحة للمستخدم (صاحب الدرس، محتوى مجاني، أو مشترك في الكورس)
   async find(ctx) {
+    if (!ctx.state.user) {
+      return ctx.forbidden('Direct access to lessons is not allowed. Please access lessons through the course endpoint.');
+    }
+
     const user = ctx.state.user;
     const userId = user?.id || null;
     const userDocId = user?.documentId || null;
@@ -60,10 +64,11 @@ module.exports = createCoreController('api::lesson.lesson', ({ strapi }) => ({
           filters: {
             users_permissions_user: { id: userId },
             content_types: 'course',
-            valid: 'successed'
+            status: 'successed'
           },
           fields: ['productId']
         });
+
 
         const productIds = registrations.map(r => r.productId).filter(Boolean);
         
@@ -116,6 +121,10 @@ module.exports = createCoreController('api::lesson.lesson', ({ strapi }) => ({
 
   // GET /lessons/:id - الحصول على درس واحد بناءً على الصلاحيات
   async findOne(ctx) {
+    if (!ctx.state.user) {
+      return ctx.forbidden('Direct access to lessons is not allowed. Please access lessons through the course endpoint.');
+    }
+
     const user = ctx.state.user;
     const { id } = ctx.params;
     const userId = user?.id || null;

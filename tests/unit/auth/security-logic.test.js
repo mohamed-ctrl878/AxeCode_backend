@@ -7,27 +7,42 @@ const securityLogic = logicFactory({ strapi: strapiMock });
 
 describe('SecurityLogic Service', () => {
   describe('setAuthCookie', () => {
-    it('should call ctx.cookies.set with correct options', () => {
+    it('should set Set-Cookie header with correct options', () => {
       const mockSet = vi.fn();
-      const ctx = { cookies: { set: mockSet }, log: strapiMock.log };
+      const ctx = { 
+        set: mockSet, 
+        response: { get: vi.fn().mockReturnValue([]) },
+        log: strapiMock.log 
+      };
       
       securityLogic.setAuthCookie(ctx, 'fake-jwt');
       
-      expect(mockSet).toHaveBeenCalledWith('jwt', 'fake-jwt', expect.objectContaining({
-        httpOnly: true,
-        path: '/'
-      }));
+      expect(mockSet).toHaveBeenCalledWith('Set-Cookie', expect.arrayContaining([
+        expect.stringContaining('jwt=fake-jwt'),
+        expect.stringContaining('HttpOnly'),
+        expect.stringContaining('Path=/')
+      ]));
     });
-    it('should include domain in cookie options if COOKIE_DOMAIN is set', () => {
+
+    it('should include domain in cookie if COOKIE_DOMAIN is set', () => {
       process.env.COOKIE_DOMAIN = 'example.com';
+      // Re-initialize logic to pick up env change if needed, 
+      // though the service currently captures it at factory level.
+      // For the test, we might need a fresh instance if it doesn't pick up process.env dynamically.
+      const freshLogic = logicFactory({ strapi: strapiMock });
+      
       const mockSet = vi.fn();
-      const ctx = { cookies: { set: mockSet }, log: strapiMock.log };
+      const ctx = { 
+        set: mockSet, 
+        response: { get: vi.fn().mockReturnValue([]) },
+        log: strapiMock.log 
+      };
       
-      securityLogic.setAuthCookie(ctx, 'fake-jwt');
+      freshLogic.setAuthCookie(ctx, 'fake-jwt');
       
-      expect(mockSet).toHaveBeenCalledWith('jwt', 'fake-jwt', expect.objectContaining({
-        domain: 'example.com'
-      }));
+      expect(mockSet).toHaveBeenCalledWith('Set-Cookie', expect.arrayContaining([
+        expect.stringContaining('Domain=example.com')
+      ]));
       delete process.env.COOKIE_DOMAIN;
     });
   });
@@ -35,13 +50,18 @@ describe('SecurityLogic Service', () => {
   describe('clearAuthCookie', () => {
     it('should set maxAge to 0 to clear cookie', () => {
         const mockSet = vi.fn();
-        const ctx = { cookies: { set: mockSet }, log: strapiMock.log };
+        const ctx = { 
+          set: mockSet, 
+          response: { get: vi.fn().mockReturnValue([]) },
+          log: strapiMock.log 
+        };
         
         securityLogic.clearAuthCookie(ctx);
         
-        expect(mockSet).toHaveBeenCalledWith('jwt', null, expect.objectContaining({
-          maxAge: 0
-        }));
+        expect(mockSet).toHaveBeenCalledWith('Set-Cookie', expect.arrayContaining([
+          expect.stringContaining('jwt=;'),
+          expect.stringContaining('Max-Age=0')
+        ]));
     });
   });
 

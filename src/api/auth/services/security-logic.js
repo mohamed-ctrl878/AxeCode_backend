@@ -41,10 +41,12 @@ module.exports = ({ strapi }) => {
       });
 
       // Append to existing Set-Cookie headers (don't overwrite)
-      const existing = ctx.response.get('Set-Cookie') || [];
+      const existing = ctx.response?.get ? ctx.response.get('Set-Cookie') : [];
+
       const headers = Array.isArray(existing) ? existing : (existing ? [existing] : []);
       headers.push(cookieStr);
-      ctx.set('Set-Cookie', headers);
+      if (ctx.set) ctx.set('Set-Cookie', headers);
+
 
       strapi.log.debug(`[Security] Auth cookie set for user`);
     },
@@ -62,10 +64,12 @@ module.exports = ({ strapi }) => {
         domain: domain || undefined,
       });
 
-      const existing = ctx.response.get('Set-Cookie') || [];
+      const existing = ctx.response?.get ? ctx.response.get('Set-Cookie') : [];
+
       const headers = Array.isArray(existing) ? existing : (existing ? [existing] : []);
       headers.push(cookieStr);
-      ctx.set('Set-Cookie', headers);
+      if (ctx.set) ctx.set('Set-Cookie', headers);
+
 
       strapi.log.debug(`[Security] Auth cookie cleared`);
     },
@@ -82,12 +86,13 @@ module.exports = ({ strapi }) => {
     /**
      * Verify a JWT token from cookie
      */
-    async verifyToken(token) {
+    verifyToken(token) {
       try {
-        return await strapi.plugins['users-permissions'].services.jwt.verify(token);
+        return strapi.plugins['users-permissions'].services.jwt.verify(token);
       } catch (err) {
         return null;
       }
     }
+
   };
 };

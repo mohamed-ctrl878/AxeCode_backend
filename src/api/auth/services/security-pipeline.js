@@ -137,8 +137,9 @@ module.exports = ({ strapi }) => ({
       let token = ctx.cookies.get('jwt');
       console.log("[SECURITY DEBUG] Cookie JWT present:", !!token);
 
-      if (!token && ctx.request.header.authorization) {
+      if (!token && ctx.request?.header?.authorization) {
         const parts = ctx.request.header.authorization.split(' ');
+
         if (parts.length === 2 && parts[0].toLowerCase() === 'bearer') {
           token = parts[1];
           console.log("[SECURITY DEBUG] Token extracted from Header");
@@ -150,7 +151,8 @@ module.exports = ({ strapi }) => ({
         return;
       }
 
-      const payload = await securityLogic.verifyToken(token);
+      const payload = securityLogic.verifyToken(token);
+
       console.log("[SECURITY DEBUG] Payload verified:", !!payload);
 
       if (!payload || !payload.id) {

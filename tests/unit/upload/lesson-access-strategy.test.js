@@ -10,6 +10,9 @@ function createMockStrapi(queryResult = null) {
         findOne: vi.fn().mockResolvedValue(queryResult),
       })),
     },
+    service: vi.fn().mockReturnValue({
+      getFullDetails: vi.fn().mockResolvedValue({ hasAccess: false })
+    }),
   };
 }
 

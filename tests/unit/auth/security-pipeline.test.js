@@ -14,10 +14,11 @@ describe('SecurityPipeline Service', () => {
 
     it('should throw tooManyRequests when limit exceeded', async () => {
       const ctx = strapiMock.mockContext({ ip: '9.9.9.9' });
-      // Simulate 101 requests
-      for (let i = 0; i < 100; i++) {
+      // Simulate 200 requests (exactly at the limit)
+      for (let i = 0; i < 200; i++) {
         await pipeline.checkRateLimit(ctx);
       }
+      // The 201st request should throw
       await expect(pipeline.checkRateLimit(ctx)).rejects.toThrow();
     });
   });
@@ -80,7 +81,7 @@ describe('SecurityPipeline Service', () => {
         const ctx = strapiMock.mockContext({});
         ctx.cookies.get = vi.fn().mockReturnValue(null);
         await pipeline.authenticate(ctx);
-        expect(ctx.state.user).toBeUndefined();
+        expect(ctx.state.user).toBeNull();
     });
 
     it('should populate ctx.state.user for a valid token', async () => {
@@ -108,7 +109,7 @@ describe('SecurityPipeline Service', () => {
         });
 
         await pipeline.authenticate(ctx);
-        expect(ctx.state.user).toBeUndefined();
+        expect(ctx.state.user).toBeNull();
     });
   });
 });

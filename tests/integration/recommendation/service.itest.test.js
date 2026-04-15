@@ -44,7 +44,7 @@ describe("Recommendation Service - Integration Tests (iTest)", () => {
 
     describe("updateUserInterests", () => {
         it("should orchestrate content fetch and user update", async () => {
-            const docFindOneSpy = vi.spyOn(strapi.documents("api::article.article"), "findOne")
+            const docFindOneSpy = vi.spyOn(strapi.db.query("api::article.article"), "findOne")
                 .mockResolvedValue({ documentId: "art1", tags: ["tech"], engagement_score: 10 });
 
             const userUpdateSpy = vi.spyOn(strapi.db.query("plugin::users-permissions.user"), "update");

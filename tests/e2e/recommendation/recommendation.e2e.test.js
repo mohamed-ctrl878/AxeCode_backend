@@ -45,7 +45,7 @@ describe("Recommendation API - End-to-End (E2E) Flow Simulation", () => {
             const result = await controller.getFeed(ctx);
 
             expect(strapi.service("api::recommendation.recommendation").getFeed)
-                .toHaveBeenCalledWith(user, 5, undefined);
+                .toHaveBeenCalledWith(user, 5, undefined, []);
             expect(result).toHaveProperty("data");
         });
     });
@@ -58,7 +58,7 @@ describe("Recommendation API - End-to-End (E2E) Flow Simulation", () => {
             await controller.getArticles(ctx);
 
             expect(strapi.service("api::recommendation.recommendation").getFeed)
-                .toHaveBeenCalledWith(user, 20, "article");
+                .toHaveBeenCalledWith(user, 20, "article", []);
         });
     });
 

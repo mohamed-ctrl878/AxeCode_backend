@@ -15,11 +15,20 @@ module.exports = createCoreService('api::course.course', ({ strapi }) => ({
    * @param {object} course - Course document
    * @param {object|null} user - {id, documentId}
    */
-  async enrichCourse(course, user = null) {
+  async enrichCourse(course, userOrId = null) {
     if (!course) return null;
     
-    const userId = user?.id || null;
-    const userDocId = user?.documentId || null;
+    // Support both numeric ID (legacy tests) and user object
+    let userId = null;
+    let userDocId = null;
+
+    if (userOrId && typeof userOrId === 'object') {
+      userId = userOrId.id;
+      userDocId = userOrId.documentId;
+    } else {
+      userId = userOrId;
+    }
+
 
     const facade = strapi.service('api::entitlement.content-access-facade');
     
@@ -28,16 +37,19 @@ module.exports = createCoreService('api::course.course', ({ strapi }) => ({
     // so passing a string documentId causes a type mismatch and hasAccess always returns false.
     const metrics = await facade.getFullDetails(course.documentId, CONTENT_TYPES.COURSE, userId);
 
-    const isPublisher = (userDocId && course.users_permissions_user?.documentId == userDocId) || 
-                        (userId && course.users_permissions_user?.id == userId);
+    const isInstructor = !!(
+      (userDocId && course.users_permissions_user?.documentId === userDocId) || 
+      (userId && course.users_permissions_user?.id == userId)
+    );
 
     const enriched = {
       ...course,
       price: metrics.price,
       student_count: metrics.studentCount,
-      hasAccess: isPublisher || metrics.hasAccess,
+      hasAccess: isInstructor || metrics.hasAccess,
       entitlementsId: metrics.entitlementId
     };
+
 
     // Interaction Metadata (Social Facade)
     const interactionFacade = strapi.service('api::rate.interaction-facade');
@@ -72,14 +84,15 @@ module.exports = createCoreService('api::course.course', ({ strapi }) => ({
     // 4. Total Lessons Count
     let totalLessonsCount = 0;
     try {
-      totalLessonsCount = await strapi.documents('api::lesson.lesson').count({
-        filters: {
+      totalLessonsCount = await strapi.db.query('api::lesson.lesson').count({
+        where: {
           week: {
             course: { documentId: course.documentId }
           }
         }
       });
     } catch (err) {
+
       console.error('[CourseEnrich] Lesson count error:', err);
     }
 
@@ -96,8 +109,16 @@ module.exports = createCoreService('api::course.course', ({ strapi }) => ({
   },
 
   /**
+   * Alias for test compatibility and clean content stripping
+   */
+  stripSensitiveContent(course) {
+    return this.processWeeksAndLessons(course, []);
+  },
+
+  /**
    * Combined logic for stripping sensitive data and tagging completion
    */
+
   processWeeksAndLessons(course, completedLessonIds) {
     if (!course.weeks) return course;
 

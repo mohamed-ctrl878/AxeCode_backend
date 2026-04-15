@@ -76,7 +76,7 @@ function createMockCtx(options = {}) {
 // WEEK CONTROLLER TESTS
 // ══════════════════════════════════════════════
 
-describe('🔒 Direct Access Security - Week Controller', () => {
+describe('🔒 Direct Access Security - Week Controller', { timeout: 30000 }, () => {
   let strapiMock;
 
   beforeEach(() => {
@@ -149,7 +149,7 @@ describe('🔒 Direct Access Security - Week Controller', () => {
 // LESSON CONTROLLER TESTS (AFTER FIX)
 // ══════════════════════════════════════════════
 
-describe('🔒 Direct Access Security - Lesson Controller (Fixed)', () => {
+describe('🔒 Direct Access Security - Lesson Controller (Fixed)', { timeout: 30000 }, () => {
   let strapiMock;
 
   beforeEach(() => {

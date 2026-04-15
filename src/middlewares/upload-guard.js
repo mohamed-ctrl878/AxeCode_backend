@@ -41,10 +41,19 @@ module.exports = (config, { strapi }) => {
           populate: ['owner', 'related'],
         });
 
-        // 2. If the file is not in managed by Strapi (e.g. static asset in public/uploads), 
-        // we might choose to allow it or block it. For now, we only protect DB-tracked files.
+        // 2. Security Policy:
+        // All files in /uploads/ must be managed by Strapi's database.
+        // If a file exists on disk but not in the DB, it's considered unmanaged/orphaned and blocked by default.
         if (!file) {
-          return next();
+          ctx.status = 403;
+          ctx.body = {
+            error: {
+              status: 403,
+              name: 'ForbiddenError',
+              message: 'You do not have permission to access this file directly.',
+            },
+          };
+          return;
         }
 
         // 3. Use the centralized access service to check permissions

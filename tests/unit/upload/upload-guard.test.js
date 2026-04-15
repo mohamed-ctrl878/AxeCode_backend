@@ -13,10 +13,35 @@ describe('Upload Guard Middleware', () => {
       url,
       status: 200,
       body: null,
+      cookies: {
+        get: vi.fn().mockReturnValue(null)
+      },
+      request: {
+        header: {}
+      }
     };
+
   }
 
-  const mockStrapi = { log: { info: vi.fn() } };
+  const mockStrapi = { 
+    log: { info: vi.fn(), error: vi.fn() },
+    db: { 
+      query: vi.fn().mockReturnValue({
+        findOne: vi.fn().mockResolvedValue(null) // Default: file not managed by DB
+      })
+    },
+    service: vi.fn().mockReturnValue({
+      canAccess: vi.fn().mockResolvedValue(false)
+    }),
+    plugins: {
+      'users-permissions': {
+        services: {
+          jwt: { verify: vi.fn().mockResolvedValue({ id: 1 }) }
+        }
+      }
+    }
+  };
+
   const next = vi.fn();
 
   it('should block direct access to /uploads/ path', async () => {
@@ -80,7 +105,8 @@ describe('Upload Guard Middleware', () => {
       error: {
         status: 403,
         name: 'ForbiddenError',
-        message: 'Direct file access is not allowed. Use /api/upload/files/:id instead.',
+        message: 'You do not have permission to access this file directly.',
+
       },
     });
   });
