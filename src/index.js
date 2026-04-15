@@ -111,7 +111,10 @@ module.exports = {
     // Initialize Socket.io
     const io = new Server(strapi.server.httpServer, {
       cors: {
-        origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+        origin: [
+          'https://axe-code.vercel.app',
+          process.env.FRONTEND_URL || 'http://localhost:5173',
+        ].filter(Boolean),
         methods: ['GET', 'POST'],
         credentials: true,
       },
