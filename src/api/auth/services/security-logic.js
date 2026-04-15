@@ -17,6 +17,7 @@ module.exports = ({ strapi }) => {
       ctx.cookies.set('jwt', jwt, {
         httpOnly: true,
         secure: isProd,
+        secureProxy: isProd, // Bypasses Koa unencrypted check behind proxies
         sameSite: isProd ? 'none' : 'lax', // 'none' required for cross-domain Vercel -> Strapi Cloud
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
         path: '/',
@@ -33,6 +34,7 @@ module.exports = ({ strapi }) => {
       ctx.cookies.set('jwt', null, {
         httpOnly: true,
         secure: isProd,
+        secureProxy: isProd, // Bypasses Koa unencrypted check behind proxies
         sameSite: isProd ? 'none' : 'lax',
         maxAge: 0,
         path: '/',
