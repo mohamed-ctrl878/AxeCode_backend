@@ -177,7 +177,7 @@ jobs:
           
           # Test 2: API responds
           echo -n "  [2/3] API endpoint:    "
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/api/courses?pagination[pageSize]=1")
+          STATUS=$(curl -sg -o /dev/null -w "%{http_code}" "$BASE/api/courses?pagination[pageSize]=1")
           if [ "$STATUS" -lt "500" ]; then echo "✅ (HTTP $STATUS)"; else echo "❌ (HTTP $STATUS)"; exit 1; fi
           
           # Test 3: Admin panel loads
