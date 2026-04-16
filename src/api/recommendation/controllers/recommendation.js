@@ -34,7 +34,8 @@ module.exports = createCoreController("api::recommendation.recommendation", ({ s
         user,
         limit ? parseInt(String(limit), 10) : 20,
         type,
-        excludeIdsArray
+        excludeIdsArray,
+        query.populate
       );
     }
     return { data: feed };
@@ -76,7 +77,8 @@ module.exports = createCoreController("api::recommendation.recommendation", ({ s
         user,
         limit ? parseInt(String(limit), 10) : 20,
         "article",
-        excludeIdsArray
+        excludeIdsArray,
+        query.populate
       );
     }
     return { data: feed };
@@ -105,7 +107,8 @@ module.exports = createCoreController("api::recommendation.recommendation", ({ s
         user,
         limit ? parseInt(String(limit), 10) : 20,
         "blog",
-        excludeIdsArray
+        excludeIdsArray,
+        query.populate
       );
     }
     return { data: feed };
@@ -134,7 +137,8 @@ module.exports = createCoreController("api::recommendation.recommendation", ({ s
         user,
         limit ? parseInt(String(limit), 10) : 20,
         "post",
-        excludeIdsArray
+        excludeIdsArray,
+        query.populate
       );
     }
     return { data: feed };
@@ -163,7 +167,8 @@ module.exports = createCoreController("api::recommendation.recommendation", ({ s
         user,
         limit ? parseInt(String(limit), 10) : 20,
         "course",
-        excludeIdsArray
+        excludeIdsArray,
+        query.populate
       );
     }
     return { data: feed };
@@ -192,7 +197,8 @@ module.exports = createCoreController("api::recommendation.recommendation", ({ s
         user,
         limit ? parseInt(String(limit), 10) : 20,
         "problem",
-        excludeIdsArray
+        excludeIdsArray,
+        query.populate
       );
     }
     return { data: feed };
@@ -221,7 +227,8 @@ module.exports = createCoreController("api::recommendation.recommendation", ({ s
         user,
         limit ? parseInt(String(limit), 10) : 20,
         "live-stream",
-        excludeIdsArray
+        excludeIdsArray,
+        query.populate
       );
     }
     return { data: feed };
@@ -250,7 +257,8 @@ module.exports = createCoreController("api::recommendation.recommendation", ({ s
         user,
         limit ? parseInt(limit) : 20,
         "event",
-        excludeIdsArray
+        excludeIdsArray,
+        query.populate
       );
     }
     return { data: feed };

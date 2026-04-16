@@ -263,7 +263,7 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
      * Get personalized feed for a user.
      * Supports filtering by type or returning a grouped object.
      */
-    async getFeed(user, limit = 20, type = null, excludeIds = []) {
+    async getFeed(user, limit = 20, type = null, excludeIds = [], populate = null) {
       if (!user) return type ? [] : {};
 
       const parsedLimit = parseInt(limit, 10) || 20;
@@ -286,7 +286,7 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
       console.debug("queryTags", queryTags);
       let personalizedCandidates = [];
       if (queryTags.length > 0) {
-        personalizedCandidates = await service.getCandidateContents(queryTags, seenHistory, contentTypes, safeExcludeIds);
+        personalizedCandidates = await service.getCandidateContents(queryTags, seenHistory, contentTypes, safeExcludeIds, populate);
         personalizedCandidates = service.rankContents(personalizedCandidates, interestMap);
       }
 
@@ -297,14 +297,14 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
       const personalizedFeed = personalizedCandidates.slice(0, personalizedCount);
       const personalizedRefs = personalizedFeed.map(i => `${i.contentType}:${i.documentId}`);
 
-      const discoveryCandidates = await service.getTrendingContent(discoveryCount, seenHistory, personalizedRefs, contentTypes, safeExcludeIds);
+      const discoveryCandidates = await service.getTrendingContent(discoveryCount, seenHistory, personalizedRefs, contentTypes, safeExcludeIds, populate);
 
       let finalFeed = [...personalizedFeed, ...discoveryCandidates];
 
       // Phase 5: Scarcity handling (Backfill if needed)
       if (finalFeed.length < parsedLimit) {
         const currentRefs = finalFeed.map(i => `${i.contentType}:${i.documentId}`);
-        const backfill = await service.getLatestContent(parsedLimit - finalFeed.length, seenHistory, currentRefs, contentTypes, safeExcludeIds);
+        const backfill = await service.getLatestContent(parsedLimit - finalFeed.length, seenHistory, currentRefs, contentTypes, safeExcludeIds, populate);
         finalFeed = [...finalFeed, ...backfill];
       }
 
@@ -406,7 +406,7 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
     /**
      * Fetch candidates from all participating content types in parallel.
      */
-    async getCandidateContents(tags, seenHistory, contentTypes, excludeIds = []) {
+    async getCandidateContents(tags, seenHistory, contentTypes, excludeIds = [], overridePopulate = null) {
       const results = await Promise.all(
         contentTypes.map(async (type) => {
           try {
@@ -415,9 +415,11 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
               filters.documentId = { $notIn: excludeIds };
             }
 
+            const populateMap = overridePopulate || service.getPopulateForType(type);
+
             const candidates = await strapi.documents(`api::${type}.${type}`).findMany({
               filters: filters,
-              populate: service.getPopulateForType(type),
+              populate: populateMap,
               limit: 200, // Fetch a wide pool of recent items
               sort: [{ createdAt: "desc" }]
             });
@@ -459,7 +461,7 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
     /**
      * Get trending content for discovery in parallel.
      */
-    async getTrendingContent(limit, seenHistory, excludeRefs, contentTypes, excludeIds = []) {
+    async getTrendingContent(limit, seenHistory, excludeRefs, contentTypes, excludeIds = [], overridePopulate = null) {
       const safeExcludeLength = excludeRefs && Array.isArray(excludeRefs) ? excludeRefs.length : 0;
       const results = await Promise.all(
         contentTypes.map(async (type) => {
@@ -469,10 +471,12 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
               filters.documentId = { $notIn: excludeIds };
             }
 
+            const populateMap = overridePopulate || service.getPopulateForType(type);
+
             const items = await strapi.documents(`api::${type}.${type}`).findMany({
               filters: filters,
               sort: [{ engagement_score: "desc" }],
-              populate: service.getPopulateForType(type),
+              populate: populateMap,
               limit: limit + safeExcludeLength + 10, // Fetch extra from DB to survive deduplication filters
             });
             return items.map(i => ({ ...i, contentType: type }));
@@ -491,7 +495,7 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
     /**
      * Get latest content for backfill in parallel.
      */
-    async getLatestContent(limit, seenHistory, excludeRefs, contentTypes, excludeIds = []) {
+    async getLatestContent(limit, seenHistory, excludeRefs, contentTypes, excludeIds = [], overridePopulate = null) {
       const safeExcludeLength = excludeRefs && Array.isArray(excludeRefs) ? excludeRefs.length : 0;
       const results = await Promise.all(
         contentTypes.map(async (type) => {
@@ -501,10 +505,12 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
               filters.documentId = { $notIn: excludeIds };
             }
 
+            const populateMap = overridePopulate || service.getPopulateForType(type);
+
             const items = await strapi.documents(`api::${type}.${type}`).findMany({
               filters: filters,
               sort: [{ createdAt: "desc" }],
-              populate: service.getPopulateForType(type),
+              populate: populateMap,
               limit: limit + safeExcludeLength + 10, // Fetch extra from DB to survive deduplication filters
             });
             return items.map(i => ({ ...i, contentType: type }));
