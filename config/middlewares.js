@@ -1,10 +1,10 @@
 module.exports = ({ env }) => {
   // Build the allowed origins list dynamically
   const allowedOrigins = [
-    "http://localhost:3000",
-    "http://localhost:1338",
-    "http://localhost:5173",
-    "https://axe-code.vercel.app",
+    // "http://localhost:3000",
+    // "http://localhost:1338",
+    // "http://localhost:5173",
+    // "https://axe-code.vercel.app",
   ];
 
   // Add any custom origin from environment (e.g., Vercel preview URLs)
