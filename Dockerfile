@@ -1,19 +1,5 @@
 # ============================================
-# Stage 1: Install production dependencies
-# ============================================
-FROM node:20-alpine AS deps
-
-RUN apk add --no-cache build-base gcc autoconf automake zlib-dev libpng-dev vips-dev python3
-
-WORKDIR /app
-
-COPY package.json package-lock.json ./
-
-RUN npm ci --omit=dev --ignore-scripts && \
-    npm rebuild bcrypt --build-from-source
-
-# ============================================
-# Stage 2: Build Strapi admin panel
+# Stage 1: Install ALL dependencies + Build
 # ============================================
 FROM node:20-alpine AS builder
 
@@ -21,17 +7,21 @@ RUN apk add --no-cache build-base gcc autoconf automake zlib-dev libpng-dev vips
 
 WORKDIR /app
 
+# Copy package files first (Docker caches this layer if unchanged)
 COPY package.json package-lock.json ./
+
+# Single npm ci: install everything, rebuild native modules once
 RUN npm ci --ignore-scripts && \
     npm rebuild bcrypt --build-from-source
 
+# Copy source code (only invalidates cache when code changes)
 COPY . .
 
 ENV NODE_ENV=production
 RUN npm run build
 
 # ============================================
-# Stage 3: Production image
+# Stage 2: Production image (lean)
 # ============================================
 FROM node:20-alpine AS production
 
@@ -43,10 +33,8 @@ RUN addgroup -g 1001 -S strapi && \
 
 WORKDIR /app
 
-# Copy production node_modules from deps stage
-COPY --from=deps /app/node_modules ./node_modules
-
-# Copy built admin panel from builder stage
+# Copy only production node_modules (prune dev deps from builder)
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/build ./build
 COPY --from=builder /app/config ./config
 COPY --from=builder /app/src ./src
@@ -54,6 +42,9 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/favicon.png ./
 COPY --from=builder /app/mediamtx.yml ./
+
+# Remove dev dependencies from the copied node_modules
+RUN npm prune --omit=dev 2>/dev/null || true
 
 # Create uploads directory and set ownership
 RUN mkdir -p public/uploads && \
