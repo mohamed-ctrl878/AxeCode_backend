@@ -18,7 +18,7 @@ class StrapiMock {
       'users-permissions': {
         services: {
           jwt: {
-            verify: (token) => ({ id: 1 }),
+            verify: async (token) => ({ id: 1 }),
             issue: (payload) => 'mock-token'
           }
         }

@@ -71,17 +71,17 @@ describe('SecurityLogic Service', () => {
       expect(token).toBe('mock-token');
     });
 
-    it('should verify and return payload for valid token', () => {
-        const payload = securityLogic.verifyToken('valid-token');
+    it('should verify and return payload for valid token', async () => {
+        const payload = await securityLogic.verifyToken('valid-token');
         expect(payload.id).toBe(1);
     });
 
-    it('should return null for invalid token', () => {
+    it('should return null for invalid token', async () => {
         // Force wrap verify to throw
         vi.spyOn(strapiMock.plugins['users-permissions'].services.jwt, 'verify').mockImplementationOnce(() => {
             throw new Error();
         });
-        const payload = securityLogic.verifyToken('bad-token');
+        const payload = await securityLogic.verifyToken('bad-token');
         expect(payload).toBeNull();
     });
   });
