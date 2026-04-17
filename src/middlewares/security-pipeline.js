@@ -10,6 +10,11 @@ module.exports = (config, { strapi }) => {
   return async (ctx, next) => {
     const pipeline = strapi.service('api::auth.security-pipeline');
 
+    // Skip security checks for CORS preflight requests (OPTIONS)
+    if (ctx.request.method === 'OPTIONS') {
+      return await next();
+    }
+
     try {
       // Execute the security pipeline (Rate Limit -> Validation -> Auth)
       await pipeline.run(ctx);
