@@ -151,7 +151,7 @@ module.exports = ({ strapi }) => ({
         return;
       }
 
-      const payload = securityLogic.verifyToken(token);
+      const payload = await securityLogic.verifyToken(token);
 
       console.log("[SECURITY DEBUG] Payload verified:", !!payload);
 

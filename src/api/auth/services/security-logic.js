@@ -86,10 +86,11 @@ module.exports = ({ strapi }) => {
     /**
      * Verify a JWT token from cookie
      */
-    verifyToken(token) {
+    async verifyToken(token) {
       try {
-        return strapi.plugins['users-permissions'].services.jwt.verify(token);
+        return await strapi.plugins['users-permissions'].services.jwt.verify(token);
       } catch (err) {
+        strapi.log.debug(`[Security] Token verification failed: ${err.message}`);
         return null;
       }
     }
