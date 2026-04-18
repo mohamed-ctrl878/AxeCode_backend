@@ -126,6 +126,9 @@ jobs:
       - name: Stop existing containers
         run: docker compose --env-file .env.production down --remove-orphans || true
 
+      - name: Pre-pull large images (Judge0, Postgres, Redis)
+        run: docker compose --env-file .env.production pull
+
       - name: Build Docker image (with cache)
         run: DOCKER_BUILDKIT=1 docker compose --env-file .env.production build strapi
 
@@ -160,17 +163,18 @@ jobs:
 
       - name: Wait for health check
         run: |
-          echo "⏳ Waiting for Strapi to start (up to 300s)..."
-          for i in $(seq 1 60); do
+          echo "⏳ Waiting for Strapi to start (up to 600s)..."
+          for i in $(seq 1 120); do
             if curl -sf http://127.0.0.1:1338/_health > /dev/null 2>&1; then
               echo "✅ Strapi is healthy!"
               exit 0
             fi
-            echo "  Attempt $i/60 - waiting 5s..."
+            echo "  Attempt $i/120 - waiting 5s..."
             sleep 5
           done
-          echo "❌ Strapi failed to start within 300s"
-          docker compose logs strapi --tail 100
+          echo "❌ Strapi failed to start within 600s"
+          docker compose logs strapi --tail 200
+          docker compose ps
           exit 1
 
       - name: Smoke tests
