@@ -132,27 +132,30 @@ jobs:
       - name: Start all services
         run: docker compose --env-file .env.production up -d
 
-      - name: Prepare Stable Public URL
+      - name: Prepare Stable Public URL & Environment
         run: |
-          echo "🚀 Forcing stable Production URL: https://api.axecode.qzz.io"
-          # Replace existing PUBLIC_URL or add it if missing
-          if grep -q "^PUBLIC_URL=" .env.production; then
-            sed -i "s|^PUBLIC_URL=.*|PUBLIC_URL=https://api.axecode.qzz.io|" .env.production
-          else
-            echo "PUBLIC_URL=https://api.axecode.qzz.io" >> .env.production
+          echo "🚀 Preparing environment for Docker Compose..."
+          
+          # 1. Force stable Production URL (replace old ones)
+          sed -i "s|^PUBLIC_URL=.*|PUBLIC_URL=https://api.axecode.qzz.io|" .env.production
+          if ! grep -q "^PUBLIC_URL=" .env.production; then
+             echo "PUBLIC_URL=https://api.axecode.qzz.io" >> .env.production
           fi
-          # Also ensure it's synced back to the source on VM
+
+          # 2. CREATE .env for Docker Compose Interpolation (Fixes DATABASE_PASSWORD warning)
+          cp .env.production .env
+          
+          # 3. Synchronize back to host source
           cp .env.production $HOME/axecode-backend/.env.production
+          
+          echo "✅ Environment prepared. PUBLIC_URL is set to: $(grep PUBLIC_URL .env.production)"
 
       - name: Debug Environment (Safe)
         run: |
-          echo "🔍 Checking for DATABASE_PASSWORD in .env.production..."
-          if grep -q "DATABASE_PASSWORD" .env.production; then
-            echo "✅ DATABASE_PASSWORD is present in .env.production"
-          else
-            echo "❌ ERROR: DATABASE_PASSWORD is MISSSING from .env.production"
-            # Optional: check if the source file exists
-            ls -l $HOME/axecode-backend/.env.production || echo "Source file not found!"
+          echo "🔍 Checking Environment resolution..."
+          if [ -f ".env" ]; then
+             echo "✅ .env file created for interpolation"
+             grep -q "DATABASE_PASSWORD" .env && echo "✅ DATABASE_PASSWORD found in .env" || echo "❌ DATABASE_PASSWORD MISSING"
           fi
 
       - name: Wait for health check
