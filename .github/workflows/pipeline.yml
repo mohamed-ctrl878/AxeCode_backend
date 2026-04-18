@@ -141,19 +141,30 @@ jobs:
             cp .env.production $HOME/axecode-backend/.env.production
           fi
 
+      - name: Debug Environment (Safe)
+        run: |
+          echo "🔍 Checking for DATABASE_PASSWORD in .env.production..."
+          if grep -q "DATABASE_PASSWORD" .env.production; then
+            echo "✅ DATABASE_PASSWORD is present in .env.production"
+          else
+            echo "❌ ERROR: DATABASE_PASSWORD is MISSSING from .env.production"
+            # Optional: check if the source file exists
+            ls -l $HOME/axecode-backend/.env.production || echo "Source file not found!"
+          fi
+
       - name: Wait for health check
         run: |
-          echo "⏳ Waiting for Strapi to start (up to 120s)..."
-          for i in $(seq 1 24); do
+          echo "⏳ Waiting for Strapi to start (up to 300s)..."
+          for i in $(seq 1 60); do
             if curl -sf http://localhost:1338/_health > /dev/null 2>&1; then
               echo "✅ Strapi is healthy!"
               exit 0
             fi
-            echo "  Attempt $i/24 - waiting 5s..."
+            echo "  Attempt $i/60 - waiting 5s..."
             sleep 5
           done
-          echo "❌ Strapi failed to start within 120s"
-          docker compose logs strapi --tail 50
+          echo "❌ Strapi failed to start within 300s"
+          docker compose logs strapi --tail 100
           exit 1
 
       - name: Smoke tests
