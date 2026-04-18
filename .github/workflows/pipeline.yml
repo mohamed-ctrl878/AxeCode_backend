@@ -132,24 +132,13 @@ jobs:
       - name: Start all services
         run: docker compose --env-file .env.production up -d
 
-      - name: Auto-update PUBLIC_URL from Cloudflare Tunnel
+      - name: Prepare Stable Public URL
         run: |
-          echo "⏳ Waiting for Cloudflare Tunnel to generate URL..."
-          sleep 15
-          TUNNEL_URL=$(docker compose --env-file .env.production logs cloudflared | grep -o 'https://[a-zA-Z0-9.-]*\.trycloudflare\.com' | head -n 1)
-          
-          if [ -n "$TUNNEL_URL" ]; then
-            echo "🚀 Found Tunnel URL: $TUNNEL_URL"
-            if grep -q "^PUBLIC_URL=" .env.production; then
-              sed -i "s|^PUBLIC_URL=.*|PUBLIC_URL=${TUNNEL_URL}|" .env.production
-            else
-              echo "PUBLIC_URL=${TUNNEL_URL}" >> .env.production
-            fi
+          echo "🚀 Using stable Production URL: https://api.axecode.qzz.io"
+          # Ensure PUBLIC_URL is correctly set in .env.production if it was missing
+          if ! grep -q "^PUBLIC_URL=" .env.production; then
+            echo "PUBLIC_URL=https://api.axecode.qzz.io" >> .env.production
             cp .env.production $HOME/axecode-backend/.env.production
-            echo "♻️ Recreating Strapi with new PUBLIC_URL..."
-            docker compose --env-file .env.production up -d --force-recreate strapi
-          else
-            echo "⚠️ Could not find Cloudflare Tunnel URL in logs."
           fi
 
       - name: Wait for health check
@@ -204,12 +193,11 @@ jobs:
       - name: Deploy Summary
         if: always()
         run: |
-          TUNNEL_URL=$(grep "^PUBLIC_URL=" $HOME/axecode-backend/.env.production | cut -d= -f2)
           echo "## 🚀 Deployment Results" >> $GITHUB_STEP_SUMMARY
           echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
           echo "| Status | ${{ job.status }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Public URL | ${TUNNEL_URL:-N/A} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Public URL | https://api.axecode.qzz.io |" >> $GITHUB_STEP_SUMMARY
           echo "| Timestamp | $(date -u '+%Y-%m-%d %H:%M UTC') |" >> $GITHUB_STEP_SUMMARY
 
   # ────────────────────────────────────────────
