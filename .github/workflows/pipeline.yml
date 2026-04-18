@@ -134,12 +134,15 @@ jobs:
 
       - name: Prepare Stable Public URL
         run: |
-          echo "🚀 Using stable Production URL: https://api.axecode.qzz.io"
-          # Ensure PUBLIC_URL is correctly set in .env.production if it was missing
-          if ! grep -q "^PUBLIC_URL=" .env.production; then
+          echo "🚀 Forcing stable Production URL: https://api.axecode.qzz.io"
+          # Replace existing PUBLIC_URL or add it if missing
+          if grep -q "^PUBLIC_URL=" .env.production; then
+            sed -i "s|^PUBLIC_URL=.*|PUBLIC_URL=https://api.axecode.qzz.io|" .env.production
+          else
             echo "PUBLIC_URL=https://api.axecode.qzz.io" >> .env.production
-            cp .env.production $HOME/axecode-backend/.env.production
           fi
+          # Also ensure it's synced back to the source on VM
+          cp .env.production $HOME/axecode-backend/.env.production
 
       - name: Debug Environment (Safe)
         run: |
