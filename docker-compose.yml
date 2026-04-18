@@ -127,6 +127,7 @@ services:
     privileged: true
     ports:
       - "2358:2358"
+    env_file: judge0.conf
     volumes:
       - ./judge0.conf:/judge0.conf:ro
     networks:
@@ -143,6 +144,7 @@ services:
     restart: unless-stopped
     command: ["./scripts/workers"]
     privileged: true
+    env_file: judge0.conf
     volumes:
       - ./judge0.conf:/judge0.conf:ro
     networks:
