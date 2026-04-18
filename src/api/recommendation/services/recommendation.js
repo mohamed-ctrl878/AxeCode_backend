@@ -359,6 +359,16 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
             item.hasAccess = details.hasAccess;
             item.student_count = details.studentCount;
             item.entitlementsId = details.entitlementId;
+
+            // Course Specific Stats Integration
+            if (item.contentType === 'course') {
+                const lessons = await strapi.db.query('api::lesson.lesson').findMany({
+                    where: { week: { course: item.id } },
+                    select: ['id', 'duration']
+                });
+                item.lessonCount = lessons.length;
+                item.duration = lessons.reduce((acc, curr) => acc + (Number(curr.duration) || 0), 0);
+            }
           } catch (error) {
             strapi.log.error(`[Recommendation] Enrichment failed for ${item.contentType} ${item.documentId}:`, error.message);
             item.hasAccess = false;

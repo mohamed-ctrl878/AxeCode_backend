@@ -12,6 +12,10 @@
   },
   "pluginOptions": {},
   "attributes": {
+    "duration": {
+      "type": "integer",
+      "default": 0
+    },
     "title": {
       "type": "string"
     },

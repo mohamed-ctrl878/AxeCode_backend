@@ -19,6 +19,13 @@ module.exports = ({ strapi }) => ({
   },
 
   /**
+   * Map language name to Judge0 numeric ID
+   */
+  getLanguageId(languageName) {
+    return LANGUAGE_MAP[languageName.toLowerCase()];
+  },
+
+  /**
    * JDoodle Implementation
    */
   async executeJDoodle(languageName, sourceCode, stdin = '') {

@@ -81,19 +81,31 @@ module.exports = createCoreService('api::course.course', ({ strapi }) => ({
       }
     }
 
-    // 4. Total Lessons Count
+    // 4. Total Lessons Count & Total Duration
     let totalLessonsCount = 0;
+    let totalDuration = 0;
     try {
-      totalLessonsCount = await strapi.db.query('api::lesson.lesson').count({
-        where: {
-          week: {
-            course: { documentId: course.documentId }
-          }
-        }
-      });
-    } catch (err) {
+      const courseId = course.id;
+      if (!courseId) {
+          strapi.log.warn(`[CourseEnrich] Missing numeric ID for course enrichment`);
+      } else {
+        // Use DB Query Engine for direct relational join on numeric IDs (most reliable)
+        const lessons = await strapi.db.query('api::lesson.lesson').findMany({
+          where: {
+            week: {
+              course: courseId
+            }
+          },
+          select: ['id', 'duration']
+        });
 
-      console.error('[CourseEnrich] Lesson count error:', err);
+        totalLessonsCount = lessons.length;
+        totalDuration = lessons.reduce((acc, curr) => acc + (Number(curr.duration) || 0), 0);
+
+        console.log(`[CourseEnrich] Course ID ${courseId}: Found ${totalLessonsCount} lessons via DB query.`);
+      }
+    } catch (err) {
+      strapi.log.error('[CourseEnrich] Lesson metrics error:', err);
     }
 
     // Prepare enriched weeks with isCompleted tags
@@ -101,7 +113,8 @@ module.exports = createCoreService('api::course.course', ({ strapi }) => ({
       ...enriched,
       interactions: socialMetadata,
       completedLessonsCount: completedLessonIds.length,
-      lessonCount: totalLessonsCount
+      lessonCount: totalLessonsCount,
+      duration: totalDuration
     };
 
     // Strip sensitive content AND inject isCompleted tags simultaneously 

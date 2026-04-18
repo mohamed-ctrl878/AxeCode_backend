@@ -116,21 +116,71 @@ services:
         max-size: "50m"
         max-file: "3"
 
+
   # ============================================
-  # Cloudflare Tunnel (Quick Tunnel Mode)
+  # Judge0 - Self-Hosted Execution Engine
   # ============================================
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    container_name: axe-cloudflared
+  judge0-api:
+    image: judge0/judge0:latest
+    container_name: axe-judge0-api
     restart: unless-stopped
-    command: tunnel --url http://axe-strapi:1338
+    privileged: true
+    ports:
+      - "2358:2358"
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
     networks:
       - axe-network
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "50m"
-        max-file: "3"
+    depends_on:
+      judge0-db:
+        condition: service_healthy
+      judge0-redis:
+        condition: service_healthy
+
+  judge0-worker:
+    image: judge0/judge0:latest
+    container_name: axe-judge0-worker
+    restart: unless-stopped
+    command: ["./scripts/workers"]
+    privileged: true
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+    networks:
+      - axe-network
+    depends_on:
+      judge0-db:
+        condition: service_healthy
+      judge0-redis:
+        condition: service_healthy
+
+  judge0-db:
+    image: postgres:16-alpine
+    container_name: axe-judge0-db
+    restart: unless-stopped
+    env_file: judge0.conf
+    volumes:
+      - judge0-db-data:/var/lib/postgresql/data
+    networks:
+      - axe-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U judge0"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  judge0-redis:
+    image: redis:7-alpine
+    container_name: axe-judge0-redis
+    restart: unless-stopped
+    command: [ "sh", "-c", 'docker-entrypoint.sh --appendonly no --requirepass "$$REDIS_PASSWORD"' ]
+    env_file: judge0.conf
+    networks:
+      - axe-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "judge0_redis_pass_456", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 # ============================================
 # Persistent Volumes
@@ -145,6 +195,8 @@ volumes:
   npm-data:
     driver: local
   npm-letsencrypt:
+    driver: local
+  judge0-db-data:
     driver: local
 
 # ============================================
