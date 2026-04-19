@@ -21,10 +21,8 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
     getPopulateForType(type) {
       if (type === 'blog') return ['*', 'publisher.avatar'];
       if (type === 'article') return ['*', 'author.avatar'];
-      if (type === 'post') return ['*', 'users_permissions_user.avatar'];
       if (type === 'course') return ['*', 'users_permissions_user.avatar'];
       if (type === 'problem') return ['*'];
-      if (type === 'live-stream') return ['*', 'host.avatar'];
       if (type === 'event') return ['*', 'users_permissions_user.avatar'];
       return ['*'];
     },
@@ -274,7 +272,7 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
 
       const interestMap = user.interest_map || {};
       const seenHistory = new Set(user.seen_history || []);
-      const contentTypes = type ? [type] : ["article", "blog", "post", "course", "problem", "live-stream", "event"];
+      const contentTypes = type ? [type] : ["article", "blog", "course", "problem", "event"];
 
       // Phase 1: Context Analysis - Get Top-10 tags
       const queryTags = Object.entries(interestMap)
@@ -326,10 +324,8 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
       return {
         articles: sortedFeed.filter(i => i.contentType === "article"),
         blogs: sortedFeed.filter(i => i.contentType === "blog"),
-        posts: sortedFeed.filter(i => i.contentType === "post"),
         courses: sortedFeed.filter(i => i.contentType === "course"),
         problems: sortedFeed.filter(i => i.contentType === "problem"),
-        liveStreams: sortedFeed.filter(i => i.contentType === "live-stream"),
         events: sortedFeed.filter(i => i.contentType === "event"),
         all: sortedFeed
       };
@@ -343,7 +339,6 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
 
       const mapping = {
         'course': 'course',
-        'live-stream': 'uplive',
         'event': 'event',
       };
 

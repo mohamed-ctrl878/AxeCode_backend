@@ -8,7 +8,7 @@ module.exports = {
      */
     async getTrendingFeed(user, limit = 20, type = null) {
         const strapiInstance = strapi;
-        const contentTypes = type ? [type] : ["article", "blog", "post", "course", "problem", "live-stream", "event"];
+        const contentTypes = type ? [type] : ["article", "blog", "course", "problem", "event"];
 
         // 1. Fetch recent candidates (e.g., published in the last 60 days to limit processing)
         const recentDate = new Date();
@@ -68,10 +68,8 @@ module.exports = {
         return {
             articles: topTrending.filter(i => i.contentType === "article"),
             blogs: topTrending.filter(i => i.contentType === "blog"),
-            posts: topTrending.filter(i => i.contentType === "post"),
             courses: topTrending.filter(i => i.contentType === "course"),
             problems: topTrending.filter(i => i.contentType === "problem"),
-            liveStreams: topTrending.filter(i => i.contentType === "live-stream"),
             events: topTrending.filter(i => i.contentType === "event"),
             all: topTrending
         };

@@ -1,0 +1,30 @@
+# ═══════════════════════════════════════════════════════════════
+# 🔥 AxeCode Quick Smoke Test (Artillery)
+# ═══════════════════════════════════════════════════════════════
+# A lightweight, fast load test (10 seconds) to verify the API
+# doesn't crash under minimal concurrent load.
+# Usage: npx artillery run tests/load/smoke.yml
+# ═══════════════════════════════════════════════════════════════
+
+config:
+  target: "http://localhost:1338"
+  phases:
+    - duration: 10
+      arrivalRate: 5
+      name: "Smoke Test"
+
+  defaults:
+    headers:
+      Content-Type: "application/json"
+
+scenarios:
+  - name: "Quick Health Check"
+    flow:
+      - get:
+          url: "/api/blogs?pagination[pageSize]=1"
+          expect:
+            - statusCode: 200
+      - get:
+          url: "/api/events?pagination[pageSize]=1"
+          expect:
+            - statusCode: 200

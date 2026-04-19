@@ -1,0 +1,127 @@
+# ═══════════════════════════════════════════════════════════════
+# 🚀 AxeCode Load Testing Configuration (Artillery)
+# ═══════════════════════════════════════════════════════════════
+# Simulates production-like traffic patterns against the API.
+# Usage: npx artillery run tests/load/config.yml
+# ═══════════════════════════════════════════════════════════════
+
+config:
+  target: "http://localhost:1338"
+  phases:
+    # Phase 1: Warm-up (10 users/sec for 30s)
+    - duration: 30
+      arrivalRate: 10
+      name: "Warm-up"
+
+    # Phase 2: Ramp-up (10 → 50 users/sec over 60s)
+    - duration: 60
+      arrivalRate: 10
+      rampTo: 50
+      name: "Ramp-up"
+
+    # Phase 3: Sustained Peak (50 users/sec for 120s)
+    - duration: 120
+      arrivalRate: 50
+      name: "Sustained Peak"
+
+    # Phase 4: Spike (100 users/sec for 30s — DDoS simulation)
+    - duration: 30
+      arrivalRate: 100
+      name: "Spike / DDoS Simulation"
+
+  defaults:
+    headers:
+      Content-Type: "application/json"
+      Origin: "http://localhost:5173"
+
+  # Processor for dynamic JWT token generation
+  processor: "./auth-generator.js"
+
+  # Performance thresholds
+  ensure:
+    thresholds:
+      - http.response_time.p95: 2000   # 95th percentile < 2s
+      - http.response_time.p99: 5000   # 99th percentile < 5s
+
+scenarios:
+  # ─────────────────────────────────────────────
+  # SCENARIO 1: Read-Heavy "Browse Feed" Traffic
+  # ─────────────────────────────────────────────
+  - name: "Browse Feed (GET Requests)"
+    weight: 60   # 60% of all traffic
+    flow:
+      # Hit the recommendation feed (heaviest query)
+      - get:
+          url: "/api/recommendations/feed"
+          expect:
+            - statusCode: 200
+
+      # Browse blogs listing
+      - get:
+          url: "/api/blogs?pagination[page]=1&pagination[pageSize]=10"
+          expect:
+            - statusCode: 200
+
+      # Browse courses
+      - get:
+          url: "/api/courses?pagination[page]=1&pagination[pageSize]=10"
+          expect:
+            - statusCode: 200
+
+      # Browse events
+      - get:
+          url: "/api/events?pagination[page]=1&pagination[pageSize]=10"
+          expect:
+            - statusCode: 200
+
+  # ─────────────────────────────────────────────
+  # SCENARIO 2: Auth Flow (Login Stress)
+  # ─────────────────────────────────────────────
+  - name: "Login Storm"
+    weight: 20   # 20% of all traffic
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            identifier: "loadtest@axecode.com"
+            password: "LoadTest123!"
+          expect:
+            - statusCode:
+                - 200
+                - 400  # Accept bad request too (user may not exist)
+
+  # ─────────────────────────────────────────────
+  # SCENARIO 3: Write-Heavy (Submissions + Comments)
+  # ─────────────────────────────────────────────
+  - name: "Write Storm (Submissions)"
+    weight: 15   # 15% of all traffic
+    flow:
+      - function: "generateAuthToken"
+      - post:
+          url: "/api/submissions"
+          headers:
+            Cookie: "jwt={{ jwt }}"
+          json:
+            data:
+              problem: "load-test-problem"
+              code: "print('Hello from artillery')"
+              language: "python"
+          expect:
+            - statusCode:
+                - 200
+                - 400
+                - 401
+
+  # ─────────────────────────────────────────────
+  # SCENARIO 4: Health Check Ping
+  # ─────────────────────────────────────────────
+  - name: "Health Pings"
+    weight: 5    # 5% of all traffic
+    flow:
+      - get:
+          url: "/_health"
+          expect:
+            - statusCode:
+                - 200
+                - 204
+                - 404  # Strapi may not have /_health

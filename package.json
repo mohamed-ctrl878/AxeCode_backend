@@ -25,7 +25,6 @@
     "dockerode": "^4.0.8",
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "^7.0.3",
-    "pg": "8.8.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.30.3",
@@ -47,10 +46,12 @@
     "uuid": "41a96715-be7e-4c6a-a928-7cb454b0888d"
   },
   "devDependencies": {
+    "@testcontainers/postgresql": "^11.14.0",
     "@vitest/coverage-v8": "^4.0.18",
     "artillery": "^2.0.21",
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
+    "pg": "^8.20.0",
     "vitest": "^4.0.18"
   }
 }

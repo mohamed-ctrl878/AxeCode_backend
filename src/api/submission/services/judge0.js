@@ -12,6 +12,11 @@ module.exports = ({ strapi }) => ({
    * Determine which engine to use based on configuration
    */
   getEngineType() {
+    // Prioritize Judge0 if local URL is set
+    if (process.env.JUDGE0_API_URL || process.env.JUDGE0_RAPIDAPI_KEY) {
+      return 'judge0';
+    }
+    // Fallback to JDoodle if credentials are provided
     if (process.env.JDOODLE_CLIENT_ID && process.env.JDOODLE_CLIENT_SECRET) {
       return 'jdoodle';
     }
@@ -74,7 +79,10 @@ module.exports = ({ strapi }) => ({
       stdin: Buffer.from(stdin).toString('base64'),
     };
 
-    const response = await axios.post(`${baseUrl}/submissions?wait=true&base64_encoded=true`, payload, { headers });
+    const response = await axios.post(`${baseUrl}/submissions?wait=true&base64_encoded=true`, payload, { 
+      headers,
+      timeout: 30000 // 30 seconds timeout
+    });
     return response.data;
   },
 

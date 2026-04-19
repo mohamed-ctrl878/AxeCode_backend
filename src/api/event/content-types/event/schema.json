@@ -35,9 +35,6 @@
       "type": "boolean",
       "default": true
     },
-    "live_streaming": {
-      "type": "boolean"
-    },
     "location": {
       "type": "string"
     },

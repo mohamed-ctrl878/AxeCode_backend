@@ -16,9 +16,7 @@
       "enum": [
         "role",
         "course",
-        "uplive",
         "event",
-        "veiwlive",
         "veiwevent"
       ]
     },

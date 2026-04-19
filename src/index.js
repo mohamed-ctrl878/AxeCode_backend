@@ -122,18 +122,12 @@ module.exports = {
 
     strapi.io = io;
 
-    // Use specialized messenger service for WS logic
-    strapi.service('api::conversation.messenger').initialize(io);
-    
-    // Initialize live stream socket handlers
-    strapi.service('api::live-stream.live-stream-socket').initialize(io);
-    
     // Initialize submission socket handlers
     strapi.service('api::submission.submission-socket').initialize(io);
     
     // Initialize notification socket handlers
     strapi.service('api::notification.notification-socket').initialize(io);
     
-    strapi.log.info('[Socket.io] WebSocket server initialized (messenger + live-stream + submission + notification)');
+    strapi.log.info('[Socket.io] WebSocket server initialized (submission + notification)');
   },
 };

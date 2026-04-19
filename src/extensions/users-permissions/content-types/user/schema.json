@@ -96,24 +96,6 @@
       "target": "api::submission.submission",
       "mappedBy": "user"
     },
-    "admin_conversations": {
-      "type": "relation",
-      "relation": "manyToMany",
-      "target": "api::conversation.conversation",
-      "inversedBy": "admins"
-    },
-    "messages": {
-      "type": "relation",
-      "relation": "oneToMany",
-      "target": "api::message.message",
-      "mappedBy": "users_permissions_user"
-    },
-    "posts": {
-      "type": "relation",
-      "relation": "oneToMany",
-      "target": "api::post.post",
-      "mappedBy": "users_permissions_user"
-    },
     "likes": {
       "type": "relation",
       "relation": "oneToMany",
@@ -180,21 +162,9 @@
       "target": "api::scanner.scanner",
       "mappedBy": "users_permissions_user"
     },
-    "created_conversations": {
-      "type": "relation",
-      "relation": "oneToMany",
-      "target": "api::conversation.conversation",
-      "mappedBy": "creator"
-    },
     "university": {
       "type": "string",
       "required": false
-    },
-    "conversations": {
-      "type": "relation",
-      "relation": "manyToMany",
-      "target": "api::conversation.conversation",
-      "mappedBy": "members"
     },
     "interest_map": {
       "type": "json"

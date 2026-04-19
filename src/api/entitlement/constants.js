@@ -8,18 +8,14 @@
 const CONTENT_TYPES = {
     EVENT: 'event',
     COURSE: 'course',
-    LIVESTREAM: 'uplive',
-    CHALLENGE: 'challenge',
-    LIVECHAT: 'livechat'
+    CHALLENGE: 'challenge'
 };
 
 // Maps entitlement content_types to user-entitlement schema identifiers
 const USER_ENTITLEMENT_MAP = {
     [CONTENT_TYPES.EVENT]: 'event',
-    [CONTENT_TYPES.LIVESTREAM]: 'live',
     [CONTENT_TYPES.COURSE]: 'course',
-    [CONTENT_TYPES.CHALLENGE]: 'challenge',
-    [CONTENT_TYPES.LIVECHAT]: 'livechat'
+    [CONTENT_TYPES.CHALLENGE]: 'challenge'
 };
 
 module.exports = {

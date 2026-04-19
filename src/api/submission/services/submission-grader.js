@@ -15,8 +15,9 @@ module.exports = ({ strapi }) => ({
     const stderr = execution.stderr ? Buffer.from(execution.stderr, 'base64').toString('utf8').trim() : '';
     const compileOut = execution.compile_output ? Buffer.from(execution.compile_output, 'base64').toString('utf8').trim() : '';
 
-    strapi.log.info(`[Grader] TestCase ID: ${testCase.id || testCase.documentId}`);
-    strapi.log.info(`[Grader] Raw Stdout: \n${stdout}`);
+    strapi.log.info(`[Grader] [FINAL-GRADER] TestCase ID: ${testCase.id || testCase.documentId}`);
+    strapi.log.info(`[Grader] [FINAL-GRADER] Judge0 Status: ID=${statusId} (${execution.status?.description || 'Unknown'})`);
+    strapi.log.info(`[Grader] Raw Stdout: \n${stdout || '[Empty]'}`);
     if (stderr || compileOut) {
       strapi.log.info(`[Grader] Raw Stderr/CompileOut: \n${stderr || compileOut}`);
     }

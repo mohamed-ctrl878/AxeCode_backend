@@ -68,33 +68,6 @@ services:
         max-file: "3"
 
   # ============================================
-  # MediaMTX Streaming Server
-  # ============================================
-  mediamtx:
-    image: bluenviron/mediamtx:latest
-    container_name: axe-media-server
-    restart: unless-stopped
-    ports:
-      - "1935:1935"
-      - "8888:8888"
-      - "8554:8554"
-      - "8889:8889"
-      - "8890:8890"
-      - "9997:9997"
-    volumes:
-      - ./mediamtx.yml:/mediamtx.yml
-      - media-recordings:/recordings
-    environment:
-      - MTX_PROTOCOLS=tcp
-    networks:
-      - axe-network
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "50m"
-        max-file: "3"
-
-  # ============================================
   # Nginx Proxy Manager (SSL & Proxy)
   # ============================================
   nginx-proxy-manager:
@@ -191,8 +164,6 @@ volumes:
   postgres-data:
     driver: local
   strapi-uploads:
-    driver: local
-  media-recordings:
     driver: local
   npm-data:
     driver: local

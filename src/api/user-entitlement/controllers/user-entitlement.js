@@ -25,8 +25,7 @@ module.exports = createCoreController('api::user-entitlement.user-entitlement', 
     console.debug("entitlement", entitlement)
     const contentTypeMap = {
       'course': 'api::course.course',
-      'event': 'api::event.event',
-      'uplive': 'api::live-stream.live-stream'
+      'event': 'api::event.event'
     };
     const targetApi = contentTypeMap[entitlement.content_types] || `api::${entitlement.content_types}.${entitlement.content_types}`;
 

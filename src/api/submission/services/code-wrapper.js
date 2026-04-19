@@ -313,41 +313,69 @@ module.exports = ({ strapi }) => ({
     const paramValues = lines.map(l => JSON.parse(l));
 `;
         } else if (language === 'python') {
+            const numParams = problem.functionParams?.length || 0;
             invocation = `${functionName}(*param_values)`;
             paramAssignments = `
-    input_lines = sys.stdin.read().splitlines()
-    param_values = [json.loads(line) for line in input_lines if line.strip()]
+    import sys
+    def _read_input(n):
+        lines = []
+        for _ in range(n):
+            line = sys.stdin.readline()
+            if not line: break
+            lines.append(json.loads(line.strip()))
+        return lines
+    param_values = _read_input(${numParams})
 `;
         } else if (language === 'java') {
             const pm = params.map((p, i) => {
-                const t = p.type.toLowerCase();
+                const t = p.type.toLowerCase().trim();
                 const line = `inputLines.get(${i})`;
-                if (t === 'int[]' || t === 'vector<int>') return `        int[] ${p.name} = parseArray(${line});`;
-                if (t === 'string[]') return `        String[] ${p.name} = parseStringArray(${line});`;
-                if (t === 'int' || t === 'integer') return `        int ${p.name} = Integer.parseInt(${line});`;
-                if (t === 'boolean' || t === 'bool') return `        boolean ${p.name} = Boolean.parseBoolean(${line});`;
-                if (t === 'double') return `        double ${p.name} = Double.parseDouble(${line});`;
-                if (t === 'float') return `        float ${p.name} = Float.parseFloat(${line});`;
-                if (t === 'string') return `        String ${p.name} = ${line}.equals("null") ? null : (${line}.startsWith("\\\"") && ${line}.endsWith("\\\"") ? ${line}.substring(1, ${line}.length() - 1) : ${line});`;
-                if (t === 'listnode') return `        ListNode ${p.name} = listToLinkedList(parseArray(${line}));`;
-                if (t === 'treenode') return `        TreeNode ${p.name} = listToTree(parseArray(${line}));`;
+                
+                if (t.includes('int[]') || t.includes('vector<int>') || t.includes('array<int>')) 
+                    return `        int[] ${p.name} = parseArray(${line});`;
+                if (t.includes('string[]') || t.includes('vector<string>')) 
+                    return `        String[] ${p.name} = parseStringArray(${line});`;
+                if (t === 'int' || t === 'integer' || t === 'number') 
+                    return `        int ${p.name} = Integer.parseInt(${line});`;
+                if (t === 'boolean' || t === 'bool') 
+                    return `        boolean ${p.name} = Boolean.parseBoolean(${line});`;
+                if (t === 'double') 
+                    return `        double ${p.name} = Double.parseDouble(${line});`;
+                if (t === 'float') 
+                    return `        float ${p.name} = Float.parseFloat(${line});`;
+                if (t === 'string') 
+                    return `        String ${p.name} = ${line}.equals("null") ? null : (${line}.startsWith("\\\"") && ${line}.endsWith("\\\"") ? ${line}.substring(1, ${line}.length() - 1) : ${line});`;
+                if (t === 'listnode') 
+                    return `        ListNode ${p.name} = listToLinkedList(parseArray(${line}));`;
+                if (t === 'treenode') 
+                    return `        TreeNode ${p.name} = listToTree(parseArray(${line}));`;
                 return `        Object ${p.name} = ${line};`;
             }).join('\n');
             invocation = `sol.${functionName}(${params.map(p => p.name).join(', ')})`;
             paramAssignments = pm;
         } else if (language === 'cpp') {
             const pm = params.map((p, i) => {
-                const t = p.type.toLowerCase();
+                const t = p.type.toLowerCase().trim();
                 const line = `inputLines[${i}]`;
-                if (t === 'vector<int>') return `    vector<int> ${p.name} = parseVector(${line});`;
-                if (t === 'vector<string>') return `    vector<string> ${p.name} = parseStringVector(${line});`;
-                if (t === 'int' || t === 'integer') return `    int ${p.name} = stoi(${line});`;
-                if (t === 'boolean' || t === 'bool') return `    bool ${p.name} = (${line} == "true");`;
-                if (t === 'double') return `    double ${p.name} = stod(${line});`;
-                if (t === 'float') return `    float ${p.name} = stof(${line});`;
-                if (t === 'string') return `    string ${p.name} = (${line} == "null") ? "" : ((${line}.front() == '"' && ${line}.back() == '"') ? ${line}.substr(1, ${line}.length() - 2) : ${line});`;
-                if (t === 'listnode') return `    ListNode* ${p.name} = listToLinkedList(parseVector(${line}));`;
-                if (t === 'treenode') return `    TreeNode* ${p.name} = listToTree(parseVector(${line}));`;
+                
+                if (t.includes('vector<int>') || t.includes('int[]') || t.includes('array<int>')) 
+                    return `    vector<int> ${p.name} = parseVector(${line});`;
+                if (t.includes('vector<string>') || t.includes('string[]')) 
+                    return `    vector<string> ${p.name} = parseStringVector(${line});`;
+                if (t === 'int' || t === 'integer' || t === 'number') 
+                    return `    int ${p.name} = stoi(${line});`;
+                if (t === 'boolean' || t === 'bool') 
+                    return `    bool ${p.name} = (${line} == "true");`;
+                if (t === 'double') 
+                    return `    double ${p.name} = stod(${line});`;
+                if (t === 'float') 
+                    return `    float ${p.name} = stof(${line});`;
+                if (t === 'string') 
+                    return `    string ${p.name} = (${line} == "null") ? "" : ((${line}.front() == '"' && ${line}.back() == '"') ? ${line}.substr(1, ${line}.length() - 2) : ${line});`;
+                if (t === 'listnode') 
+                    return `    ListNode* ${p.name} = listToLinkedList(parseVector(${line}));`;
+                if (t === 'treenode') 
+                    return `    TreeNode* ${p.name} = listToTree(parseVector(${line}));`;
                 return `    auto ${p.name} = ${line};`;
             }).join('\n');
             invocation = `sol.${functionName}(${params.map(p => p.name).join(', ')})`;

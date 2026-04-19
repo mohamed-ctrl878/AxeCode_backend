@@ -41,7 +41,6 @@ COPY --from=builder /app/src ./src
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/favicon.png ./
-COPY --from=builder /app/mediamtx.yml ./
 
 # Remove dev dependencies from the copied node_modules
 RUN npm prune --omit=dev 2>/dev/null || true
