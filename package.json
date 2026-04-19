@@ -10,7 +10,8 @@
     "start": "strapi start",
     "strapi": "strapi",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "prepare": "husky"
   },
   "dependencies": {
     "@sensinum/strapi-plugin-mcp": "^1.1.0",
@@ -47,6 +48,9 @@
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^4.0.18",
+    "artillery": "^2.0.21",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
     "vitest": "^4.0.18"
   }
 }

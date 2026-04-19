@@ -1,0 +1,8 @@
+{
+  "src/**/*.js": [
+    "npx vitest related --run"
+  ],
+  "tests/**/*.test.js": [
+    "npx vitest related --run"
+  ]
+}
