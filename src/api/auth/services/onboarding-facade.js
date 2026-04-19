@@ -35,13 +35,37 @@ module.exports = ({ strapi }) => ({
     const authService = strapi.service('api::auth.auth-service');
     
     // 1. Identity Creation (AuthService)
-    // We'll modify AuthService to ONLY handle user creation soon.
     const { jwt, user } = await authService.register(ctx, userData);
 
+    // 2. Social Integration (Automatic University Community Join)
+    if (user.university) {
+        await this.joinUniversityCommunity(user);
+    }
+
     // 3. Resource Allocation (Optional: Welcome Gift/Entitlement)
-    // Here we could call EntitlementService to grant a free "Starter Bundle"
     
     return { jwt, user };
   },
+
+  /**
+   * Automatically connects user to their university discussion room
+   */
+  async joinUniversityCommunity(user) {
+    try {
+      const room = await strapi.db.query('api::comment.comment').findOne({
+        where: { title: user.university }
+      });
+
+      if (room) {
+        await strapi.db.query('api::comment.comment').update({
+          where: { id: room.id },
+          data: { members: { connect: [user.id] } }
+        });
+      }
+    } catch (err) {
+      strapi.log.error(`[AxeCode] Social integration error: ${err.message}`);
+    }
+  }
+
 
 });
