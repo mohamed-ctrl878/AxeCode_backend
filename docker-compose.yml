@@ -17,6 +17,7 @@ services:
       - DATABASE_NAME=axecode
       - DATABASE_USERNAME=axecode
       - DATABASE_SSL=false
+      - JUDGE0_API_URL=http://judge0-api:2358
     ports:
       - "1338:1338"
     volumes:
