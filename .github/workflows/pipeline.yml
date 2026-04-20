@@ -202,12 +202,13 @@ jobs:
         if: always()
         run: docker compose --env-file .env.production ps
 
-      - name: Cleanup old Docker images (keep build cache)
-        if: success()
+      - name: Cleanup old Docker images & Build Cache
+        if: always()
         run: |
-          echo "🧹 Removing dangling images and stopped containers..."
-          docker image prune -f
+          echo "🧹 Performing aggressive cleanup to prevent VHD bloat..."
+          docker image prune -a -f
           docker container prune -f
+          docker builder prune -a -f
           echo "📊 Current Docker disk usage:"
           docker system df
 
