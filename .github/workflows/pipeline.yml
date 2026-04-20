@@ -145,13 +145,19 @@ jobs:
              echo "PUBLIC_URL=https://api.axecode.qzz.io" >> .env.production
           fi
 
-          # 2. CREATE .env for Docker Compose Interpolation (Fixes DATABASE_PASSWORD warning)
+          # 2. Inject Judge0 Internal Network URL
+          sed -i "s|^JUDGE0_API_URL=.*|JUDGE0_API_URL=http://judge0-api:2358|" .env.production
+          if ! grep -q "^JUDGE0_API_URL=" .env.production; then
+             echo "JUDGE0_API_URL=http://judge0-api:2358" >> .env.production
+          fi
+
+          # 3. CREATE .env for Docker Compose Interpolation (Fixes DATABASE_PASSWORD warning)
           cp .env.production .env
           
-          # 3. Synchronize back to host source
+          # 4. Synchronize back to host source
           cp .env.production $HOME/axecode-backend/.env.production
           
-          echo "✅ Environment prepared. PUBLIC_URL is set to: $(grep PUBLIC_URL .env.production)"
+          echo "✅ Environment prepared. PUBLIC_URL: $(grep PUBLIC_URL .env.production) | JUDGE0_URL: $(grep JUDGE0_API_URL .env.production)"
 
       - name: Debug Environment (Safe)
         run: |
