@@ -129,5 +129,48 @@ module.exports = {
     strapi.service('api::notification.notification-socket').initialize(io);
     
     strapi.log.info('[Socket.io] WebSocket server initialized (submission + notification)');
+    
+    // ── Layer 7: isDraft Migration ──
+    // This script ensures legacy records are marked as NOT drafts (isDraft: false)
+    // to maintain visibility after disabling draftAndPublish.
+    (async () => {
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const lockFile = path.join(process.cwd(), '.migration_draft_done');
+        
+        if (fs.existsSync(lockFile)) return;
+
+        const entities = [
+          'api::article.article',
+          'api::blog.blog',
+          'api::course.course',
+          'api::event.event',
+          'api::lesson.lesson',
+          'api::problem.problem',
+          'api::roadmap.roadmap',
+          'api::week.week',
+        ];
+
+        strapi.log.info('[Migration] Starting isDraft migration for existing records...');
+
+        for (const uid of entities) {
+          try {
+            const result = await strapi.db.query(uid).updateMany({
+              where: { isDraft: null },
+              data: { isDraft: false },
+            });
+            strapi.log.info(`[Migration] Updated ${result?.count || 0} records for ${uid}`);
+          } catch (err) {
+            strapi.log.error(`[Migration] Failed to migrate ${uid}: ${err.message}`);
+          }
+        }
+
+        fs.writeFileSync(lockFile, new Date().toISOString());
+        strapi.log.info('[Migration] isDraft migration completed manually via lock file.');
+      } catch (globalErr) {
+        strapi.log.error(`[Migration] Global error in Draft Migration: ${globalErr.message}`);
+      }
+    })();
   },
 };

@@ -7,10 +7,14 @@
     "displayName": "week"
   },
   "options": {
-    "draftAndPublish": true
+    "draftAndPublish": false
   },
   "pluginOptions": {},
   "attributes": {
+    "isDraft": {
+      "type": "boolean",
+      "default": true
+    },
     "lessons": {
       "type": "relation",
       "relation": "oneToMany",

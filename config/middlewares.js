@@ -57,6 +57,7 @@ module.exports = ({ env }) => {
     { name: "global::jwt-cookie" },
     "strapi::poweredBy",
     "strapi::query",
+    { name: "global::draft-visibility" },
     "strapi::body",
     {
       name: "strapi::session",
