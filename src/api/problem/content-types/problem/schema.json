@@ -8,7 +8,7 @@
     "description": "Algorithm problems for practice"
   },
   "options": {
-    "draftAndPublish": true
+    "draftAndPublish": false
   },
   "pluginOptions": {},
   "attributes": {
@@ -99,6 +99,15 @@
     "engagement_score": {
       "type": "integer",
       "default": 0
+    },
+    "isDraft": {
+      "type": "boolean",
+      "default": true
+    },
+    "publisher": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
     }
   }
 }

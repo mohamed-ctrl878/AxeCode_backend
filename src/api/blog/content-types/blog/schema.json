@@ -8,7 +8,7 @@
     "description": "Blog posts with rich text content and images"
   },
   "options": {
-    "draftAndPublish": true
+    "draftAndPublish": false
   },
   "pluginOptions": {},
   "attributes": {
@@ -35,6 +35,10 @@
     "engagement_score": {
       "type": "integer",
       "default": 0
+    },
+    "isDraft": {
+      "type": "boolean",
+      "default": true
     }
   }
 }

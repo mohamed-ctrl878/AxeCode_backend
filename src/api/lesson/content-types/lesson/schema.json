@@ -8,10 +8,14 @@
     "description": ""
   },
   "options": {
-    "draftAndPublish": true
+    "draftAndPublish": false
   },
   "pluginOptions": {},
   "attributes": {
+    "isDraft": {
+      "type": "boolean",
+      "default": true
+    },
     "duration": {
       "type": "integer",
       "default": 0
