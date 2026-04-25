@@ -484,7 +484,7 @@ export interface ApiArticleArticle extends Struct.CollectionTypeSchema {
     singularName: 'article';
   };
   options: {
-    draftAndPublish: true;
+    draftAndPublish: false;
   };
   attributes: {
     author: Schema.Attribute.Relation<
@@ -496,6 +496,7 @@ export interface ApiArticleArticle extends Struct.CollectionTypeSchema {
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     engagement_score: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    isDraft: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
@@ -520,7 +521,7 @@ export interface ApiBlogBlog extends Struct.CollectionTypeSchema {
     singularName: 'blog';
   };
   options: {
-    draftAndPublish: true;
+    draftAndPublish: false;
   };
   attributes: {
     createdAt: Schema.Attribute.DateTime;
@@ -529,6 +530,7 @@ export interface ApiBlogBlog extends Struct.CollectionTypeSchema {
     description: Schema.Attribute.Blocks & Schema.Attribute.Required;
     engagement_score: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
     image: Schema.Attribute.Media<'images'>;
+    isDraft: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<'oneToMany', 'api::blog.blog'> &
       Schema.Attribute.Private;
@@ -666,7 +668,7 @@ export interface ApiCourseCourse extends Struct.CollectionTypeSchema {
     singularName: 'course';
   };
   options: {
-    draftAndPublish: true;
+    draftAndPublish: false;
   };
   attributes: {
     course_types: Schema.Attribute.Relation<
@@ -679,6 +681,7 @@ export interface ApiCourseCourse extends Struct.CollectionTypeSchema {
     description: Schema.Attribute.Blocks;
     difficulty: Schema.Attribute.Enumeration<['Easy', 'Medium', 'Advanced']>;
     engagement_score: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    isDraft: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
@@ -819,7 +822,7 @@ export interface ApiEventEvent extends Struct.CollectionTypeSchema {
     singularName: 'event';
   };
   options: {
-    draftAndPublish: true;
+    draftAndPublish: false;
   };
   attributes: {
     createdAt: Schema.Attribute.DateTime;
@@ -837,6 +840,7 @@ export interface ApiEventEvent extends Struct.CollectionTypeSchema {
       'images' | 'files' | 'videos' | 'audios',
       true
     >;
+    isDraft: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<'oneToMany', 'api::event.event'> &
       Schema.Attribute.Private;
@@ -953,7 +957,7 @@ export interface ApiLessonLesson extends Struct.CollectionTypeSchema {
     singularName: 'lesson';
   };
   options: {
-    draftAndPublish: true;
+    draftAndPublish: false;
   };
   attributes: {
     course_types: Schema.Attribute.Relation<
@@ -966,6 +970,7 @@ export interface ApiLessonLesson extends Struct.CollectionTypeSchema {
     description: Schema.Attribute.Blocks;
     duration: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
     isCompleted: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    isDraft: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
@@ -1155,7 +1160,7 @@ export interface ApiProblemProblem extends Struct.CollectionTypeSchema {
     singularName: 'problem';
   };
   options: {
-    draftAndPublish: true;
+    draftAndPublish: false;
   };
   attributes: {
     code_templates: Schema.Attribute.Relation<
@@ -1176,6 +1181,7 @@ export interface ApiProblemProblem extends Struct.CollectionTypeSchema {
     functionName: Schema.Attribute.String & Schema.Attribute.Required;
     functionParams: Schema.Attribute.JSON;
     hints: Schema.Attribute.JSON;
+    isDraft: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
@@ -1189,6 +1195,10 @@ export interface ApiProblemProblem extends Struct.CollectionTypeSchema {
     >;
     public: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     publishedAt: Schema.Attribute.DateTime;
+    publisher: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
     returnType: Schema.Attribute.String;
     slug: Schema.Attribute.UID<'title'>;
     submissions: Schema.Attribute.Relation<
@@ -1405,7 +1415,7 @@ export interface ApiRoadmapRoadmap extends Struct.CollectionTypeSchema {
     singularName: 'roadmap';
   };
   options: {
-    draftAndPublish: true;
+    draftAndPublish: false;
   };
   attributes: {
     author: Schema.Attribute.Relation<
@@ -1419,6 +1429,7 @@ export interface ApiRoadmapRoadmap extends Struct.CollectionTypeSchema {
     description: Schema.Attribute.Blocks;
     flowData: Schema.Attribute.JSON;
     icon: Schema.Attribute.String & Schema.Attribute.DefaultTo<'faMapSigns'>;
+    isDraft: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
@@ -1732,13 +1743,14 @@ export interface ApiWeekWeek extends Struct.CollectionTypeSchema {
     singularName: 'week';
   };
   options: {
-    draftAndPublish: true;
+    draftAndPublish: false;
   };
   attributes: {
     course: Schema.Attribute.Relation<'manyToOne', 'api::course.course'>;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    isDraft: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
     lessons: Schema.Attribute.Relation<'oneToMany', 'api::lesson.lesson'>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<'oneToMany', 'api::week.week'> &
