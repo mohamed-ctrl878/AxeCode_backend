@@ -172,5 +172,34 @@ module.exports = {
         strapi.log.error(`[Migration] Global error in Draft Migration: ${globalErr.message}`);
       }
     })();
+
+    // ── Layer 8: Platform Wallet Bootstrap ──
+    // Creates the platform wallet (for collecting commissions) if it doesn't exist.
+    (async () => {
+      try {
+        const existing = await strapi.db.query('api::wallet.wallet').findOne({
+          where: { owner_type: 'platform' },
+        });
+
+        if (!existing) {
+          await strapi.db.query('api::wallet.wallet').create({
+            data: {
+              owner_type: 'platform',
+              balance: 0,
+              pending_balance: 0,
+              version: 0,
+              currency: 'EGP',
+              commission_rate: 0,
+              is_active: true,
+            },
+          });
+          strapi.log.info('[Wallet] ✅ Platform wallet created successfully');
+        } else {
+          strapi.log.info('[Wallet] Platform wallet already exists');
+        }
+      } catch (err) {
+        strapi.log.warn(`[Wallet] Platform wallet init skipped: ${err.message}`);
+      }
+    })();
   },
 };

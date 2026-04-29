@@ -948,6 +948,46 @@ export interface ApiHelpCenterHelpCenter extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiIdempotencyKeyIdempotencyKey
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'idempotency_keys';
+  info: {
+    description: 'Ensures each payment webhook is processed exactly once';
+    displayName: 'Idempotency Key';
+    pluralName: 'idempotency-keys';
+    singularName: 'idempotency-key';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    expires_at: Schema.Attribute.DateTime;
+    key: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::idempotency-key.idempotency-key'
+    > &
+      Schema.Attribute.Private;
+    processed_at: Schema.Attribute.DateTime;
+    publishedAt: Schema.Attribute.DateTime;
+    result_payload: Schema.Attribute.JSON;
+    status: Schema.Attribute.Enumeration<
+      ['PROCESSING', 'COMPLETED', 'FAILED']
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'PROCESSING'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiLessonLesson extends Struct.CollectionTypeSchema {
   collectionName: 'lessons';
   info: {
@@ -1660,6 +1700,51 @@ export interface ApiTestCaseTestCase extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiTransactionTransaction extends Struct.CollectionTypeSchema {
+  collectionName: 'transactions';
+  info: {
+    description: 'Immutable financial ledger \u2014 append only';
+    displayName: 'Transaction';
+    pluralName: 'transactions';
+    singularName: 'transaction';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    amount: Schema.Attribute.Decimal & Schema.Attribute.Required;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.String;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::transaction.transaction'
+    > &
+      Schema.Attribute.Private;
+    metadata: Schema.Attribute.JSON;
+    payment_id: Schema.Attribute.String;
+    publishedAt: Schema.Attribute.DateTime;
+    reference_id: Schema.Attribute.String;
+    reference_type: Schema.Attribute.Enumeration<
+      ['TICKET_PAYMENT', 'REFUND', 'PAYOUT', 'COMMISSION', 'ADJUSTMENT']
+    > &
+      Schema.Attribute.Required;
+    status: Schema.Attribute.Enumeration<
+      ['PENDING', 'COMPLETED', 'FAILED', 'REVERSED']
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'PENDING'>;
+    type: Schema.Attribute.Enumeration<['CREDIT', 'DEBIT']> &
+      Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    wallet: Schema.Attribute.Relation<'manyToOne', 'api::wallet.wallet'>;
+  };
+}
+
 export interface ApiUserEntitlementUserEntitlement
   extends Struct.CollectionTypeSchema {
   collectionName: 'user_entitlements';
@@ -1732,6 +1817,64 @@ export interface ApiUserProgressUserProgress
       'manyToOne',
       'plugin::users-permissions.user'
     >;
+  };
+}
+
+export interface ApiWalletWallet extends Struct.CollectionTypeSchema {
+  collectionName: 'wallets';
+  info: {
+    description: 'Digital wallet for publishers and platform';
+    displayName: 'Wallet';
+    pluralName: 'wallets';
+    singularName: 'wallet';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    balance: Schema.Attribute.Decimal &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<0>;
+    commission_rate: Schema.Attribute.Decimal &
+      Schema.Attribute.SetMinMax<
+        {
+          max: 1;
+          min: 0;
+        },
+        number
+      > &
+      Schema.Attribute.DefaultTo<0.1>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    currency: Schema.Attribute.Enumeration<
+      ['EGP', 'USD', 'EUR', 'SAR', 'AED', 'GBP', 'KWD']
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'EGP'>;
+    is_active: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::wallet.wallet'
+    > &
+      Schema.Attribute.Private;
+    owner: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+    owner_type: Schema.Attribute.Enumeration<['publisher', 'platform']> &
+      Schema.Attribute.Required;
+    pending_balance: Schema.Attribute.Decimal &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<0>;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    version: Schema.Attribute.Integer &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<0>;
   };
 }
 
@@ -2329,6 +2472,7 @@ declare module '@strapi/strapi' {
       'api::faq.faq': ApiFaqFaq;
       'api::global-tag.global-tag': ApiGlobalTagGlobalTag;
       'api::help-center.help-center': ApiHelpCenterHelpCenter;
+      'api::idempotency-key.idempotency-key': ApiIdempotencyKeyIdempotencyKey;
       'api::lesson.lesson': ApiLessonLesson;
       'api::like.like': ApiLikeLike;
       'api::notification-preference.notification-preference': ApiNotificationPreferenceNotificationPreference;
@@ -2347,8 +2491,10 @@ declare module '@strapi/strapi' {
       'api::speaker.speaker': ApiSpeakerSpeaker;
       'api::submission.submission': ApiSubmissionSubmission;
       'api::test-case.test-case': ApiTestCaseTestCase;
+      'api::transaction.transaction': ApiTransactionTransaction;
       'api::user-entitlement.user-entitlement': ApiUserEntitlementUserEntitlement;
       'api::user-progress.user-progress': ApiUserProgressUserProgress;
+      'api::wallet.wallet': ApiWalletWallet;
       'api::week.week': ApiWeekWeek;
       'plugin::content-releases.release': PluginContentReleasesRelease;
       'plugin::content-releases.release-action': PluginContentReleasesReleaseAction;
