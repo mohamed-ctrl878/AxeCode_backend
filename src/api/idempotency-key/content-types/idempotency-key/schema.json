@@ -1,0 +1,36 @@
+{
+  "kind": "collectionType",
+  "collectionName": "idempotency_keys",
+  "info": {
+    "singularName": "idempotency-key",
+    "pluralName": "idempotency-keys",
+    "displayName": "Idempotency Key",
+    "description": "Ensures each payment webhook is processed exactly once"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "key": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["PROCESSING", "COMPLETED", "FAILED"],
+      "required": true,
+      "default": "PROCESSING"
+    },
+    "result_payload": {
+      "type": "json"
+    },
+    "processed_at": {
+      "type": "datetime"
+    },
+    "expires_at": {
+      "type": "datetime"
+    }
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "kind": "collectionType",
+  "collectionName": "wallets",
+  "info": {
+    "singularName": "wallet",
+    "pluralName": "wallets",
+    "displayName": "Wallet",
+    "description": "Digital wallet for publishers and platform"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "owner": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "owner_type": {
+      "type": "enumeration",
+      "enum": ["publisher", "platform"],
+      "required": true
+    },
+    "balance": {
+      "type": "decimal",
+      "required": true,
+      "default": 0
+    },
+    "pending_balance": {
+      "type": "decimal",
+      "required": true,
+      "default": 0
+    },
+    "version": {
+      "type": "integer",
+      "required": true,
+      "default": 0
+    },
+    "currency": {
+      "type": "enumeration",
+      "enum": ["EGP", "USD", "EUR", "SAR", "AED", "GBP", "KWD"],
+      "required": true,
+      "default": "EGP"
+    },
+    "commission_rate": {
+      "type": "decimal",
+      "default": 0.10,
+      "min": 0,
+      "max": 1
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  }
+}

@@ -269,5 +269,14 @@ module.exports = createCoreController("api::recommendation.recommendation", ({ s
     const { q } = ctx.query;
     const suggestions = await strapi.service("api::recommendation.recommendation").getSuggestions(String(q || ''));
     return { data: suggestions };
+  },
+
+  // Tag audience map for CMS analytics
+  async getTagAudience(ctx) {
+    const user = ctx.state.user;
+    if (!user) return ctx.unauthorized("Authentication required");
+
+    const result = await strapi.service("api::recommendation.recommendation").getTagAudienceMap();
+    return { data: result };
   }
 }));

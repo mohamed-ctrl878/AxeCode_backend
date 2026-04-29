@@ -597,6 +597,89 @@ module.exports = createCoreService("api::recommendation.recommendation", ({ stra
         orderBy: { count: "desc" },
         limit,
       });
+    },
+
+    /**
+     * Get real audience map: how many users are interested in each tag.
+     * Scans all users' interest_map and counts unique users per tag.
+     * Returns tags enriched with `interestedUsers` count.
+     */
+    async getTagAudienceMap() {
+      // 1. Fetch all global tags
+      const allTags = await strapi.db.query("api::global-tag.global-tag").findMany({
+        orderBy: { count: "desc" },
+        limit: 100,
+      });
+
+      // 2. Fetch all users with their interest_map (batch to avoid memory issues)
+      const batchSize = 200;
+      let offset = 0;
+      const tagUserCounts = {}; // { tagName: Set<userId> }
+
+      // Initialize counters for all known tags
+      allTags.forEach(tag => {
+        tagUserCounts[tag.name] = new Set();
+      });
+
+      while (true) {
+        const users = await strapi.db.query("plugin::users-permissions.user").findMany({
+          select: ["id", "interest_map"],
+          limit: batchSize,
+          offset: offset,
+        });
+
+        if (!users || users.length === 0) break;
+
+        for (const user of users) {
+          if (!user.interest_map || typeof user.interest_map !== "object") continue;
+
+          // For each tag in the user's interest_map, if score > 0, count this user
+          for (const [tagName, score] of Object.entries(user.interest_map)) {
+            if (score > 0) {
+              if (!tagUserCounts[tagName]) {
+                tagUserCounts[tagName] = new Set();
+              }
+              tagUserCounts[tagName].add(user.id);
+            }
+          }
+        }
+
+        offset += batchSize;
+      }
+
+      // 3. Enrich tags with real user counts
+      const enrichedTags = allTags.map(tag => ({
+        id: tag.id,
+        documentId: tag.documentId,
+        name: tag.name,
+        count: tag.count || 0, // content usage count
+        interestedUsers: tagUserCounts[tag.name] ? tagUserCounts[tag.name].size : 0,
+        lastUsed: tag.last_used,
+      }));
+
+      // Also collect tags from interest_maps that aren't in global-tags table
+      const knownTagNames = new Set(allTags.map(t => t.name));
+      const extraTags = [];
+      for (const [tagName, userSet] of Object.entries(tagUserCounts)) {
+        if (!knownTagNames.has(tagName) && userSet.size > 0) {
+          extraTags.push({
+            id: null,
+            documentId: null,
+            name: tagName,
+            count: 0,
+            interestedUsers: userSet.size,
+            lastUsed: null,
+          });
+        }
+      }
+
+      // Get total user count for reference
+      const totalUsers = await strapi.db.query("plugin::users-permissions.user").count();
+
+      return {
+        tags: [...enrichedTags, ...extraTags].sort((a, b) => b.interestedUsers - a.interestedUsers),
+        totalUsers,
+      };
     }
   };
 

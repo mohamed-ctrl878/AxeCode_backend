@@ -84,5 +84,15 @@ module.exports = {
         middlewares: [],
       },
     },
+    // Tag audience map (CMS analytics)
+    {
+      method: "GET",
+      path: "/recommendations/tag-audience",
+      handler: "recommendation.getTagAudience",
+      config: {
+        policies: [],
+        middlewares: [],
+      },
+    },
   ],
 };
