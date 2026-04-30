@@ -34,7 +34,7 @@
     },
     "reference_type": {
       "type": "enumeration",
-      "enum": ["TICKET_PAYMENT", "REFUND", "PAYOUT", "COMMISSION", "ADJUSTMENT"],
+      "enum": ["TICKET_PAYMENT", "REFUND", "PAYOUT", "COMMISSION", "ADJUSTMENT", "CONTENT_PURCHASE"],
       "required": true
     },
     "reference_id": {

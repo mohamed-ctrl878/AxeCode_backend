@@ -256,4 +256,73 @@ module.exports = createCoreService('api::wallet.wallet', ({ strapi }) => ({
     InsufficientFundsError,
     WalletInactiveError,
   },
+
+  /**
+   * Internal Reconciliation: compares SUM(transactions) with wallet.balance
+   * Logs discrepancies and updates wallet status.
+   */
+  async runInternalReconciliation() {
+    strapi.log.info('[Reconciliation] Starting internal audit...');
+    
+    // Fetch all wallets
+    const wallets = await strapi.db.query('api::wallet.wallet').findMany({
+      populate: ['owner'],
+    });
+
+    const results = {
+      checked: 0,
+      balanced: 0,
+      discrepancies: [],
+    };
+
+    for (const wallet of wallets) {
+      // Correct way to sum transactions in Knex (strapi.db.connection)
+      const transactionsSum = await strapi.db.connection('transactions')
+        .where({ wallet_id: wallet.id, status: 'COMPLETED' })
+        .select(
+          strapi.db.connection.raw('SUM(CASE WHEN type = \'CREDIT\' THEN amount ELSE -amount END) as total')
+        )
+        .first();
+
+      const calculatedBalance = parseFloat(transactionsSum.total || 0);
+      const storedBalance = parseFloat(wallet.balance);
+
+      // Handle precision issues (0.01 tolerance)
+      const diff = Math.abs(calculatedBalance - storedBalance);
+      const isBalanced = diff < 0.01;
+
+      results.checked++;
+
+      if (isBalanced) {
+        results.balanced++;
+        await strapi.db.query('api::wallet.wallet').update({
+          where: { id: wallet.id },
+          data: {
+            reconciliation_status: 'BALANCED',
+            last_reconciled_at: new Date(),
+          },
+        });
+      } else {
+        strapi.log.error(`[Reconciliation] DISCREPANCY on wallet #${wallet.id} (Owner: ${wallet.owner?.username || 'SYSTEM'}): Stored=${storedBalance}, Calculated=${calculatedBalance}, Diff=${diff}`);
+        
+        results.discrepancies.push({
+          walletId: wallet.id,
+          stored: storedBalance,
+          calculated: calculatedBalance,
+          diff,
+        });
+
+        await strapi.db.query('api::wallet.wallet').update({
+          where: { id: wallet.id },
+          data: {
+            reconciliation_status: 'DISCREPANCY',
+            last_reconciled_at: new Date(),
+          },
+        });
+      }
+    }
+
+    strapi.log.info(`[Reconciliation] Audit Finished: Checked=${results.checked}, Balanced=${results.balanced}, Discrepancies=${results.discrepancies.length}`);
+    return results;
+  }
 }));
