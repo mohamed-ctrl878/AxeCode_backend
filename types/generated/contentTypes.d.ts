@@ -1160,6 +1160,104 @@ export interface ApiNotificationNotification
   };
 }
 
+export interface ApiPaymentPayment extends Struct.CollectionTypeSchema {
+  collectionName: 'payments';
+  info: {
+    description: 'Logs all incoming payments from external gateways (Paymob)';
+    displayName: 'Payment';
+    pluralName: 'payments';
+    singularName: 'payment';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    amount: Schema.Attribute.Decimal & Schema.Attribute.Required;
+    course: Schema.Attribute.Relation<'manyToOne', 'api::course.course'>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    currency: Schema.Attribute.String & Schema.Attribute.DefaultTo<'EGP'>;
+    event: Schema.Attribute.Relation<'manyToOne', 'api::event.event'>;
+    gateway_raw_payload: Schema.Attribute.JSON;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::payment.payment'
+    > &
+      Schema.Attribute.Private;
+    metadata: Schema.Attribute.JSON;
+    paymob_id: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    publishedAt: Schema.Attribute.DateTime;
+    status: Schema.Attribute.Enumeration<
+      ['PENDING', 'SUCCESS', 'FAILED', 'REFUNDED']
+    > &
+      Schema.Attribute.DefaultTo<'PENDING'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+  };
+}
+
+export interface ApiPayoutPayout extends Struct.CollectionTypeSchema {
+  collectionName: 'payouts';
+  info: {
+    description: 'Requests made by publishers to withdraw funds from their wallets';
+    displayName: 'Payout Request';
+    pluralName: 'payouts';
+    singularName: 'payout';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    admin_notes: Schema.Attribute.Text;
+    amount: Schema.Attribute.Decimal &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMax<
+        {
+          min: 100;
+        },
+        number
+      >;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    details: Schema.Attribute.JSON & Schema.Attribute.Required;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::payout.payout'
+    > &
+      Schema.Attribute.Private;
+    method: Schema.Attribute.Enumeration<
+      ['InstaPay', 'Bank Transfer', 'Vodafone Cash', 'Paypal']
+    > &
+      Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    rejection_reason: Schema.Attribute.String;
+    status: Schema.Attribute.Enumeration<
+      ['PENDING', 'APPROVED', 'REJECTED', 'PAID']
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'PENDING'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    users_permissions_user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+    wallet: Schema.Attribute.Relation<'manyToOne', 'api::wallet.wallet'>;
+  };
+}
+
 export interface ApiProblemTypeProblemType extends Struct.CollectionTypeSchema {
   collectionName: 'problem_types';
   info: {
@@ -1728,7 +1826,14 @@ export interface ApiTransactionTransaction extends Struct.CollectionTypeSchema {
     publishedAt: Schema.Attribute.DateTime;
     reference_id: Schema.Attribute.String;
     reference_type: Schema.Attribute.Enumeration<
-      ['TICKET_PAYMENT', 'REFUND', 'PAYOUT', 'COMMISSION', 'ADJUSTMENT']
+      [
+        'TICKET_PAYMENT',
+        'REFUND',
+        'PAYOUT',
+        'COMMISSION',
+        'ADJUSTMENT',
+        'CONTENT_PURCHASE',
+      ]
     > &
       Schema.Attribute.Required;
     status: Schema.Attribute.Enumeration<
@@ -1853,6 +1958,7 @@ export interface ApiWalletWallet extends Struct.CollectionTypeSchema {
       Schema.Attribute.Required &
       Schema.Attribute.DefaultTo<'EGP'>;
     is_active: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    last_reconciled_at: Schema.Attribute.DateTime;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
@@ -1865,10 +1971,19 @@ export interface ApiWalletWallet extends Struct.CollectionTypeSchema {
     >;
     owner_type: Schema.Attribute.Enumeration<['publisher', 'platform']> &
       Schema.Attribute.Required;
+    payouts: Schema.Attribute.Relation<'oneToMany', 'api::payout.payout'>;
     pending_balance: Schema.Attribute.Decimal &
       Schema.Attribute.Required &
       Schema.Attribute.DefaultTo<0>;
     publishedAt: Schema.Attribute.DateTime;
+    reconciliation_status: Schema.Attribute.Enumeration<
+      ['BALANCED', 'DISCREPANCY']
+    > &
+      Schema.Attribute.DefaultTo<'BALANCED'>;
+    transactions: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::transaction.transaction'
+    >;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -2477,6 +2592,8 @@ declare module '@strapi/strapi' {
       'api::like.like': ApiLikeLike;
       'api::notification-preference.notification-preference': ApiNotificationPreferenceNotificationPreference;
       'api::notification.notification': ApiNotificationNotification;
+      'api::payment.payment': ApiPaymentPayment;
+      'api::payout.payout': ApiPayoutPayout;
       'api::problem-type.problem-type': ApiProblemTypeProblemType;
       'api::problem.problem': ApiProblemProblem;
       'api::push-subscription.push-subscription': ApiPushSubscriptionPushSubscription;

@@ -23,6 +23,21 @@ module.exports = createCoreController('api::wallet.wallet', ({ strapi }) => ({
       const wallet = await strapi.service('api::wallet.wallet')
         .findOrCreateWallet(user.id, 'publisher');
 
+      // Fetch the wallet with the most recent transactions and payouts
+      const enrichedWallet = await strapi.db.query('api::wallet.wallet').findOne({
+        where: { id: wallet.id },
+        populate: {
+          transactions: {
+            orderBy: { createdAt: 'desc' },
+            limit: 10
+          },
+          payouts: {
+            orderBy: { createdAt: 'desc' },
+            limit: 10
+          }
+        }
+      });
+
       const balance = await strapi.service('api::wallet.wallet')
         .getBalance(wallet.id);
 
@@ -35,6 +50,8 @@ module.exports = createCoreController('api::wallet.wallet', ({ strapi }) => ({
           commission_rate: wallet.commission_rate,
           is_active: wallet.is_active,
           ...balance,
+          transactions: enrichedWallet.transactions || [],
+          payouts: enrichedWallet.payouts || [],
           createdAt: wallet.createdAt || wallet.created_at,
         },
       });

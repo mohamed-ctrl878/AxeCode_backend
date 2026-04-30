@@ -52,6 +52,26 @@
     "is_active": {
       "type": "boolean",
       "default": true
+    },
+    "transactions": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::transaction.transaction",
+      "mappedBy": "wallet"
+    },
+    "payouts": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::payout.payout",
+      "mappedBy": "wallet"
+    },
+    "last_reconciled_at": {
+      "type": "datetime"
+    },
+    "reconciliation_status": {
+      "type": "enumeration",
+      "enum": ["BALANCED", "DISCREPANCY"],
+      "default": "BALANCED"
     }
   }
 }

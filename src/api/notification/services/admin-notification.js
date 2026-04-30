@@ -23,6 +23,7 @@ module.exports = {
         event: 'فعالية',
         article: 'مقال',
         blog: 'مدونة',
+        payout: 'عملية سحب',
       };
       
       const contentNameAr = map[contentType] || contentType;
@@ -33,6 +34,9 @@ module.exports = {
       if (type === 'content_reported') {
         messageAr = `قام ${actorName} بالإبلاغ عن ${contentNameAr}`;
         messageEn = `${actorName} reported a ${contentType}`;
+      } else if (type === 'payout_requested') {
+        messageAr = `طلب ${actorName} سحب مبلغ ${extra?.amount || ''} ج.م`;
+        messageEn = `${actorName} requested a payout of ${extra?.amount || ''} EGP`;
       } else {
         messageAr = `تنبيه نظام من نوع ${type} على ${contentNameAr}`;
         messageEn = `System alert ${type} for ${contentType}`;

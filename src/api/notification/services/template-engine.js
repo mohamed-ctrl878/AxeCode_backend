@@ -46,6 +46,20 @@ module.exports = {
         ar = `مستخدم مجهول أبلغ عن ${this._getContentNameAr(contentType)} الخاص(ة) بك`;
         en = `An anonymous user reported your ${contentType}`;
         break;
+      case 'payout_request':
+        ar = `تم استلام طلب سحب جديد بمبلغ ${extra.amount} ج.م`;
+        en = `New payout request received for ${extra.amount} EGP`;
+        break;
+      case 'payout_paid':
+        ar = `تمت الموافقة على طلب السحب الخاص بك بمبلغ ${extra.amount} ج.م وتم التحويل`;
+        en = `Your payout request for ${extra.amount} EGP has been approved and paid`;
+        break;
+      case 'payout_rejected':
+        const reason = extra.reason ? ` السبب: ${extra.reason}` : '';
+        const reasonEn = extra.reason ? ` Reason: ${extra.reason}` : '';
+        ar = `تم رفض طلب السحب الخاص بك بمبلغ ${extra.amount} ج.م.${reason}`;
+        en = `Your payout request for ${extra.amount} EGP was rejected.${reasonEn}`;
+        break;
       default:
         ar = `تفاعل جديد على ${this._getContentNameAr(contentType)}`;
         en = `New interaction on your ${contentType}`;
@@ -60,6 +74,7 @@ module.exports = {
       event: 'فعاليتك',
       article: 'مقالتك',
       blog: 'المدونة',
+      payout: 'طلب السحب',
     };
     return map[contentType] || contentType;
   }
