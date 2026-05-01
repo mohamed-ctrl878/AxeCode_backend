@@ -5,13 +5,15 @@
  * 
  * Custom routes with role-based access:
  * - /api/wallet/me — Authenticated users (publishers)
- * - /api/wallets — Admin only
- * - /api/wallets/:id — Admin only
- * - /api/wallets/:id/commission — Admin only
+ * - /api/wallet/platform — Publisher role only
+ * - /api/wallets — Publisher role only
+ * - /api/wallets/:id — Publisher role only
+ * - /api/wallets/:id/commission — Publisher role only
  */
 
 module.exports = {
   routes: [
+    // --- Authenticated User Routes ---
     {
       method: 'GET',
       path: '/wallet/me',
@@ -21,13 +23,24 @@ module.exports = {
         description: 'Get the authenticated user\'s wallet',
       },
     },
+
+    // --- Publisher (Admin) Only Routes ---
+    {
+      method: 'GET',
+      path: '/wallet/platform',
+      handler: 'wallet.platform',
+      config: {
+        policies: ['api::wallet.is-publisher'],
+        description: 'Get the platform wallet (Publisher/Admin only)',
+      },
+    },
     {
       method: 'GET',
       path: '/wallets',
       handler: 'wallet.find',
       config: {
-        policies: [],
-        description: 'List all wallets (Admin only)',
+        policies: ['api::wallet.is-publisher'],
+        description: 'List all wallets (Publisher/Admin only)',
       },
     },
     {
@@ -35,8 +48,8 @@ module.exports = {
       path: '/wallets/:id',
       handler: 'wallet.findOne',
       config: {
-        policies: [],
-        description: 'Get a specific wallet (Admin only)',
+        policies: ['api::wallet.is-publisher'],
+        description: 'Get a specific wallet (Publisher/Admin only)',
       },
     },
     {
@@ -44,8 +57,8 @@ module.exports = {
       path: '/wallets/:id/commission',
       handler: 'wallet.updateCommission',
       config: {
-        policies: [],
-        description: 'Update commission rate for a wallet (Admin only)',
+        policies: ['api::wallet.is-publisher'],
+        description: 'Update commission rate (Publisher/Admin only)',
       },
     },
   ],

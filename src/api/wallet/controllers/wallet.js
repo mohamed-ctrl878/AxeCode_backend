@@ -62,6 +62,44 @@ module.exports = createCoreController('api::wallet.wallet', ({ strapi }) => ({
   },
 
   /**
+   * GET /api/wallet/platform
+   * Publisher (Admin) only: returns the platform's commission wallet.
+   */
+  async platform(ctx) {
+    try {
+      const platformWallet = await strapi.service('api::wallet.wallet').getPlatformWallet();
+
+      const enrichedWallet = await strapi.db.query('api::wallet.wallet').findOne({
+        where: { id: platformWallet.id },
+        populate: {
+          transactions: {
+            orderBy: { createdAt: 'desc' },
+            limit: 20
+          },
+        }
+      });
+
+      const balance = await strapi.service('api::wallet.wallet').getBalance(platformWallet.id);
+
+      return ctx.send({
+        data: {
+          id: platformWallet.id,
+          documentId: platformWallet.documentId,
+          owner_type: 'platform',
+          currency: platformWallet.currency,
+          is_active: platformWallet.is_active,
+          ...balance,
+          transactions: enrichedWallet.transactions || [],
+          createdAt: platformWallet.createdAt || platformWallet.created_at,
+        },
+      });
+    } catch (error) {
+      strapi.log.error('[Wallet Controller] platform() failed:', error.message);
+      return ctx.internalServerError('Failed to fetch platform wallet');
+    }
+  },
+
+  /**
    * GET /api/wallets
    * Admin-only: lists all wallets with pagination.
    */
