@@ -34,7 +34,7 @@ module.exports = createCoreService('api::transaction.transaction', ({ strapi }) 
     if (!data.reference_type) throw new Error('Transaction reference_type is required');
 
     const entry = {
-      wallet: typeof data.wallet === 'object' ? data.wallet.id : data.wallet,
+      wallet: typeof data.wallet === 'object' ? (data.wallet.id || data.wallet.documentId) : data.wallet,
       amount: data.amount,
       type: data.type,
       status: data.status || 'COMPLETED',
@@ -48,17 +48,55 @@ module.exports = createCoreService('api::transaction.transaction', ({ strapi }) 
     let transaction;
     if (trx) {
       // Inside a database transaction — use raw Knex
+      // Separate relation fields from actual table columns
+      const { wallet, ...rawEntry } = entry;
+
       const [result] = await trx('transactions').insert({
-        ...entry,
+        ...rawEntry,
+        wallet_id: wallet, // Link directly via column (Standard for many-to-one in Strapi/Postgres)
         created_at: new Date(),
         updated_at: new Date(),
       }).returning('*');
+      
       transaction = result;
+
+      // Also try join table as fallback if the system is configured that way
+      try {
+        const hasLinkTable = await trx.schema.hasTable('transactions_wallet_lnk');
+        if (hasLinkTable && wallet) {
+          await trx('transactions_wallet_lnk').insert({
+            transaction_id: transaction.id,
+            wallet_id: wallet,
+          });
+        }
+      } catch (e) {
+        // Ignore if link table doesn't exist
+      }
     } else {
       // Standalone — use Strapi API
+      // In Strapi 5, we MUST ensure the relation is handled via the relation system
       transaction = await strapi.db.query('api::transaction.transaction').create({
-        data: entry,
+        data: {
+          ...entry,
+          wallet: entry.wallet // Strapi's Query Engine handles the link table automatically if passed here
+        },
       });
+
+      // DOUBLE CHECK & FORCE LINK: If it's Strapi 5, sometimes we need to use the Document API for relations
+      if (transaction) {
+        try {
+          // Attempt to force the relation link via the Document Service if the above failed
+          await strapi.documents('api::transaction.transaction').update({
+            documentId: transaction.documentId,
+            data: {
+              wallet: entry.wallet
+            }
+          });
+          strapi.log.info(`[Ledger] Transaction #${transaction.id} linked to wallet ${entry.wallet} successfully.`);
+        } catch (linkErr) {
+          strapi.log.warn(`[Ledger] Document link update failed (might be already linked): ${linkErr.message}`);
+        }
+      }
     }
 
     strapi.log.info(

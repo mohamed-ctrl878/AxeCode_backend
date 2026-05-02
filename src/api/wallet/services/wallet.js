@@ -250,6 +250,141 @@ module.exports = createCoreService('api::wallet.wallet', ({ strapi }) => ({
     strapi.log.info(`[Wallet] Commission rate updated for wallet #${walletId}: ${(newRate * 100).toFixed(1)}%`);
   },
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HOLD / FREEZE PATTERN — for payout requests
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * HOLD (freeze) funds in a wallet's pending_balance.
+   * The balance itself is NOT reduced — only the available amount decreases.
+   * Available = balance - pending_balance.
+   *
+   * MUST be called within a database transaction (pessimistic lock).
+   *
+   * @param {number} walletId
+   * @param {number} amount - Amount to freeze (must be positive)
+   * @param {object} trx - Required Knex transaction
+   */
+  async holdBalance(walletId, amount, trx) {
+    if (!trx) throw new Error('holdBalance requires a database transaction');
+    if (amount <= 0) throw new Error('Hold amount must be positive');
+
+    const wallet = await trx('wallets')
+      .where({ id: walletId })
+      .forUpdate()
+      .first();
+
+    if (!wallet) throw new Error(`Wallet ${walletId} not found`);
+    if (!wallet.is_active) throw new WalletInactiveError(walletId);
+
+    const currentBalance = parseFloat(wallet.balance);
+    const currentPending = parseFloat(wallet.pending_balance);
+    const available = currentBalance - currentPending;
+
+    if (available < amount) {
+      throw new InsufficientFundsError(available, amount);
+    }
+
+    await trx('wallets')
+      .where({ id: walletId })
+      .update({
+        pending_balance: currentPending + amount,
+        version: wallet.version + 1,
+        updated_at: new Date(),
+      });
+
+    strapi.log.info(`[Wallet] HOLD wallet #${walletId}: ${amount} frozen (pending: ${currentPending} → ${currentPending + amount})`);
+    return {
+      success: true,
+      new_pending_balance: currentPending + amount,
+      available: available - amount,
+      version: wallet.version + 1,
+    };
+  },
+
+  /**
+   * RELEASE a hold — unfreeze funds without debiting.
+   * Used when a payout request is REJECTED.
+   *
+   * @param {number} walletId
+   * @param {number} amount - Amount to unfreeze
+   * @param {object} trx - Required Knex transaction
+   */
+  async releaseHold(walletId, amount, trx) {
+    if (!trx) throw new Error('releaseHold requires a database transaction');
+    if (amount <= 0) throw new Error('Release amount must be positive');
+
+    const wallet = await trx('wallets')
+      .where({ id: walletId })
+      .forUpdate()
+      .first();
+
+    if (!wallet) throw new Error(`Wallet ${walletId} not found`);
+
+    const currentPending = parseFloat(wallet.pending_balance);
+    const newPending = Math.max(0, currentPending - amount);
+
+    await trx('wallets')
+      .where({ id: walletId })
+      .update({
+        pending_balance: newPending,
+        version: wallet.version + 1,
+        updated_at: new Date(),
+      });
+
+    strapi.log.info(`[Wallet] RELEASE HOLD wallet #${walletId}: ${amount} unfrozen (pending: ${currentPending} → ${newPending})`);
+    return {
+      success: true,
+      new_pending_balance: newPending,
+      version: wallet.version + 1,
+    };
+  },
+
+  /**
+   * CONFIRM DEBIT — actually deduct from balance AND release the hold.
+   * Used when a payout is APPROVED/PAID by admin.
+   *
+   * @param {number} walletId
+   * @param {number} amount - Amount to debit
+   * @param {object} trx - Required Knex transaction
+   */
+  async confirmDebit(walletId, amount, trx) {
+    if (!trx) throw new Error('confirmDebit requires a database transaction');
+    if (amount <= 0) throw new Error('Debit amount must be positive');
+
+    const wallet = await trx('wallets')
+      .where({ id: walletId })
+      .forUpdate()
+      .first();
+
+    if (!wallet) throw new Error(`Wallet ${walletId} not found`);
+    if (!wallet.is_active) throw new WalletInactiveError(walletId);
+
+    const currentBalance = parseFloat(wallet.balance);
+    const currentPending = parseFloat(wallet.pending_balance);
+
+    if (currentBalance < amount) {
+      throw new InsufficientFundsError(currentBalance, amount);
+    }
+
+    await trx('wallets')
+      .where({ id: walletId })
+      .update({
+        balance: currentBalance - amount,
+        pending_balance: Math.max(0, currentPending - amount),
+        version: wallet.version + 1,
+        updated_at: new Date(),
+      });
+
+    strapi.log.info(`[Wallet] CONFIRM DEBIT wallet #${walletId}: -${amount} (balance: ${currentBalance} → ${currentBalance - amount}, hold released)`);
+    return {
+      success: true,
+      new_balance: currentBalance - amount,
+      new_pending_balance: Math.max(0, currentPending - amount),
+      version: wallet.version + 1,
+    };
+  },
+
   /** Expose error classes for external use */
   errors: {
     OptimisticLockError,
@@ -278,7 +413,8 @@ module.exports = createCoreService('api::wallet.wallet', ({ strapi }) => ({
     for (const wallet of wallets) {
       // Correct way to sum transactions in Knex (strapi.db.connection)
       const transactionsSum = await strapi.db.connection('transactions')
-        .where({ wallet_id: wallet.id, status: 'COMPLETED' })
+        .join('transactions_wallet_lnk', 'transactions.id', 'transactions_wallet_lnk.transaction_id')
+        .where({ 'transactions_wallet_lnk.wallet_id': wallet.id, 'transactions.status': 'COMPLETED' })
         .select(
           strapi.db.connection.raw('SUM(CASE WHEN type = \'CREDIT\' THEN amount ELSE -amount END) as total')
         )
