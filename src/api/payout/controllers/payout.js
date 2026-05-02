@@ -31,7 +31,7 @@ module.exports = createCoreController('api::payout.payout', ({ strapi }) => ({
                 await strapi.service('api::notification.notification-emitter').emit({
                     interactionType: 'payout_request',
                     contentType: 'payout',
-                    docId: payout.documentId,
+                    docId: payout.document_id,  // Raw Knex returns snake_case
                     actorDocumentId: user.documentId,
                     extra: { amount }
                 });
@@ -40,7 +40,7 @@ module.exports = createCoreController('api::payout.payout', ({ strapi }) => ({
                 await strapi.service('api::notification.admin-notification').emit({
                     type: 'payout_requested',
                     contentType: 'payout',
-                    docId: payout.documentId,
+                    docId: payout.document_id,
                     actorDocumentId: user.documentId,
                     extra: { amount }
                 });

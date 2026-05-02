@@ -273,12 +273,10 @@ module.exports = ({ strapi }) => ({
       await strapi.documents('api::payment.payment').update({
         documentId: pendingPayment.documentId,
         data: {
-          transaction_id: paymobId,
           amount: amount,
           status: 'SUCCESS',
           gateway_raw_payload: payload,
-        },
-        status: 'published'
+        }
       });
       strapi.log.info(`[Paymob] Payment ${paymobId} marked as SUCCESS`);
 
@@ -298,7 +296,10 @@ module.exports = ({ strapi }) => ({
             productId: ent.documentId,
             content_types: contentType,
             users_permissions_user: userId,
-            publishedAt: new Date()
+            publishedAt: new Date(),
+            valid: 'successed',
+            strart: new Date().toISOString(),
+            duration: ent.duration
           },
           status: 'published'
         });

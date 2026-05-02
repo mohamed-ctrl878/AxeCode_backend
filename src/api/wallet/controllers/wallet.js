@@ -20,27 +20,29 @@ module.exports = createCoreController('api::wallet.wallet', ({ strapi }) => ({
     if (!user) return ctx.unauthorized('Authentication required');
 
     try {
+      // 1. Find or create the wallet
       const wallet = await strapi.service('api::wallet.wallet')
         .findOrCreateWallet(user.id, 'publisher');
 
-      // Fetch the wallet with the most recent transactions and payouts
-      const enrichedWallet = await strapi.db.query('api::wallet.wallet').findOne({
-        where: { id: wallet.id },
-        populate: {
-          transactions: {
-            orderBy: { createdAt: 'desc' },
-            limit: 10
-          },
-          payouts: {
-            orderBy: { createdAt: 'desc' },
-            limit: 10
-          }
-        }
+      // 2. Fetch the latest transactions separately (Strapi 5 relation bypass)
+      const transactions = await strapi.db.query('api::transaction.transaction').findMany({
+        where: { wallet: wallet.id },
+        orderBy: { createdAt: 'desc' },
+        limit: 10
       });
 
+      // 3. Fetch the latest payouts separately
+      const payouts = await strapi.db.query('api::payout.payout').findMany({
+        where: { wallet: wallet.id },
+        orderBy: { createdAt: 'desc' },
+        limit: 10
+      });
+
+      // 4. Get current balance metrics
       const balance = await strapi.service('api::wallet.wallet')
         .getBalance(wallet.id);
 
+      // 5. Send consolidated response
       return ctx.send({
         data: {
           id: wallet.id,
@@ -50,8 +52,8 @@ module.exports = createCoreController('api::wallet.wallet', ({ strapi }) => ({
           commission_rate: wallet.commission_rate,
           is_active: wallet.is_active,
           ...balance,
-          transactions: enrichedWallet.transactions || [],
-          payouts: enrichedWallet.payouts || [],
+          transactions: transactions || [],
+          payouts: payouts || [],
           createdAt: wallet.createdAt || wallet.created_at,
         },
       });
@@ -63,23 +65,31 @@ module.exports = createCoreController('api::wallet.wallet', ({ strapi }) => ({
 
   /**
    * GET /api/wallet/platform
-   * Publisher (Admin) only: returns the platform's commission wallet.
+   * Publisher (Admin) only: returns the platform's commission wallet and global stats.
    */
   async platform(ctx) {
     try {
+      // 1. Get the platform wallet
       const platformWallet = await strapi.service('api::wallet.wallet').getPlatformWallet();
 
-      const enrichedWallet = await strapi.db.query('api::wallet.wallet').findOne({
-        where: { id: platformWallet.id },
-        populate: {
-          transactions: {
-            orderBy: { createdAt: 'desc' },
-            limit: 20
-          },
-        }
+      // 2. Fetch balance metrics
+      const balance = await strapi.service('api::wallet.wallet').getBalance(platformWallet.id);
+
+      // 3. Fetch latest transactions separately (Strapi 5 relation bypass)
+      const transactions = await strapi.db.query('api::transaction.transaction').findMany({
+        where: { wallet: platformWallet.id },
+        orderBy: { createdAt: 'desc' },
+        limit: 20
       });
 
-      const balance = await strapi.service('api::wallet.wallet').getBalance(platformWallet.id);
+      // 4. Aggregate publisher balances for stats
+      const publishersSum = await strapi.db.connection('wallets')
+        .where('owner_type', 'publisher')
+        .sum('balance as total_publisher_balance')
+        .first();
+
+      const totalPublisherBalance = parseFloat(publishersSum?.total_publisher_balance || 0);
+      const totalSystemBalance = totalPublisherBalance + balance.balance;
 
       return ctx.send({
         data: {
@@ -89,7 +99,11 @@ module.exports = createCoreController('api::wallet.wallet', ({ strapi }) => ({
           currency: platformWallet.currency,
           is_active: platformWallet.is_active,
           ...balance,
-          transactions: enrichedWallet.transactions || [],
+          stats: {
+            total_system_balance: totalSystemBalance,
+            total_publisher_balance: totalPublisherBalance,
+          },
+          transactions: transactions || [],
           createdAt: platformWallet.createdAt || platformWallet.created_at,
         },
       });
