@@ -251,13 +251,20 @@ module.exports = ({ strapi }) => ({
     }
 
     const metadata = pendingPayment.metadata || {};
-    const userId = pendingPayment.user?.documentId;
+    const userObj = pendingPayment.user;
+    const userId = userObj?.documentId || userObj?.id || metadata.user_id;
     
-    // Robust Item identification
-    const itemId = pendingPayment.course?.documentId || pendingPayment.event?.documentId || metadata.itemId;
+    // Get the resource to find its numeric ID (fallback for old entitlement records)
+    const uid = pendingPayment.course ? 'api::course.course' : (pendingPayment.event ? 'api::event.event' : metadata.contentType);
+    const itemResource = await strapi.documents(uid).findOne({
+      documentId: pendingPayment.course?.documentId || pendingPayment.event?.documentId || metadata.itemId
+    });
+
+    const itemId = itemResource?.documentId || metadata.itemId;
+    const numericItemId = itemResource?.id;
     const contentType = pendingPayment.course ? 'course' : (pendingPayment.event ? 'event' : metadata.contentType);
 
-    strapi.log.info(`[Paymob] Processing success for User: ${userId}, Item: ${itemId}, Type: ${contentType}`);
+    strapi.log.info(`[Paymob] Processing success for User: ${userId}, Item: ${itemId} (Numeric: ${numericItemId}), Type: ${contentType}`);
 
     if (!userId || !itemId) {
       strapi.log.warn(`[Paymob] Missing user or item context in pending payment ${pendingPayment.id}. User: ${userId}, Item: ${itemId}`);
@@ -282,55 +289,84 @@ module.exports = ({ strapi }) => ({
 
       // === STEP 2: GRANT ACCESS (Entitlement) — TOP PRIORITY ===
       let accessGranted = false;
+      strapi.log.info(`[Paymob] Searching for entitlement with itemId: "${itemId}" and contentType: "${contentType}"`);
+
       const entitlementResults = await strapi.documents('api::entitlement.entitlement').findMany({
-        filters: { itemId: itemId, content_types: contentType },
+        filters: { 
+          $or: [
+            { itemId: String(itemId) },
+            { itemId: String(numericItemId) }
+          ],
+          content_types: contentType 
+        },
         status: 'published'
       });
 
+      strapi.log.info(`[Paymob] Entitlement search results count: ${entitlementResults?.length || 0}`);
+
       if (entitlementResults && entitlementResults.length > 0) {
         const ent = entitlementResults[0];
-        strapi.log.info(`[Paymob] Granting access for User ${userId} to ${contentType} via Entitlement ${ent.documentId}`);
+        strapi.log.info(`[Paymob] Found Entitlement: ${ent.documentId}. Granting access to User ${userId}...`);
 
-        await strapi.documents('api::user-entitlement.user-entitlement').create({
-          data: {
-            productId: ent.documentId,
-            content_types: contentType,
-            users_permissions_user: userId,
-            publishedAt: new Date(),
-            valid: 'successed',
-            strart: new Date().toISOString(),
-            duration: ent.duration
-          },
-          status: 'published'
-        });
-        accessGranted = true;
-        strapi.log.info(`[Paymob] ✅ Access GRANTED for User ${userId}`);
+        try {
+          await strapi.documents('api::user-entitlement.user-entitlement').create({
+            data: {
+              productId: ent.documentId,
+              content_types: contentType,
+              users_permissions_user: userId,
+              publishedAt: new Date(),
+              valid: 'successed',
+              strart: new Date().toISOString(),
+              duration: ent.duration
+            },
+            status: 'published'
+          });
+          accessGranted = true;
+          strapi.log.info(`[Paymob] ✅ Access record created successfully for User ${userId}`);
+        } catch (createErr) {
+          strapi.log.error(`[Paymob] ❌ FAILED to create user-entitlement: ${createErr.message}`);
+        }
       } else {
-        strapi.log.warn(`[Paymob] No entitlement found for ${contentType} ${itemId}. Access not granted.`);
+        strapi.log.warn(`[Paymob] ⚠️ CRITICAL: No entitlement found for ${contentType} with itemId: ${itemId}. User paid but received no access!`);
       }
 
       // === STEP 3: Wallet & Commission (non-blocking) ===
       try {
+        // Get the resource and populate the owner correctly
         const uid = contentType === 'event' ? 'api::event.event' : 'api::course.course';
         const resource = await strapi.documents(uid).findOne({
           documentId: itemId,
           populate: ['users_permissions_user']
         });
 
-        const publisherId = resource?.users_permissions_user?.id;
-        const platformWallet = await walletService.getPlatformWallet();
+        if (!resource) {
+          strapi.log.error(`[Paymob] Resource NOT FOUND: ${uid} with documentId ${itemId}`);
+        }
 
+        // In Strapi 5, the relation might be in resource.users_permissions_user
+        const publisher = resource?.users_permissions_user;
+        const publisherId = publisher?.id || publisher?.documentId;
+        
+        strapi.log.info(`[Paymob] Resource owner found: ${publisherId ? 'YES' : 'NO'} (Publisher ID: ${publisherId})`);
+
+        const platformWallet = await walletService.getPlatformWallet();
         let publisherShare = amount;
         let platformShare = 0;
 
         if (publisherId) {
+          // findOrCreateWallet should handle both ID and DocumentID if implemented correctly
           const publisherWallet = await walletService.findOrCreateWallet(publisherId, 'publisher');
           const commissionRate = parseFloat(publisherWallet.commission_rate) || 0.10;
+          
           platformShare = Math.round(amount * commissionRate * 100) / 100;
           publisherShare = amount - platformShare;
 
+          strapi.log.info(`[Paymob] Crediting Publisher Wallet ${publisherWallet.id}: +${publisherShare} (Rate: ${commissionRate})`);
+
           // Credit Publisher Wallet
           await walletService.creditWallet(publisherWallet.id, publisherShare);
+          
+          // Use a safe createEntry that handles relations correctly
           await transactionService.createEntry({
             wallet: publisherWallet.id,
             amount: publisherShare,
@@ -341,7 +377,9 @@ module.exports = ({ strapi }) => ({
             payment_id: paymobId,
             description: `${contentType} purchase #${itemId} (after ${commissionRate * 100}% commission)`,
           });
-          strapi.log.info(`[Paymob] Publisher wallet credited: +${publisherShare}`);
+          strapi.log.info(`[Paymob] ✅ Publisher wallet credited.`);
+        } else {
+          strapi.log.warn(`[Paymob] ⚠️ No publisher found for ${contentType} ${itemId}. All funds remain in platform?`);
         }
 
         // Credit Platform Wallet (Commission)
