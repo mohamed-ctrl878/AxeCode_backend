@@ -22,12 +22,26 @@ import { Client } from 'pg';
 
 // ── Database Connection ──────────────────────────────────────────────────────
 
-const DB_CONFIG = {
-  host: '127.0.0.1',
-  port: 5432,
-  database: 'postgres',
-  user: 'postgres',
-  password: '0194456244',
+// Use dynamic config from TestContainers if available (for CI/CD), fallback to local for dev
+const getDBConfig = () => {
+  if (process.env.TEST_DATABASE_URL) {
+    const url = new URL(process.env.TEST_DATABASE_URL);
+    return {
+      host: url.hostname,
+      port: parseInt(url.port),
+      database: url.pathname.substring(1),
+      user: url.username,
+      password: url.password,
+    };
+  }
+  
+  return {
+    host: '127.0.0.1',
+    port: 5432,
+    database: 'postgres',
+    user: 'postgres',
+    password: '0194456244',
+  };
 };
 
 let db;
@@ -193,8 +207,67 @@ async function createLedgerEntry(client, walletId, data) {
 describe('Wallet System — Integration Tests (Real PostgreSQL)', () => {
 
   beforeAll(async () => {
-    db = new Client(DB_CONFIG);
+    db = new Client(getDBConfig());
     await db.connect();
+
+    // ── Create Schema for TestContainers (Strapi 5 Style) ──
+    await db.query(`
+      DROP TABLE IF EXISTS transactions_wallet_lnk;
+      DROP TABLE IF EXISTS payouts_wallet_lnk;
+      DROP TABLE IF EXISTS transactions;
+      DROP TABLE IF EXISTS payouts;
+      DROP TABLE IF EXISTS wallets;
+
+      CREATE TABLE wallets (
+        id SERIAL PRIMARY KEY,
+        document_id VARCHAR(255) UNIQUE,
+        owner_type VARCHAR(50),
+        balance DECIMAL(15,2) DEFAULT 0,
+        pending_balance DECIMAL(15,2) DEFAULT 0,
+        version INTEGER DEFAULT 0,
+        currency VARCHAR(10) DEFAULT 'EGP',
+        commission_rate DECIMAL(5,2),
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP,
+        updated_at TIMESTAMP
+      );
+
+      CREATE TABLE payouts (
+        id SERIAL PRIMARY KEY,
+        document_id VARCHAR(255) UNIQUE,
+        amount DECIMAL(15,2),
+        status VARCHAR(50),
+        method VARCHAR(100),
+        details JSONB,
+        created_at TIMESTAMP,
+        updated_at TIMESTAMP
+      );
+
+      CREATE TABLE transactions (
+        id SERIAL PRIMARY KEY,
+        document_id VARCHAR(255) UNIQUE,
+        amount DECIMAL(15,2),
+        type VARCHAR(20),
+        status VARCHAR(20),
+        reference_type VARCHAR(100),
+        reference_id VARCHAR(255),
+        description TEXT,
+        created_at TIMESTAMP,
+        updated_at TIMESTAMP
+      );
+
+      CREATE TABLE payouts_wallet_lnk (
+        id SERIAL PRIMARY KEY,
+        payout_id INTEGER REFERENCES payouts(id),
+        wallet_id INTEGER REFERENCES wallets(id)
+      );
+
+      CREATE TABLE transactions_wallet_lnk (
+        id SERIAL PRIMARY KEY,
+        transaction_id INTEGER REFERENCES transactions(id),
+        wallet_id INTEGER REFERENCES wallets(id)
+      );
+    `);
   });
 
   afterAll(async () => {
