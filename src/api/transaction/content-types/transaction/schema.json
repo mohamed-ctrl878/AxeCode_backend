@@ -1,0 +1,53 @@
+{
+  "kind": "collectionType",
+  "collectionName": "transactions",
+  "info": {
+    "singularName": "transaction",
+    "pluralName": "transactions",
+    "displayName": "Transaction",
+    "description": "Immutable financial ledger — append only"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "wallet": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::wallet.wallet"
+    },
+    "amount": {
+      "type": "decimal",
+      "required": true
+    },
+    "type": {
+      "type": "enumeration",
+      "enum": ["CREDIT", "DEBIT"],
+      "required": true
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["PENDING", "COMPLETED", "FAILED", "REVERSED"],
+      "required": true,
+      "default": "PENDING"
+    },
+    "reference_type": {
+      "type": "enumeration",
+      "enum": ["TICKET_PAYMENT", "REFUND", "PAYOUT", "COMMISSION", "ADJUSTMENT", "CONTENT_PURCHASE"],
+      "required": true
+    },
+    "reference_id": {
+      "type": "string"
+    },
+    "payment_id": {
+      "type": "string"
+    },
+    "metadata": {
+      "type": "json"
+    },
+    "description": {
+      "type": "string"
+    }
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "kind": "collectionType",
+  "collectionName": "payouts",
+  "info": {
+    "singularName": "payout",
+    "pluralName": "payouts",
+    "displayName": "Payout Request",
+    "description": "Requests made by publishers to withdraw funds from their wallets"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "amount": {
+      "type": "decimal",
+      "required": true,
+      "min": 100
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": [
+        "PENDING",
+        "APPROVED",
+        "REJECTED",
+        "PAID"
+      ],
+      "default": "PENDING",
+      "required": true
+    },
+    "method": {
+      "type": "enumeration",
+      "enum": [
+        "InstaPay",
+        "Bank Transfer",
+        "Vodafone Cash",
+        "Paypal"
+      ],
+      "required": true
+    },
+    "details": {
+      "type": "json",
+      "required": true
+    },
+    "rejection_reason": {
+      "type": "string"
+    },
+    "admin_notes": {
+      "type": "text"
+    },
+    "wallet": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::wallet.wallet",
+      "inversedBy": "payouts"
+    },
+    "users_permissions_user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    }
+  }
+}
