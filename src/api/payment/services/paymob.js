@@ -182,6 +182,7 @@ module.exports = ({ strapi }) => ({
         String(obj.is_capture),
         String(obj.is_refunded),
         String(obj.is_standalone_payment),
+        String(obj.is_voided),
         String(obj.order.id),
         String(obj.owner),
         String(obj.pending),
