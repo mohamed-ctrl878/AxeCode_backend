@@ -1009,6 +1009,9 @@ export interface ApiLessonLesson extends Struct.CollectionTypeSchema {
       Schema.Attribute.Private;
     description: Schema.Attribute.Blocks;
     duration: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    embed_metadata: Schema.Attribute.JSON;
+    embed_source: Schema.Attribute.Enumeration<['youtube', 'vimeo', 'custom']>;
+    embed_url: Schema.Attribute.String;
     isCompleted: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     isDraft: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
@@ -1024,7 +1027,9 @@ export interface ApiLessonLesson extends Struct.CollectionTypeSchema {
     public: Schema.Attribute.Boolean;
     publishedAt: Schema.Attribute.DateTime;
     title: Schema.Attribute.String;
-    type_of_lesson: Schema.Attribute.Enumeration<['video', 'article']> &
+    type_of_lesson: Schema.Attribute.Enumeration<
+      ['video', 'article', 'embedded']
+    > &
       Schema.Attribute.DefaultTo<'video'>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &

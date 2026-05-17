@@ -33,8 +33,8 @@ module.exports = ({ strapi }) => {
     setAuthCookie(ctx, jwt) {
       const cookieStr = buildCookieHeader('jwt', jwt, {
         httpOnly: true,
-        secure: isProd,
-        sameSite: isProd ? 'None' : 'Lax',
+        secure: true, // Production: HTTPS | Dev: localhost is treated as secure context
+        sameSite: 'None', // Required for cross-origin requests (different domains in prod, different ports in dev)
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
         path: '/',
         domain: domain || undefined,

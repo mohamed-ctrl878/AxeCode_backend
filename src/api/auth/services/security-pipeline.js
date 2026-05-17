@@ -22,6 +22,7 @@ const sanitizeObject = (obj) => {
                         lowerKey.includes('startercode') || 
                         lowerKey.includes('wrappercode') ||
                         lowerKey.includes('starter_code') ||
+                        lowerKey.includes('embed')||
                         lowerKey.includes('wrapper_code');
 
     if (lowerKey.includes('password') || isCodeField) {
