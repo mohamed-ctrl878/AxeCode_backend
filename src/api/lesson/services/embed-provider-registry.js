@@ -37,8 +37,7 @@ const providers = {
 
     /** Generates the embeddable iframe URL with JS API enabled */
     getEmbedUrl(videoId) {
-      const origin = process.env.FRONTEND_URL || '*';
-      return `https://www.youtube.com/embed/${videoId}?enablejsapi=1&origin=${encodeURIComponent(origin)}`;
+      return `https://www.youtube.com/embed/${videoId}?enablejsapi=1`;
     },
 
     /** Generates a high-quality thumbnail URL (no API key needed) */
