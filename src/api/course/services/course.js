@@ -147,7 +147,7 @@ module.exports = createCoreService('api::course.course', ({ strapi }) => ({
         // 2. Strip sensitive data if no access
         if (course.hasAccess || lesson.public) return updatedLesson;
 
-        const { video, description, ...safeMeta } = updatedLesson;
+        const { video, description, embed_url, embed_metadata, ...safeMeta } = updatedLesson;
         return safeMeta;
       })
     }));
