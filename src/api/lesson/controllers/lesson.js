@@ -23,6 +23,24 @@ module.exports = createCoreController('api::lesson.lesson', ({ strapi }) => ({
       return ctx.badRequest('Data is required');
     }
 
+    // Auto-resolve embedded video metadata if type is embedded
+    if (data.type_of_lesson === 'embedded' && data.embed_url) {
+      try {
+        const registry = strapi.service('api::lesson.embed-provider-registry');
+        const { provider, metadata } = await registry.resolveUrl(data.embed_url, data.embed_source);
+        data.embed_source = provider || data.embed_source || 'custom';
+        data.embed_metadata = metadata || {};
+        // Auto-fill duration from metadata if not manually set
+        if (!data.duration && metadata?.duration) {
+          data.duration = metadata.duration;
+        }
+      } catch (err) {
+        strapi.log.warn('[LessonController] Embed metadata resolution failed:', err.message);
+        // Continue with creation even if metadata fetch fails
+        data.embed_metadata = { status: 'fetch_failed', fetchedAt: new Date().toISOString() };
+      }
+    }
+
     // Set the user and ensure the lesson is published immediately
     ctx.request.body.data = {
       ...data,
@@ -31,6 +49,35 @@ module.exports = createCoreController('api::lesson.lesson', ({ strapi }) => ({
     };
 
     return await super.create(ctx);
+  },
+  // PUT /lessons/:id - Update an existing lesson
+  async update(ctx) {
+    if (!ctx.state.user) {
+      return ctx.unauthorized('Not authenticated. Please login first.');
+    }
+
+    const { data } = ctx.request.body;
+    if (!data) return ctx.badRequest('Data is required');
+
+    // Auto-resolve embedded video metadata if type is embedded
+    if (data.type_of_lesson === 'embedded' && data.embed_url) {
+      try {
+        const registry = strapi.service('api::lesson.embed-provider-registry');
+        const { provider, metadata } = await registry.resolveUrl(data.embed_url, data.embed_source);
+        data.embed_source = provider || data.embed_source || 'custom';
+        data.embed_metadata = metadata || {};
+        // Auto-fill duration from metadata if not manually set
+        if (!data.duration && metadata?.duration) {
+          data.duration = metadata.duration;
+        }
+      } catch (err) {
+        strapi.log.warn('[LessonController] Embed metadata resolution failed during update:', err.message);
+        data.embed_metadata = { status: 'fetch_failed', fetchedAt: new Date().toISOString() };
+      }
+    }
+
+    ctx.request.body.data = data;
+    return await super.update(ctx);
   },
 
   // GET /lessons - جلب الدروس المتاحة للمستخدم (صاحب الدرس، محتوى مجاني، أو مشترك في الكورس)
