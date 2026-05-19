@@ -1,0 +1,91 @@
+{
+  "kind": "collectionType",
+  "collectionName": "projects",
+  "info": {
+    "singularName": "project",
+    "pluralName": "projects",
+    "displayName": "Project",
+    "description": "Core project entity for the Project Management feature"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "description": {
+      "type": "blocks"
+    },
+    "methodology": {
+      "type": "enumeration",
+      "enum": [
+        "agile",
+        "scrum",
+        "kanban",
+        "waterfall"
+      ]
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": [
+        "draft",
+        "active",
+        "paused",
+        "completed",
+        "archived"
+      ],
+      "default": "draft"
+    },
+    "visibility": {
+      "type": "enumeration",
+      "enum": [
+        "public",
+        "invite_only"
+      ],
+      "default": "public"
+    },
+    "github_repo_url": {
+      "type": "string"
+    },
+    "github_repo_id": {
+      "type": "biginteger"
+    },
+    "github_webhook_secret": {
+      "type": "string",
+      "private": true
+    },
+    "publisher": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "project_roles": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::project-role.project-role",
+      "mappedBy": "project"
+    },
+    "project_members": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::project-member.project-member",
+      "mappedBy": "project"
+    },
+    "sprints": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::sprint.sprint",
+      "mappedBy": "project"
+    },
+    "tags": {
+      "type": "json"
+    },
+    "engagement_score": {
+      "type": "integer",
+      "default": 0
+    }
+  }
+}

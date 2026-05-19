@@ -1,0 +1,40 @@
+{
+  "kind": "collectionType",
+  "collectionName": "project_members",
+  "info": {
+    "singularName": "project-member",
+    "pluralName": "project-members",
+    "displayName": "Project Member",
+    "description": "Links users to projects with specific roles"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "project": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::project.project",
+      "inversedBy": "project_members"
+    },
+    "users_permissions_user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "project_memberships"
+    },
+    "project_role": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::project-role.project-role"
+    },
+    "github_username": {
+      "type": "string"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  }
+}

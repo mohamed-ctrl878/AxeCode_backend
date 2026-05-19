@@ -1,0 +1,51 @@
+{
+  "kind": "collectionType",
+  "collectionName": "project_roles",
+  "info": {
+    "singularName": "project-role",
+    "pluralName": "project-roles",
+    "displayName": "Project Role",
+    "description": "Custom roles defined per project, anchored to job title tags"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "project": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::project.project",
+      "inversedBy": "project_roles"
+    },
+    "job_title_tag": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::job-title-tag.job-title-tag"
+    },
+    "custom_label": {
+      "type": "string"
+    },
+    "required_level": {
+      "type": "enumeration",
+      "enum": [
+        "junior",
+        "mid",
+        "senior",
+        "any"
+      ],
+      "default": "any"
+    },
+    "slots": {
+      "type": "integer",
+      "default": 1
+    },
+    "permissions": {
+      "type": "json"
+    },
+    "is_open": {
+      "type": "boolean",
+      "default": true
+    }
+  }
+}

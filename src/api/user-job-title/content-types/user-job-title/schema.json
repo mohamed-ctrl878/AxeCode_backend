@@ -1,0 +1,35 @@
+{
+  "kind": "collectionType",
+  "collectionName": "user_job_titles",
+  "info": {
+    "singularName": "user-job-title",
+    "pluralName": "user-job-titles",
+    "displayName": "User Job Title",
+    "description": "Junction table linking users to their selected fixed job title tags"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "users_permissions_user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "job_titles"
+    },
+    "job_title_tag": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::job-title-tag.job-title-tag"
+    },
+    "experience_level": {
+      "type": "enumeration",
+      "enum": [
+        "junior",
+        "mid",
+        "senior"
+      ]
+    }
+  }
+}

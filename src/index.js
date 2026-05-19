@@ -201,5 +201,140 @@ module.exports = {
         strapi.log.warn(`[Wallet] Platform wallet init skipped: ${err.message}`);
       }
     })();
+
+    // ── Layer 9: Job Title Tag Seeding ──
+    // Seeds the initial fixed job title tags for the Project Management feature.
+    (async () => {
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const lockFile = path.join(process.cwd(), '.migration_job_title_tags_done');
+
+        if (fs.existsSync(lockFile)) return;
+
+        const initialTags = [
+          { slug: 'frontend-developer', label_ar: 'مطور واجهات أمامية', label_en: 'Frontend Developer', category: 'Frontend' },
+          { slug: 'backend-developer', label_ar: 'مطور خوادم', label_en: 'Backend Developer', category: 'Backend' },
+          { slug: 'full-stack-developer', label_ar: 'مطور متكامل', label_en: 'Full Stack Developer', category: 'Full Stack' },
+          { slug: 'mobile-developer', label_ar: 'مطور تطبيقات جوال', label_en: 'Mobile Developer', category: 'Mobile' },
+          { slug: 'devops-engineer', label_ar: 'مهندس DevOps', label_en: 'DevOps Engineer', category: 'DevOps' },
+          { slug: 'qa-engineer', label_ar: 'مهندس ضمان الجودة', label_en: 'QA Engineer', category: 'QA' },
+          { slug: 'ui-ux-designer', label_ar: 'مصمم واجهات', label_en: 'UI/UX Designer', category: 'Design' },
+          { slug: 'product-manager', label_ar: 'مدير منتج', label_en: 'Product Manager', category: 'Management' },
+          { slug: 'tech-lead', label_ar: 'قائد تقني', label_en: 'Tech Lead', category: 'Management' },
+          { slug: 'data-engineer', label_ar: 'مهندس بيانات', label_en: 'Data Engineer', category: 'Data' },
+        ];
+
+        strapi.log.info('[JobTitleTag] Seeding initial job title tags...');
+
+        for (const tag of initialTags) {
+          const exists = await strapi.db.query('api::job-title-tag.job-title-tag').findOne({
+            where: { slug: tag.slug },
+          });
+
+          if (!exists) {
+            await strapi.db.query('api::job-title-tag.job-title-tag').create({
+              data: { ...tag, is_active: true },
+            });
+          }
+        }
+
+        fs.writeFileSync(lockFile, new Date().toISOString());
+        strapi.log.info('[JobTitleTag] ✅ Initial job title tags seeded successfully');
+      } catch (err) {
+        strapi.log.warn(`[JobTitleTag] Seed skipped: ${err.message}`);
+      }
+    })();
+
+    // ── Layer 10: Project Management API Permissions ──
+    // Grants public access to job-title-tags list and authenticated access
+    // to all project management endpoints.
+    (async () => {
+      try {
+        const publicRole = await strapi.db.query('plugin::users-permissions.role').findOne({
+          where: { type: 'public' },
+        });
+        const authRole = await strapi.db.query('plugin::users-permissions.role').findOne({
+          where: { type: 'authenticated' },
+        });
+
+        // Public actions (no auth needed)
+        const publicActions = [
+          'api::job-title-tag.job-title-tag.find',
+          'api::project.project.find',
+          'api::project.project.findOne',
+          'api::project-role.project-role.findRoles',
+          'api::project-member.project-member.findMembers',
+          'api::sprint.sprint.findSprints',
+          'api::task.task.findTasks',
+          'api::github-event.github-event.ingest',
+          'api::github-event.github-event.findByProject',
+        ];
+
+        // Authenticated actions (user must be logged in)
+        const authActions = [
+          'api::user-job-title.user-job-title.getMyJobTitles',
+          'api::user-job-title.user-job-title.addMyJobTitle',
+          'api::user-job-title.user-job-title.removeMyJobTitle',
+          'api::project.project.find',
+          'api::project.project.findOne',
+          'api::project.project.create',
+          'api::project.project.update',
+          'api::project.project.delete',
+          'api::project-role.project-role.findRoles',
+          'api::project-role.project-role.createRole',
+          'api::project-role.project-role.updateRole',
+          'api::project-member.project-member.findMembers',
+          'api::project-member.project-member.removeMember',
+          'api::project-application.project-application.apply',
+          'api::project-application.project-application.invite',
+          'api::project-application.project-application.respond',
+          'api::project-application.project-application.findByProject',
+          'api::project-application.project-application.myApplications',
+          'api::sprint.sprint.findSprints',
+          'api::sprint.sprint.createSprint',
+          'api::sprint.sprint.updateSprint',
+          'api::sprint.sprint.startSprint',
+          'api::task.task.findTasks',
+          'api::task.task.createTask',
+          'api::task.task.updateTask',
+          'api::task.task.transitionTask',
+          'api::task.task.reorderTasks',
+          'api::task.task.deleteTask',
+          'api::recommendation.recommendation.getJobAds',
+        ];
+
+        const grantPermission = async (action, roleId) => {
+          const exists = await strapi.db.query('plugin::users-permissions.permission').findOne({
+            where: { action, role: roleId },
+          });
+          if (!exists) {
+            await strapi.db.query('plugin::users-permissions.permission').create({
+              data: { action, role: roleId },
+            });
+          }
+        };
+
+        if (publicRole) {
+          for (const action of publicActions) {
+            await grantPermission(action, publicRole.id);
+          }
+          // Also grant public actions to authenticated role
+          for (const action of publicActions) {
+            if (authRole) await grantPermission(action, authRole.id);
+          }
+        }
+
+        if (authRole) {
+          for (const action of authActions) {
+            await grantPermission(action, authRole.id);
+          }
+        }
+
+        strapi.log.info('[ProjectMgmt] ✅ API permissions configured');
+      } catch (err) {
+        strapi.log.warn(`[ProjectMgmt] Permission setup skipped: ${err.message}`);
+      }
+    })();
   },
 };

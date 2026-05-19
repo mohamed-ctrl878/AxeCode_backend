@@ -278,5 +278,17 @@ module.exports = createCoreController("api::recommendation.recommendation", ({ s
 
     const result = await strapi.service("api::recommendation.recommendation").getTagAudienceMap();
     return { data: result };
-  }
+  },
+
+  // Job ads — open project roles matching user's job title tags
+  async getJobAds(ctx) {
+    const user = ctx.state.user;
+    if (!user) return ctx.unauthorized("Authentication required for job ad recommendations");
+
+    const query = ctx.query || {};
+    const limit = query.limit ? parseInt(String(query.limit), 10) : 4;
+
+    const jobAds = await strapi.service("api::recommendation.job-ad-feed").getMatchingJobAds(user, limit);
+    return { data: jobAds };
+  },
 }));
