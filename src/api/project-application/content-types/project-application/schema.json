@@ -1,0 +1,56 @@
+{
+  "kind": "collectionType",
+  "collectionName": "project_applications",
+  "info": {
+    "singularName": "project-application",
+    "pluralName": "project-applications",
+    "displayName": "Project Application",
+    "description": "Handles both developer applications and publisher invitations"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "type": {
+      "type": "enumeration",
+      "enum": [
+        "apply",
+        "invite"
+      ],
+      "required": true
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": [
+        "pending",
+        "accepted",
+        "rejected"
+      ],
+      "default": "pending"
+    },
+    "user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "project_role": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::project-role.project-role"
+    },
+    "project": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::project.project"
+    },
+    "initiated_by": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "message": {
+      "type": "text"
+    }
+  }
+}

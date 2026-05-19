@@ -94,5 +94,15 @@ module.exports = {
         middlewares: [],
       },
     },
+    // Job ads — open project roles matching user's tags
+    {
+      method: "GET",
+      path: "/recommendations/job-ads",
+      handler: "recommendation.getJobAds",
+      config: {
+        policies: [],
+        middlewares: [],
+      },
+    },
   ],
 };

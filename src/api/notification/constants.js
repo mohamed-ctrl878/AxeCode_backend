@@ -12,13 +12,14 @@ const OWNERSHIP_MAP = {
   article: { uid: 'api::article.article', ownerField: 'author' },
   blog:    { uid: 'api::blog.blog',       ownerField: 'publisher' },
   payout:  { uid: 'api::payout.payout',   ownerField: 'user' },
+  project: { uid: 'api::project.project', ownerField: 'publisher' },
 };
 
 /**
  * Supported interaction types that trigger notifications.
  * @type {string[]}
  */
-const INTERACTION_TYPES = ['like', 'rate', 'comment', 'report', 'payout_request', 'payout_paid', 'payout_rejected'];
+const INTERACTION_TYPES = ['like', 'rate', 'comment', 'report', 'payout_request', 'payout_paid', 'payout_rejected', 'project_invite', 'project_apply', 'project_accepted', 'task_assigned', 'sprint_started'];
 
 /**
  * Matrix defining which interactions are valid for which content types.
@@ -32,6 +33,11 @@ const INTERACTION_CONTENT_MATRIX = {
   payout_request:  ['payout'],
   payout_paid:     ['payout'],
   payout_rejected: ['payout'],
+  project_invite:   ['project'],
+  project_apply:    ['project'],
+  project_accepted: ['project'],
+  task_assigned:    ['project'],
+  sprint_started:   ['project'],
 };
 
 module.exports = {
