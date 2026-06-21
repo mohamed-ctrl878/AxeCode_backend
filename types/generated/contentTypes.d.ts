@@ -546,6 +546,42 @@ export interface ApiBlogBlog extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiCheckpointCheckpoint extends Struct.CollectionTypeSchema {
+  collectionName: 'checkpoints';
+  info: {
+    description: 'A checkpoint groups multiple tasks within an SDLC stage of a sprint';
+    displayName: 'Checkpoint';
+    pluralName: 'checkpoints';
+    singularName: 'checkpoint';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::checkpoint.checkpoint'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    project: Schema.Attribute.Relation<'manyToOne', 'api::project.project'>;
+    publishedAt: Schema.Attribute.DateTime;
+    sprint: Schema.Attribute.Relation<'manyToOne', 'api::sprint.sprint'>;
+    stage: Schema.Attribute.Enumeration<
+      ['planning', 'design', 'implementation', 'testing', 'deployment']
+    > &
+      Schema.Attribute.Required;
+    tasks: Schema.Attribute.Relation<'oneToMany', 'api::task.task'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiCodeTemplateCodeTemplate
   extends Struct.CollectionTypeSchema {
   collectionName: 'code_templates';
@@ -1597,6 +1633,7 @@ export interface ApiProjectProject extends Struct.CollectionTypeSchema {
     draftAndPublish: false;
   };
   attributes: {
+    architecture_diagram: Schema.Attribute.JSON;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -1639,6 +1676,7 @@ export interface ApiProjectProject extends Struct.CollectionTypeSchema {
       Schema.Attribute.Private;
     visibility: Schema.Attribute.Enumeration<['public', 'invite_only']> &
       Schema.Attribute.DefaultTo<'public'>;
+    wiki_docs: Schema.Attribute.JSON;
   };
 }
 
@@ -1828,6 +1866,56 @@ export interface ApiReportReport extends Struct.CollectionTypeSchema {
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+  };
+}
+
+export interface ApiReviewRequestReviewRequest
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'review_requests';
+  info: {
+    description: 'Formal requests to review and merge deliverables';
+    displayName: 'Review Request';
+    pluralName: 'review-requests';
+    singularName: 'review-request';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    external_link: Schema.Attribute.String;
+    feedback: Schema.Attribute.Text;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::review-request.review-request'
+    > &
+      Schema.Attribute.Private;
+    message: Schema.Attribute.Text;
+    project: Schema.Attribute.Relation<'manyToOne', 'api::project.project'>;
+    publishedAt: Schema.Attribute.DateTime;
+    requester: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::project-member.project-member'
+    >;
+    reviewer: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::project-member.project-member'
+    >;
+    status: Schema.Attribute.Enumeration<
+      ['pending', 'approved', 'changes_requested', 'rejected']
+    > &
+      Schema.Attribute.DefaultTo<'pending'>;
+    task: Schema.Attribute.Relation<'manyToOne', 'api::task.task'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    workspace_item: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::workspace-item.workspace-item'
+    >;
   };
 }
 
@@ -2104,6 +2192,10 @@ export interface ApiTaskTask extends Struct.CollectionTypeSchema {
       'api::project-member.project-member'
     >;
     branch_pattern: Schema.Attribute.String;
+    checkpoint: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::checkpoint.checkpoint'
+    >;
     ci_status: Schema.Attribute.Enumeration<
       ['pending', 'success', 'failure', 'cancelled']
     >;
@@ -2112,6 +2204,7 @@ export interface ApiTaskTask extends Struct.CollectionTypeSchema {
       Schema.Attribute.Private;
     description: Schema.Attribute.Text;
     github_pr_id: Schema.Attribute.BigInteger;
+    layer_id: Schema.Attribute.String;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<'oneToMany', 'api::task.task'> &
       Schema.Attribute.Private;
@@ -2123,10 +2216,25 @@ export interface ApiTaskTask extends Struct.CollectionTypeSchema {
     project: Schema.Attribute.Relation<'manyToOne', 'api::project.project'>;
     publishedAt: Schema.Attribute.DateTime;
     sprint: Schema.Attribute.Relation<'manyToOne', 'api::sprint.sprint'>;
+    stage: Schema.Attribute.Enumeration<
+      ['planning', 'design', 'implementation', 'testing', 'deployment']
+    > &
+      Schema.Attribute.DefaultTo<'planning'>;
     status: Schema.Attribute.Enumeration<
       ['todo', 'in_progress', 'in_review', 'done', 'blocked']
     > &
       Schema.Attribute.DefaultTo<'todo'>;
+    task_type: Schema.Attribute.Enumeration<
+      [
+        'general',
+        'document',
+        'flowchart',
+        'code_commit',
+        'test_case',
+        'deployment',
+      ]
+    > &
+      Schema.Attribute.DefaultTo<'general'>;
     title: Schema.Attribute.String & Schema.Attribute.Required;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
@@ -2429,6 +2537,49 @@ export interface ApiWeekWeek extends Struct.CollectionTypeSchema {
       'manyToOne',
       'plugin::users-permissions.user'
     >;
+  };
+}
+
+export interface ApiWorkspaceItemWorkspaceItem
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'workspace_items';
+  info: {
+    description: 'User personal workspace drafts (Documents, Flowcharts)';
+    displayName: 'Workspace Item';
+    pluralName: 'workspace-items';
+    singularName: 'workspace-item';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    content: Schema.Attribute.JSON;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    linked_task: Schema.Attribute.Relation<'manyToOne', 'api::task.task'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::workspace-item.workspace-item'
+    > &
+      Schema.Attribute.Private;
+    project: Schema.Attribute.Relation<'manyToOne', 'api::project.project'>;
+    project_member: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::project-member.project-member'
+    >;
+    publishedAt: Schema.Attribute.DateTime;
+    status: Schema.Attribute.Enumeration<
+      ['draft', 'submitted', 'merged', 'rejected']
+    > &
+      Schema.Attribute.DefaultTo<'draft'>;
+    title: Schema.Attribute.String & Schema.Attribute.Required;
+    type: Schema.Attribute.Enumeration<['document', 'flowchart']> &
+      Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
   };
 }
 
@@ -2992,6 +3143,7 @@ declare module '@strapi/strapi' {
       'api::admin-notification.admin-notification': ApiAdminNotificationAdminNotification;
       'api::article.article': ApiArticleArticle;
       'api::blog.blog': ApiBlogBlog;
+      'api::checkpoint.checkpoint': ApiCheckpointCheckpoint;
       'api::code-template.code-template': ApiCodeTemplateCodeTemplate;
       'api::comment.comment': ApiCommentComment;
       'api::course-type.course-type': ApiCourseTypeCourseType;
@@ -3023,6 +3175,7 @@ declare module '@strapi/strapi' {
       'api::recommendation.recommendation': ApiRecommendationRecommendation;
       'api::report-type.report-type': ApiReportTypeReportType;
       'api::report.report': ApiReportReport;
+      'api::review-request.review-request': ApiReviewRequestReviewRequest;
       'api::roadmap.roadmap': ApiRoadmapRoadmap;
       'api::scan-ticket.scan-ticket': ApiScanTicketScanTicket;
       'api::scanner.scanner': ApiScannerScanner;
@@ -3038,6 +3191,7 @@ declare module '@strapi/strapi' {
       'api::user-progress.user-progress': ApiUserProgressUserProgress;
       'api::wallet.wallet': ApiWalletWallet;
       'api::week.week': ApiWeekWeek;
+      'api::workspace-item.workspace-item': ApiWorkspaceItemWorkspaceItem;
       'plugin::content-releases.release': PluginContentReleasesRelease;
       'plugin::content-releases.release-action': PluginContentReleasesReleaseAction;
       'plugin::i18n.locale': PluginI18NLocale;

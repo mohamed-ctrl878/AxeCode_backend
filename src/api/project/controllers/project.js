@@ -15,7 +15,7 @@ module.exports = createCoreController('api::project.project', ({ strapi }) => ({
     ctx.request.body = {
       data: {
         ...data,
-        publisher: user.documentId,
+        publisher: user.id,
         status: data.status || 'draft',
       },
     };
@@ -41,7 +41,7 @@ module.exports = createCoreController('api::project.project', ({ strapi }) => ({
         await strapi.documents('api::project-member.project-member').create({
           data: {
             project: result.data.documentId,
-            users_permissions_user: user.documentId,
+            users_permissions_user: user.id,
             project_role: publisherRole.documentId,
             github_username: user.github_username || '',
             is_active: true,
@@ -121,7 +121,7 @@ module.exports = createCoreController('api::project.project', ({ strapi }) => ({
 
     if (!project) return ctx.notFound('Project not found');
 
-    if (project.publisher?.documentId !== user.documentId) {
+    if (project.publisher?.id !== user.id) {
       // Check if user has admin permission via project_member
       const membership = await strapi.db.query('api::project-member.project-member').findOne({
         where: {
@@ -156,7 +156,7 @@ module.exports = createCoreController('api::project.project', ({ strapi }) => ({
 
     if (!project) return ctx.notFound('Project not found');
 
-    if (project.publisher?.documentId !== user.documentId) {
+    if (project.publisher?.id !== user.id) {
       return ctx.forbidden('Only the project publisher can archive the project');
     }
 

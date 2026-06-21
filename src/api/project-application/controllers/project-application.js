@@ -63,10 +63,10 @@ module.exports = createCoreController('api::project-application.project-applicat
       data: {
         type: 'apply',
         status: 'pending',
-        user: user.documentId,
+        user: user.id,
         project_role: project_role_id,
         project: projectId,
-        initiated_by: user.documentId,
+        initiated_by: user.id,
         message: message || '',
       },
     });
@@ -119,7 +119,7 @@ module.exports = createCoreController('api::project-application.project-applicat
     });
 
     if (!project) return ctx.notFound('Project not found');
-    if (project.publisher?.documentId !== publisher.documentId) {
+    if (project.publisher?.id !== publisher.id) {
       return ctx.forbidden('Only project admin can send invitations');
     }
 
@@ -144,7 +144,7 @@ module.exports = createCoreController('api::project-application.project-applicat
         user: user_id,
         project_role: project_role_id,
         project: projectId,
-        initiated_by: publisher.documentId,
+        initiated_by: publisher.id,
         message: message || '',
       },
     });
@@ -200,12 +200,12 @@ module.exports = createCoreController('api::project-application.project-applicat
     // Authorization: who can respond?
     if (application.type === 'apply') {
       // Publisher responds to developer's application
-      if (application.project?.publisher?.documentId !== user.documentId) {
+      if (application.project?.publisher?.id !== user.id) {
         return ctx.forbidden('Only the project publisher can respond to applications');
       }
     } else if (application.type === 'invite') {
       // Developer responds to publisher's invitation
-      if (application.user?.documentId !== user.documentId) {
+      if (application.user?.id !== user.id) {
         return ctx.forbidden('Only the invited user can respond to this invitation');
       }
     }
@@ -222,7 +222,7 @@ module.exports = createCoreController('api::project-application.project-applicat
         await strapi.documents('api::project-member.project-member').create({
           data: {
             project: application.project.documentId,
-            users_permissions_user: application.user.documentId,
+            users_permissions_user: application.user.id,
             project_role: application.project_role.documentId,
             github_username: '',
             is_active: true,
@@ -268,7 +268,7 @@ module.exports = createCoreController('api::project-application.project-applicat
     });
 
     if (!project) return ctx.notFound('Project not found');
-    if (project.publisher?.documentId !== user.documentId) {
+    if (project.publisher?.id !== user.id) {
       return ctx.forbidden('Only project admin can view applications');
     }
 
@@ -292,7 +292,7 @@ module.exports = createCoreController('api::project-application.project-applicat
     if (!user) return ctx.unauthorized('Authentication required');
 
     const applications = await strapi.documents('api::project-application.project-application').findMany({
-      filters: { user: { documentId: user.documentId } },
+      filters: { user: user.id },
       populate: ['project', 'project_role', 'project_role.job_title_tag'],
       sort: [{ createdAt: 'desc' }],
     });

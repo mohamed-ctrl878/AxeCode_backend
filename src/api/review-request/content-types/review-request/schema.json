@@ -1,0 +1,59 @@
+{
+  "kind": "collectionType",
+  "collectionName": "review_requests",
+  "info": {
+    "singularName": "review-request",
+    "pluralName": "review-requests",
+    "displayName": "Review Request",
+    "description": "Formal requests to review and merge deliverables"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "project": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::project.project"
+    },
+    "task": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::task.task"
+    },
+    "workspace_item": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::workspace-item.workspace-item"
+    },
+    "external_link": {
+      "type": "string"
+    },
+    "requester": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::project-member.project-member"
+    },
+    "reviewer": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::project-member.project-member"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": [
+        "pending",
+        "approved",
+        "changes_requested",
+        "rejected"
+      ],
+      "default": "pending"
+    },
+    "message": {
+      "type": "text"
+    },
+    "feedback": {
+      "type": "text"
+    }
+  }
+}
