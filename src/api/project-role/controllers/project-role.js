@@ -1,6 +1,7 @@
 'use strict';
 
 const { createCoreController } = require('@strapi/strapi').factories;
+const { hasProjectPermission } = require('../../../utils/rbac');
 
 module.exports = createCoreController('api::project-role.project-role', ({ strapi }) => ({
   /**
@@ -13,15 +14,15 @@ module.exports = createCoreController('api::project-role.project-role', ({ strap
     const { id: projectId } = ctx.params;
     const data = ctx.request.body?.data || ctx.request.body;
 
-    // Verify project exists and user is admin
+    // Verify project exists and user has permission
     const project = await strapi.documents('api::project.project').findOne({
       documentId: projectId,
-      populate: ['publisher'],
     });
-
     if (!project) return ctx.notFound('Project not found');
-    if (project.publisher?.documentId !== user.documentId) {
-      return ctx.forbidden('Only project admin can create roles');
+
+    const canManage = await hasProjectPermission(strapi, projectId, user.id, 'manage_members');
+    if (!canManage) {
+      return ctx.forbidden('You do not have permission to manage roles');
     }
 
     if (!data.job_title_tag) {
@@ -32,7 +33,7 @@ module.exports = createCoreController('api::project-role.project-role', ({ strap
       data: {
         ...data,
         project: projectId,
-        permissions: data.permissions || { read: true, write: true, review: false, admin: false },
+        permissions: data.permissions || { read: true, write_tasks: false, write_sprints: false, write_checkpoints: false, manage_members: false, admin: false },
       },
     });
 
@@ -51,12 +52,12 @@ module.exports = createCoreController('api::project-role.project-role', ({ strap
 
     const project = await strapi.documents('api::project.project').findOne({
       documentId: projectId,
-      populate: ['publisher'],
     });
-
     if (!project) return ctx.notFound('Project not found');
-    if (project.publisher?.documentId !== user.documentId) {
-      return ctx.forbidden('Only project admin can update roles');
+
+    const canManage = await hasProjectPermission(strapi, projectId, user.id, 'manage_members');
+    if (!canManage) {
+      return ctx.forbidden('You do not have permission to update roles');
     }
 
     const updated = await strapi.documents('api::project-role.project-role').update({

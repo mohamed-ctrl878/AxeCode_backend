@@ -7,6 +7,12 @@ module.exports = {
       config: { policies: [], middlewares: [] },
     },
     {
+      method: 'PATCH',
+      path: '/projects/:id/members/:memberId/assign-role',
+      handler: 'project-member.assignRole',
+      config: { policies: [], middlewares: [] },
+    },
+    {
       method: 'DELETE',
       path: '/projects/:id/members/:memberId',
       handler: 'project-member.removeMember',

@@ -1,6 +1,7 @@
 'use strict';
 
 const { createCoreController } = require('@strapi/strapi').factories;
+const { hasProjectPermission } = require('../../../utils/rbac');
 
 /**
  * Valid status transitions for the task state machine.
@@ -29,22 +30,16 @@ module.exports = createCoreController('api::task.task', ({ strapi }) => ({
       return ctx.badRequest('title is required');
     }
 
-    // Verify project membership with write permission
+    // Verify project membership with write_tasks permission
     const project = await strapi.documents('api::project.project').findOne({
       documentId: projectId,
       populate: ['publisher'],
     });
     if (!project) return ctx.notFound('Project not found');
 
-    const isPublisher = project.publisher?.documentId === user.documentId;
-    if (!isPublisher) {
-      const membership = await strapi.db.query('api::project-member.project-member').findOne({
-        where: { project: project.id, users_permissions_user: user.id, is_active: true },
-        populate: { project_role: true },
-      });
-      if (!membership?.project_role?.permissions?.write) {
-        return ctx.forbidden('Write permission required to create tasks');
-      }
+    const hasWrite = await hasProjectPermission(strapi, projectId, user.id, 'write_tasks');
+    if (!hasWrite) {
+      return ctx.forbidden('write_tasks permission required to create tasks');
     }
 
     // Auto-calculate order (append to end of column)
@@ -63,6 +58,10 @@ module.exports = createCoreController('api::task.task', ({ strapi }) => ({
         sprint: data.sprint || null,
         assignee: data.assignee || null,
         order: existingCount,
+        checkpoint: data.checkpoint || null,
+        stage: data.stage || 'planning',
+        layer_id: data.layer_id || null,
+        task_type: data.task_type || 'general',
       },
     });
 
@@ -101,7 +100,7 @@ module.exports = createCoreController('api::task.task', ({ strapi }) => ({
 
     const tasks = await strapi.documents('api::task.task').findMany({
       filters,
-      populate: ['assignee', 'assignee.users_permissions_user', 'assignee.project_role', 'sprint'],
+      populate: ['assignee', 'assignee.users_permissions_user', 'assignee.project_role', 'sprint', 'checkpoint'],
       sort: [{ order: 'asc' }],
     });
 
@@ -118,22 +117,16 @@ module.exports = createCoreController('api::task.task', ({ strapi }) => ({
     const { id: projectId, taskId } = ctx.params;
     const data = ctx.request.body?.data || ctx.request.body;
 
-    // Verify write permission
+    // Verify write_tasks permission
     const project = await strapi.documents('api::project.project').findOne({
       documentId: projectId,
       populate: ['publisher'],
     });
     if (!project) return ctx.notFound('Project not found');
 
-    const isPublisher = project.publisher?.documentId === user.documentId;
-    if (!isPublisher) {
-      const membership = await strapi.db.query('api::project-member.project-member').findOne({
-        where: { project: project.id, users_permissions_user: user.id, is_active: true },
-        populate: { project_role: true },
-      });
-      if (!membership?.project_role?.permissions?.write) {
-        return ctx.forbidden('Write permission required');
-      }
+    const hasWrite = await hasProjectPermission(strapi, projectId, user.id, 'write_tasks');
+    if (!hasWrite) {
+      return ctx.forbidden('write_tasks permission required');
     }
 
     const updated = await strapi.documents('api::task.task').update({
@@ -175,22 +168,16 @@ module.exports = createCoreController('api::task.task', ({ strapi }) => ({
 
     if (!newStatus) return ctx.badRequest('status is required');
 
-    // Verify write permission
+    // Verify write_tasks permission
     const project = await strapi.documents('api::project.project').findOne({
       documentId: projectId,
       populate: ['publisher'],
     });
     if (!project) return ctx.notFound('Project not found');
 
-    const isPublisher = project.publisher?.documentId === user.documentId;
-    if (!isPublisher) {
-      const membership = await strapi.db.query('api::project-member.project-member').findOne({
-        where: { project: project.id, users_permissions_user: user.id, is_active: true },
-        populate: { project_role: true },
-      });
-      if (!membership?.project_role?.permissions?.write) {
-        return ctx.forbidden('Write permission required');
-      }
+    const hasWrite = await hasProjectPermission(strapi, projectId, user.id, 'write_tasks');
+    if (!hasWrite) {
+      return ctx.forbidden('write_tasks permission required');
     }
 
     // Load current task
@@ -252,8 +239,9 @@ module.exports = createCoreController('api::task.task', ({ strapi }) => ({
     });
     if (!project) return ctx.notFound('Project not found');
 
-    if (project.publisher?.documentId !== user.documentId) {
-      return ctx.forbidden('Only project admin can delete tasks');
+    const hasWrite = await hasProjectPermission(strapi, projectId, user.id, 'write_tasks');
+    if (!hasWrite) {
+      return ctx.forbidden('write_tasks permission required to delete tasks');
     }
 
     await strapi.documents('api::task.task').delete({ documentId: taskId });

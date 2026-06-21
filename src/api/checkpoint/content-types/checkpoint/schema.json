@@ -1,0 +1,47 @@
+{
+  "kind": "collectionType",
+  "collectionName": "checkpoints",
+  "info": {
+    "singularName": "checkpoint",
+    "pluralName": "checkpoints",
+    "displayName": "Checkpoint",
+    "description": "A checkpoint groups multiple tasks within an SDLC stage of a sprint"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "project": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::project.project"
+    },
+    "sprint": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::sprint.sprint"
+    },
+    "stage": {
+      "type": "enumeration",
+      "enum": [
+        "planning",
+        "design",
+        "implementation",
+        "testing",
+        "deployment"
+      ],
+      "required": true
+    },
+    "tasks": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::task.task",
+      "mappedBy": "checkpoint"
+    }
+  }
+}

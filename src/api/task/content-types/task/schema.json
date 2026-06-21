@@ -73,6 +73,38 @@
     "order": {
       "type": "integer",
       "default": 0
+    },
+    "task_type": {
+      "type": "enumeration",
+      "enum": [
+        "general",
+        "document",
+        "flowchart",
+        "code_commit",
+        "test_case",
+        "deployment"
+      ],
+      "default": "general"
+    },
+    "layer_id": {
+      "type": "string"
+    },
+    "stage": {
+      "type": "enumeration",
+      "enum": [
+        "planning",
+        "design",
+        "implementation",
+        "testing",
+        "deployment"
+      ],
+      "default": "planning"
+    },
+    "checkpoint": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::checkpoint.checkpoint",
+      "inversedBy": "tasks"
     }
   }
 }

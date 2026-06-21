@@ -1,6 +1,7 @@
 'use strict';
 
 const { createCoreController } = require('@strapi/strapi').factories;
+const { hasProjectPermission } = require('../../../utils/rbac');
 
 module.exports = createCoreController('api::sprint.sprint', ({ strapi }) => ({
   /**
@@ -13,15 +14,13 @@ module.exports = createCoreController('api::sprint.sprint', ({ strapi }) => ({
     const { id: projectId } = ctx.params;
     const data = ctx.request.body?.data || ctx.request.body;
 
-    // Verify admin
     const project = await strapi.documents('api::project.project').findOne({
       documentId: projectId,
-      populate: ['publisher'],
     });
     if (!project) return ctx.notFound('Project not found');
-    if (project.publisher?.documentId !== user.documentId) {
-      return ctx.forbidden('Only project admin can create sprints');
-    }
+
+    const hasPerm = await hasProjectPermission(strapi, projectId, user.id, 'write_sprints');
+    if (!hasPerm) return ctx.forbidden('write_sprints permission required');
 
     // Auto-calculate sprint number
     const existingSprints = await strapi.db.query('api::sprint.sprint').count({
@@ -52,12 +51,11 @@ module.exports = createCoreController('api::sprint.sprint', ({ strapi }) => ({
 
     const project = await strapi.documents('api::project.project').findOne({
       documentId: projectId,
-      populate: ['publisher'],
     });
     if (!project) return ctx.notFound('Project not found');
-    if (project.publisher?.documentId !== user.documentId) {
-      return ctx.forbidden('Only project admin can update sprints');
-    }
+
+    const hasPerm = await hasProjectPermission(strapi, projectId, user.id, 'write_sprints');
+    if (!hasPerm) return ctx.forbidden('write_sprints permission required');
 
     const updated = await strapi.documents('api::sprint.sprint').update({
       documentId: sprintId,
@@ -92,12 +90,11 @@ module.exports = createCoreController('api::sprint.sprint', ({ strapi }) => ({
 
     const project = await strapi.documents('api::project.project').findOne({
       documentId: projectId,
-      populate: ['publisher'],
     });
     if (!project) return ctx.notFound('Project not found');
-    if (project.publisher?.documentId !== user.documentId) {
-      return ctx.forbidden('Only project admin can start sprints');
-    }
+
+    const hasPerm = await hasProjectPermission(strapi, projectId, user.id, 'write_sprints');
+    if (!hasPerm) return ctx.forbidden('write_sprints permission required');
 
     // Deactivate any currently active sprint
     const activeSprints = await strapi.db.query('api::sprint.sprint').findMany({
@@ -118,7 +115,7 @@ module.exports = createCoreController('api::sprint.sprint', ({ strapi }) => ({
       },
     });
 
-    // Fire sprint_started notification to all members (fire-and-forget)
+    // Fire sprint_started notification (fire-and-forget)
     try {
       const emitter = strapi.service('api::notification.notification-emitter');
       if (emitter) {

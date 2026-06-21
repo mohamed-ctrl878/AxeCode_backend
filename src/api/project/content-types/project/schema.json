@@ -80,6 +80,12 @@
       "target": "api::sprint.sprint",
       "mappedBy": "project"
     },
+    "wiki_docs": {
+      "type": "json"
+    },
+    "architecture_diagram": {
+      "type": "json"
+    },
     "tags": {
       "type": "json"
     },
