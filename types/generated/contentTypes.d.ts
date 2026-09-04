@@ -527,19 +527,62 @@ export interface ApiBlogBlog extends Struct.CollectionTypeSchema {
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    description: Schema.Attribute.Blocks & Schema.Attribute.Required;
+    description: Schema.Attribute.Blocks;
     engagement_score: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
     image: Schema.Attribute.Media<'images'>;
     isDraft: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<'oneToMany', 'api::blog.blog'> &
       Schema.Attribute.Private;
+    project: Schema.Attribute.Relation<'manyToOne', 'api::project.project'>;
+    project_role: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::project-role.project-role'
+    >;
     publishedAt: Schema.Attribute.DateTime;
     publisher: Schema.Attribute.Relation<
       'manyToOne',
       'plugin::users-permissions.user'
     >;
     tags: Schema.Attribute.JSON;
+    type: Schema.Attribute.Enumeration<['blog', 'job_opportunity']> &
+      Schema.Attribute.DefaultTo<'blog'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiCheckpointCheckpoint extends Struct.CollectionTypeSchema {
+  collectionName: 'checkpoints';
+  info: {
+    description: 'A checkpoint groups multiple tasks within an SDLC stage of a sprint';
+    displayName: 'Checkpoint';
+    pluralName: 'checkpoints';
+    singularName: 'checkpoint';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::checkpoint.checkpoint'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    project: Schema.Attribute.Relation<'manyToOne', 'api::project.project'>;
+    publishedAt: Schema.Attribute.DateTime;
+    sprint: Schema.Attribute.Relation<'manyToOne', 'api::sprint.sprint'>;
+    stage: Schema.Attribute.Enumeration<
+      ['planning', 'design', 'implementation', 'testing', 'deployment']
+    > &
+      Schema.Attribute.Required;
+    tasks: Schema.Attribute.Relation<'oneToMany', 'api::task.task'>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -887,6 +930,55 @@ export interface ApiFaqFaq extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiGithubEventGithubEvent extends Struct.CollectionTypeSchema {
+  collectionName: 'github_events';
+  info: {
+    description: 'Append-only log of incoming GitHub webhook events';
+    displayName: 'GitHub Event';
+    pluralName: 'github-events';
+    singularName: 'github-event';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    action: Schema.Attribute.String;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    delivery_id: Schema.Attribute.String & Schema.Attribute.Unique;
+    event_type: Schema.Attribute.Enumeration<
+      [
+        'push',
+        'pull_request',
+        'pull_request_review',
+        'issues',
+        'check_suite',
+        'check_run',
+        'workflow_run',
+        'create',
+        'delete',
+      ]
+    > &
+      Schema.Attribute.Required;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::github-event.github-event'
+    > &
+      Schema.Attribute.Private;
+    payload_summary: Schema.Attribute.JSON;
+    processed: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    processed_result: Schema.Attribute.JSON;
+    project: Schema.Attribute.Relation<'manyToOne', 'api::project.project'>;
+    publishedAt: Schema.Attribute.DateTime;
+    sender_github_username: Schema.Attribute.String;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiGlobalTagGlobalTag extends Struct.CollectionTypeSchema {
   collectionName: 'global_tags';
   info: {
@@ -982,6 +1074,41 @@ export interface ApiIdempotencyKeyIdempotencyKey
     > &
       Schema.Attribute.Required &
       Schema.Attribute.DefaultTo<'PROCESSING'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiJobTitleTagJobTitleTag extends Struct.CollectionTypeSchema {
+  collectionName: 'job_title_tags';
+  info: {
+    description: 'Static, admin-controlled professional role taxonomy';
+    displayName: 'Job Title Tag';
+    pluralName: 'job-title-tags';
+    singularName: 'job-title-tag';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    category: Schema.Attribute.String;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    is_active: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    label_ar: Schema.Attribute.String & Schema.Attribute.Required;
+    label_en: Schema.Attribute.String & Schema.Attribute.Required;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::job-title-tag.job-title-tag'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    slug: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -1136,7 +1263,7 @@ export interface ApiNotificationNotification
     >;
     content_doc_id: Schema.Attribute.String & Schema.Attribute.Required;
     content_type: Schema.Attribute.Enumeration<
-      ['course', 'event', 'article', 'blog']
+      ['course', 'event', 'article', 'blog', 'project']
     > &
       Schema.Attribute.Required;
     createdAt: Schema.Attribute.DateTime;
@@ -1157,7 +1284,19 @@ export interface ApiNotificationNotification
     >;
     publishedAt: Schema.Attribute.DateTime;
     read: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
-    type: Schema.Attribute.Enumeration<['like', 'rate', 'comment', 'report']> &
+    type: Schema.Attribute.Enumeration<
+      [
+        'like',
+        'rate',
+        'comment',
+        'report',
+        'project_invite',
+        'project_apply',
+        'project_accepted',
+        'task_assigned',
+        'sprint_started',
+      ]
+    > &
       Schema.Attribute.Required;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
@@ -1361,6 +1500,193 @@ export interface ApiProblemProblem extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiProjectApplicationProjectApplication
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'project_applications';
+  info: {
+    description: 'Handles both developer applications and publisher invitations';
+    displayName: 'Project Application';
+    pluralName: 'project-applications';
+    singularName: 'project-application';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    initiated_by: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::project-application.project-application'
+    > &
+      Schema.Attribute.Private;
+    message: Schema.Attribute.Text;
+    project: Schema.Attribute.Relation<'manyToOne', 'api::project.project'>;
+    project_role: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::project-role.project-role'
+    >;
+    publishedAt: Schema.Attribute.DateTime;
+    status: Schema.Attribute.Enumeration<['pending', 'accepted', 'rejected']> &
+      Schema.Attribute.DefaultTo<'pending'>;
+    type: Schema.Attribute.Enumeration<['apply', 'invite']> &
+      Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+  };
+}
+
+export interface ApiProjectMemberProjectMember
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'project_members';
+  info: {
+    description: 'Links users to projects with specific roles';
+    displayName: 'Project Member';
+    pluralName: 'project-members';
+    singularName: 'project-member';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    github_username: Schema.Attribute.String;
+    is_active: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::project-member.project-member'
+    > &
+      Schema.Attribute.Private;
+    project: Schema.Attribute.Relation<'manyToOne', 'api::project.project'>;
+    project_role: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::project-role.project-role'
+    >;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    users_permissions_user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+  };
+}
+
+export interface ApiProjectRoleProjectRole extends Struct.CollectionTypeSchema {
+  collectionName: 'project_roles';
+  info: {
+    description: 'Custom roles defined per project, anchored to job title tags';
+    displayName: 'Project Role';
+    pluralName: 'project-roles';
+    singularName: 'project-role';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    custom_label: Schema.Attribute.String;
+    is_open: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    job_title_tag: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::job-title-tag.job-title-tag'
+    >;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::project-role.project-role'
+    > &
+      Schema.Attribute.Private;
+    permissions: Schema.Attribute.JSON;
+    project: Schema.Attribute.Relation<'manyToOne', 'api::project.project'>;
+    publishedAt: Schema.Attribute.DateTime;
+    required_level: Schema.Attribute.Enumeration<
+      ['junior', 'mid', 'senior', 'any']
+    > &
+      Schema.Attribute.DefaultTo<'any'>;
+    slots: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<1>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiProjectProject extends Struct.CollectionTypeSchema {
+  collectionName: 'projects';
+  info: {
+    description: 'Core project entity for the Project Management feature';
+    displayName: 'Project';
+    pluralName: 'projects';
+    singularName: 'project';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    architecture_diagram: Schema.Attribute.JSON;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Blocks;
+    engagement_score: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    github_repo_id: Schema.Attribute.BigInteger;
+    github_repo_url: Schema.Attribute.String;
+    github_webhook_secret: Schema.Attribute.String & Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::project.project'
+    > &
+      Schema.Attribute.Private;
+    methodology: Schema.Attribute.Enumeration<
+      ['agile', 'scrum', 'kanban', 'waterfall']
+    >;
+    project_members: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::project-member.project-member'
+    >;
+    project_roles: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::project-role.project-role'
+    >;
+    publishedAt: Schema.Attribute.DateTime;
+    publisher: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+    sprints: Schema.Attribute.Relation<'oneToMany', 'api::sprint.sprint'>;
+    status: Schema.Attribute.Enumeration<
+      ['draft', 'active', 'paused', 'completed', 'archived']
+    > &
+      Schema.Attribute.DefaultTo<'draft'>;
+    tags: Schema.Attribute.JSON;
+    title: Schema.Attribute.String & Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    visibility: Schema.Attribute.Enumeration<['public', 'invite_only']> &
+      Schema.Attribute.DefaultTo<'public'>;
+    wiki_docs: Schema.Attribute.JSON;
+  };
+}
+
 export interface ApiPushSubscriptionPushSubscription
   extends Struct.CollectionTypeSchema {
   collectionName: 'push_subscriptions';
@@ -1550,6 +1876,56 @@ export interface ApiReportReport extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiReviewRequestReviewRequest
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'review_requests';
+  info: {
+    description: 'Formal requests to review and merge deliverables';
+    displayName: 'Review Request';
+    pluralName: 'review-requests';
+    singularName: 'review-request';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    external_link: Schema.Attribute.String;
+    feedback: Schema.Attribute.Text;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::review-request.review-request'
+    > &
+      Schema.Attribute.Private;
+    message: Schema.Attribute.Text;
+    project: Schema.Attribute.Relation<'manyToOne', 'api::project.project'>;
+    publishedAt: Schema.Attribute.DateTime;
+    requester: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::project-member.project-member'
+    >;
+    reviewer: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::project-member.project-member'
+    >;
+    status: Schema.Attribute.Enumeration<
+      ['pending', 'approved', 'changes_requested', 'rejected']
+    > &
+      Schema.Attribute.DefaultTo<'pending'>;
+    task: Schema.Attribute.Relation<'manyToOne', 'api::task.task'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    workspace_item: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::workspace-item.workspace-item'
+    >;
+  };
+}
+
 export interface ApiRoadmapRoadmap extends Struct.CollectionTypeSchema {
   collectionName: 'roadmaps';
   info: {
@@ -1715,6 +2091,42 @@ export interface ApiSpeakerSpeaker extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiSprintSprint extends Struct.CollectionTypeSchema {
+  collectionName: 'sprints';
+  info: {
+    description: 'Sprint/iteration for project execution';
+    displayName: 'Sprint';
+    pluralName: 'sprints';
+    singularName: 'sprint';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    end_date: Schema.Attribute.Date;
+    goal: Schema.Attribute.Text;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::sprint.sprint'
+    > &
+      Schema.Attribute.Private;
+    number: Schema.Attribute.Integer & Schema.Attribute.Required;
+    project: Schema.Attribute.Relation<'manyToOne', 'api::project.project'>;
+    publishedAt: Schema.Attribute.DateTime;
+    retrospective_notes: Schema.Attribute.Text;
+    start_date: Schema.Attribute.Date;
+    status: Schema.Attribute.Enumeration<['planned', 'active', 'completed']> &
+      Schema.Attribute.DefaultTo<'planned'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiSubmissionSubmission extends Struct.CollectionTypeSchema {
   collectionName: 'submissions';
   info: {
@@ -1767,6 +2179,76 @@ export interface ApiSubmissionSubmission extends Struct.CollectionTypeSchema {
       ]
     > &
       Schema.Attribute.DefaultTo<'pending'>;
+  };
+}
+
+export interface ApiTaskTask extends Struct.CollectionTypeSchema {
+  collectionName: 'tasks';
+  info: {
+    description: 'Project task with status machine, priority, and GitHub PR linkage';
+    displayName: 'Task';
+    pluralName: 'tasks';
+    singularName: 'task';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    assignee: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::project-member.project-member'
+    >;
+    branch_pattern: Schema.Attribute.String;
+    checkpoint: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::checkpoint.checkpoint'
+    >;
+    ci_status: Schema.Attribute.Enumeration<
+      ['pending', 'success', 'failure', 'cancelled']
+    >;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Text;
+    github_pr_id: Schema.Attribute.BigInteger;
+    last_commit_sha: Schema.Attribute.String;
+    layer_id: Schema.Attribute.String;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<'oneToMany', 'api::task.task'> &
+      Schema.Attribute.Private;
+    order: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    pr_title: Schema.Attribute.String;
+    pr_url: Schema.Attribute.String;
+    priority: Schema.Attribute.Enumeration<
+      ['low', 'medium', 'high', 'critical']
+    > &
+      Schema.Attribute.DefaultTo<'medium'>;
+    project: Schema.Attribute.Relation<'manyToOne', 'api::project.project'>;
+    publishedAt: Schema.Attribute.DateTime;
+    sprint: Schema.Attribute.Relation<'manyToOne', 'api::sprint.sprint'>;
+    stage: Schema.Attribute.Enumeration<
+      ['planning', 'design', 'implementation', 'testing', 'deployment']
+    > &
+      Schema.Attribute.DefaultTo<'planning'>;
+    status: Schema.Attribute.Enumeration<
+      ['todo', 'in_progress', 'in_review', 'done', 'blocked']
+    > &
+      Schema.Attribute.DefaultTo<'todo'>;
+    task_type: Schema.Attribute.Enumeration<
+      [
+        'general',
+        'document',
+        'flowchart',
+        'code_commit',
+        'test_case',
+        'deployment',
+      ]
+    > &
+      Schema.Attribute.DefaultTo<'general'>;
+    title: Schema.Attribute.String & Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
   };
 }
 
@@ -1889,6 +2371,44 @@ export interface ApiUserEntitlementUserEntitlement
       'plugin::users-permissions.user'
     >;
     valid: Schema.Attribute.Enumeration<['pinding', 'successed', 'expired']>;
+  };
+}
+
+export interface ApiUserJobTitleUserJobTitle
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'user_job_titles';
+  info: {
+    description: 'Junction table linking users to their selected fixed job title tags';
+    displayName: 'User Job Title';
+    pluralName: 'user-job-titles';
+    singularName: 'user-job-title';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    experience_level: Schema.Attribute.Enumeration<['junior', 'mid', 'senior']>;
+    job_title_tag: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::job-title-tag.job-title-tag'
+    >;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::user-job-title.user-job-title'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    users_permissions_user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
   };
 }
 
@@ -2027,6 +2547,49 @@ export interface ApiWeekWeek extends Struct.CollectionTypeSchema {
       'manyToOne',
       'plugin::users-permissions.user'
     >;
+  };
+}
+
+export interface ApiWorkspaceItemWorkspaceItem
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'workspace_items';
+  info: {
+    description: 'User personal workspace drafts (Documents, Flowcharts)';
+    displayName: 'Workspace Item';
+    pluralName: 'workspace-items';
+    singularName: 'workspace-item';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    content: Schema.Attribute.JSON;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    linked_task: Schema.Attribute.Relation<'manyToOne', 'api::task.task'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::workspace-item.workspace-item'
+    > &
+      Schema.Attribute.Private;
+    project: Schema.Attribute.Relation<'manyToOne', 'api::project.project'>;
+    project_member: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::project-member.project-member'
+    >;
+    publishedAt: Schema.Attribute.DateTime;
+    status: Schema.Attribute.Enumeration<
+      ['draft', 'submitted', 'merged', 'rejected']
+    > &
+      Schema.Attribute.DefaultTo<'draft'>;
+    title: Schema.Attribute.String & Schema.Attribute.Required;
+    type: Schema.Attribute.Enumeration<['document', 'flowchart']> &
+      Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
   };
 }
 
@@ -2514,7 +3077,12 @@ export interface PluginUsersPermissionsUser
     >;
     events: Schema.Attribute.Relation<'oneToMany', 'api::event.event'>;
     firstname: Schema.Attribute.String;
+    github_username: Schema.Attribute.String;
     interest_map: Schema.Attribute.JSON;
+    job_titles: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::user-job-title.user-job-title'
+    >;
     last_decay_date: Schema.Attribute.DateTime;
     lastname: Schema.Attribute.String;
     lessons: Schema.Attribute.Relation<'oneToMany', 'api::lesson.lesson'>;
@@ -2531,6 +3099,10 @@ export interface PluginUsersPermissionsUser
         minLength: 6;
       }>;
     phone: Schema.Attribute.String;
+    project_memberships: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::project-member.project-member'
+    >;
     provider: Schema.Attribute.String;
     publishedAt: Schema.Attribute.DateTime;
     rates: Schema.Attribute.Relation<'oneToMany', 'api::rate.rate'>;
@@ -2581,6 +3153,7 @@ declare module '@strapi/strapi' {
       'api::admin-notification.admin-notification': ApiAdminNotificationAdminNotification;
       'api::article.article': ApiArticleArticle;
       'api::blog.blog': ApiBlogBlog;
+      'api::checkpoint.checkpoint': ApiCheckpointCheckpoint;
       'api::code-template.code-template': ApiCodeTemplateCodeTemplate;
       'api::comment.comment': ApiCommentComment;
       'api::course-type.course-type': ApiCourseTypeCourseType;
@@ -2590,9 +3163,11 @@ declare module '@strapi/strapi' {
       'api::event-activity.event-activity': ApiEventActivityEventActivity;
       'api::event.event': ApiEventEvent;
       'api::faq.faq': ApiFaqFaq;
+      'api::github-event.github-event': ApiGithubEventGithubEvent;
       'api::global-tag.global-tag': ApiGlobalTagGlobalTag;
       'api::help-center.help-center': ApiHelpCenterHelpCenter;
       'api::idempotency-key.idempotency-key': ApiIdempotencyKeyIdempotencyKey;
+      'api::job-title-tag.job-title-tag': ApiJobTitleTagJobTitleTag;
       'api::lesson.lesson': ApiLessonLesson;
       'api::like.like': ApiLikeLike;
       'api::notification-preference.notification-preference': ApiNotificationPreferenceNotificationPreference;
@@ -2601,23 +3176,32 @@ declare module '@strapi/strapi' {
       'api::payout.payout': ApiPayoutPayout;
       'api::problem-type.problem-type': ApiProblemTypeProblemType;
       'api::problem.problem': ApiProblemProblem;
+      'api::project-application.project-application': ApiProjectApplicationProjectApplication;
+      'api::project-member.project-member': ApiProjectMemberProjectMember;
+      'api::project-role.project-role': ApiProjectRoleProjectRole;
+      'api::project.project': ApiProjectProject;
       'api::push-subscription.push-subscription': ApiPushSubscriptionPushSubscription;
       'api::rate.rate': ApiRateRate;
       'api::recommendation.recommendation': ApiRecommendationRecommendation;
       'api::report-type.report-type': ApiReportTypeReportType;
       'api::report.report': ApiReportReport;
+      'api::review-request.review-request': ApiReviewRequestReviewRequest;
       'api::roadmap.roadmap': ApiRoadmapRoadmap;
       'api::scan-ticket.scan-ticket': ApiScanTicketScanTicket;
       'api::scanner.scanner': ApiScannerScanner;
       'api::service-buyer.service-buyer': ApiServiceBuyerServiceBuyer;
       'api::speaker.speaker': ApiSpeakerSpeaker;
+      'api::sprint.sprint': ApiSprintSprint;
       'api::submission.submission': ApiSubmissionSubmission;
+      'api::task.task': ApiTaskTask;
       'api::test-case.test-case': ApiTestCaseTestCase;
       'api::transaction.transaction': ApiTransactionTransaction;
       'api::user-entitlement.user-entitlement': ApiUserEntitlementUserEntitlement;
+      'api::user-job-title.user-job-title': ApiUserJobTitleUserJobTitle;
       'api::user-progress.user-progress': ApiUserProgressUserProgress;
       'api::wallet.wallet': ApiWalletWallet;
       'api::week.week': ApiWeekWeek;
+      'api::workspace-item.workspace-item': ApiWorkspaceItemWorkspaceItem;
       'plugin::content-releases.release': PluginContentReleasesRelease;
       'plugin::content-releases.release-action': PluginContentReleasesReleaseAction;
       'plugin::i18n.locale': PluginI18NLocale;

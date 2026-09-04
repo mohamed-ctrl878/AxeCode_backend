@@ -73,6 +73,23 @@ module.exports = (plugin) => {
 
     ctx.body = fullUser;
   };
+  // Override the callback controller to log OAuth errors
+  const originalCallback = plugin.controllers.auth.callback;
+  plugin.controllers.auth.callback = async (ctx) => {
+    try {
+      strapi.log.info(`[OAuth Callback] Initiated for provider: ${ctx.params.provider || ctx.request.url}`);
+      await originalCallback(ctx);
+    } catch (err) {
+      strapi.log.error(`\n================== [OAUTH ERROR] ==================`);
+      strapi.log.error(`Provider: ${ctx.params.provider || 'unknown'}`);
+      strapi.log.error(`Message: ${err.message}`);
+      strapi.log.error(`Stack: ${err.stack}`);
+      strapi.log.error(`===================================================\n`);
+      
+      // Let Strapi continue its normal error handling (which redirects to admin)
+      throw err;
+    }
+  };
 
   return plugin;
 };

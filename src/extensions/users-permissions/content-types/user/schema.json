@@ -177,6 +177,21 @@
     },
     "bio": {
       "type": "string"
+    },
+    "github_username": {
+      "type": "string"
+    },
+    "job_titles": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::user-job-title.user-job-title",
+      "mappedBy": "users_permissions_user"
+    },
+    "project_memberships": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::project-member.project-member",
+      "mappedBy": "users_permissions_user"
     }
   }
 }

@@ -1,0 +1,36 @@
+{
+  "kind": "collectionType",
+  "collectionName": "job_title_tags",
+  "info": {
+    "singularName": "job-title-tag",
+    "pluralName": "job-title-tags",
+    "displayName": "Job Title Tag",
+    "description": "Static, admin-controlled professional role taxonomy"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "slug": {
+      "type": "string",
+      "unique": true,
+      "required": true
+    },
+    "label_ar": {
+      "type": "string",
+      "required": true
+    },
+    "label_en": {
+      "type": "string",
+      "required": true
+    },
+    "category": {
+      "type": "string"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  }
+}

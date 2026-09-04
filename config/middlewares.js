@@ -1,9 +1,9 @@
 module.exports = ({ env }) => {
   // Build the allowed origins list dynamically
   const allowedOrigins = [
-    // "http://127.0.0.1:5173",
+    "http://127.0.0.1:5173",
     // "http://localhost:1338",
-    // "http://localhost:5173",
+    "http://localhost:5173",
     // "https://axe-code.vercel.app",
   ];
 
@@ -58,6 +58,7 @@ module.exports = ({ env }) => {
     "strapi::poweredBy",
     "strapi::query",
     { name: "global::draft-visibility" },
+    { name: "global::github-oauth-debug" },
     "strapi::body",
     {
       name: "strapi::session",

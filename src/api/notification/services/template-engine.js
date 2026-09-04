@@ -22,7 +22,8 @@ module.exports = {
       course: 'courses',
       event: 'events',
       article: 'articles',
-      blog: 'blogs'
+      blog: 'blogs',
+      project: 'projects'
     };
     
     const actionUrl = `/${contentToPath[contentType]}/${contentDocId}`;
@@ -60,6 +61,26 @@ module.exports = {
         ar = `تم رفض طلب السحب الخاص بك بمبلغ ${extra.amount} ج.م.${reason}`;
         en = `Your payout request for ${extra.amount} EGP was rejected.${reasonEn}`;
         break;
+      case 'project_apply':
+        ar = `${actorName} تقدّم للانضمام إلى مشروعك${extra.roleLabel ? ' كـ ' + extra.roleLabel : ''}`;
+        en = `${actorNameEn} applied to join your project${extra.roleLabel ? ' as ' + extra.roleLabel : ''}`;
+        break;
+      case 'project_invite':
+        ar = `${actorName} دعاك للانضمام إلى مشروع`;
+        en = `${actorNameEn} invited you to join a project`;
+        break;
+      case 'project_accepted':
+        ar = `تم قبولك في المشروع! يمكنك البدء الآن`;
+        en = `You have been accepted to the project! You can start now`;
+        break;
+      case 'task_assigned':
+        ar = `${actorName} أسند إليك مهمة جديدة${extra.taskTitle ? ': ' + extra.taskTitle : ''}`;
+        en = `${actorNameEn} assigned you a new task${extra.taskTitle ? ': ' + extra.taskTitle : ''}`;
+        break;
+      case 'sprint_started':
+        ar = `بدأ Sprint جديد في مشروعك${extra.sprintGoal ? ' — ' + extra.sprintGoal : ''}`;
+        en = `A new sprint started in your project${extra.sprintGoal ? ' — ' + extra.sprintGoal : ''}`;
+        break;
       default:
         ar = `تفاعل جديد على ${this._getContentNameAr(contentType)}`;
         en = `New interaction on your ${contentType}`;
@@ -75,6 +96,7 @@ module.exports = {
       article: 'مقالتك',
       blog: 'المدونة',
       payout: 'طلب السحب',
+      project: 'مشروعك',
     };
     return map[contentType] || contentType;
   }

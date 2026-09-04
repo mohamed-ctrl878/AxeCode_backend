@@ -1,0 +1,56 @@
+{
+  "kind": "collectionType",
+  "collectionName": "github_events",
+  "info": {
+    "singularName": "github-event",
+    "pluralName": "github-events",
+    "displayName": "GitHub Event",
+    "description": "Append-only log of incoming GitHub webhook events"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "project": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::project.project"
+    },
+    "event_type": {
+      "type": "enumeration",
+      "enum": [
+        "push",
+        "pull_request",
+        "pull_request_review",
+        "issues",
+        "check_suite",
+        "check_run",
+        "workflow_run",
+        "create",
+        "delete"
+      ],
+      "required": true
+    },
+    "action": {
+      "type": "string"
+    },
+    "sender_github_username": {
+      "type": "string"
+    },
+    "delivery_id": {
+      "type": "string",
+      "unique": true
+    },
+    "payload_summary": {
+      "type": "json"
+    },
+    "processed": {
+      "type": "boolean",
+      "default": false
+    },
+    "processed_result": {
+      "type": "json"
+    }
+  }
+}

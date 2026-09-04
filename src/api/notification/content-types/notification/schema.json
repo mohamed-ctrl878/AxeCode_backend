@@ -12,12 +12,12 @@
   "attributes": {
     "type": {
       "type": "enumeration",
-      "enum": ["like", "rate", "comment", "report"],
+      "enum": ["like", "rate", "comment", "report", "project_invite", "project_apply", "project_accepted", "task_assigned", "sprint_started"],
       "required": true
     },
     "content_type": {
       "type": "enumeration",
-      "enum": ["course", "event", "article", "blog"],
+      "enum": ["course", "event", "article", "blog", "project"],
       "required": true
     },
     "content_doc_id": {

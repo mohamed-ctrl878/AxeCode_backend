@@ -1,0 +1,55 @@
+{
+  "kind": "collectionType",
+  "collectionName": "workspace_items",
+  "info": {
+    "singularName": "workspace-item",
+    "pluralName": "workspace-items",
+    "displayName": "Workspace Item",
+    "description": "User personal workspace drafts (Documents, Flowcharts)"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "project": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::project.project"
+    },
+    "project_member": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::project-member.project-member"
+    },
+    "type": {
+      "type": "enumeration",
+      "enum": [
+        "document",
+        "flowchart"
+      ],
+      "required": true
+    },
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "content": {
+      "type": "json"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": [
+        "draft",
+        "submitted",
+        "merged",
+        "rejected"
+      ],
+      "default": "draft"
+    },
+    "linked_task": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::task.task"
+    }
+  }
+}

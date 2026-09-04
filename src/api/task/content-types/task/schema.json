@@ -1,0 +1,119 @@
+{
+  "kind": "collectionType",
+  "collectionName": "tasks",
+  "info": {
+    "singularName": "task",
+    "pluralName": "tasks",
+    "displayName": "Task",
+    "description": "Project task with status machine, priority, and GitHub PR linkage"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "project": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::project.project"
+    },
+    "sprint": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::sprint.sprint"
+    },
+    "assignee": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::project-member.project-member"
+    },
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "description": {
+      "type": "text"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": [
+        "todo",
+        "in_progress",
+        "in_review",
+        "done",
+        "blocked"
+      ],
+      "default": "todo"
+    },
+    "priority": {
+      "type": "enumeration",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "default": "medium"
+    },
+    "branch_pattern": {
+      "type": "string"
+    },
+    "github_pr_id": {
+      "type": "biginteger"
+    },
+    "ci_status": {
+      "type": "enumeration",
+      "enum": [
+        "pending",
+        "success",
+        "failure",
+        "cancelled"
+      ]
+    },
+    "order": {
+      "type": "integer",
+      "default": 0
+    },
+    "task_type": {
+      "type": "enumeration",
+      "enum": [
+        "general",
+        "document",
+        "flowchart",
+        "code_commit",
+        "test_case",
+        "deployment"
+      ],
+      "default": "general"
+    },
+    "layer_id": {
+      "type": "string"
+    },
+    "stage": {
+      "type": "enumeration",
+      "enum": [
+        "planning",
+        "design",
+        "implementation",
+        "testing",
+        "deployment"
+      ],
+      "default": "planning"
+    },
+    "checkpoint": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::checkpoint.checkpoint",
+      "inversedBy": "tasks"
+    },
+    "last_commit_sha": {
+      "type": "string"
+    },
+    "pr_url": {
+      "type": "string"
+    },
+    "pr_title": {
+      "type": "string"
+    }
+  }
+}
