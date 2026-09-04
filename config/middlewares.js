@@ -58,6 +58,7 @@ module.exports = ({ env }) => {
     "strapi::poweredBy",
     "strapi::query",
     { name: "global::draft-visibility" },
+    { name: "global::github-oauth-debug" },
     "strapi::body",
     {
       name: "strapi::session",

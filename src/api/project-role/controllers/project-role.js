@@ -35,7 +35,44 @@ module.exports = createCoreController('api::project-role.project-role', ({ strap
         project: projectId,
         permissions: data.permissions || { read: true, write_tasks: false, write_sprints: false, write_checkpoints: false, manage_members: false, admin: false },
       },
+      populate: ['job_title_tag'],
     });
+
+    // Auto-create a feed post of type job_opportunity if requested
+    if (data.announce_in_feed) {
+      try {
+        const roleLabel = role.custom_label || role.job_title_tag?.label_en || 'New Role';
+        const projectTitle = project.title || 'Untitled Project';
+
+        await strapi.documents('api::blog.blog').create({
+          data: {
+            type: 'job_opportunity',
+            description: [
+              {
+                type: 'paragraph',
+                children: [
+                  { type: 'text', text: `Looking for a `, bold: false },
+                  { type: 'text', text: roleLabel, bold: true },
+                  { type: 'text', text: ` to join the project "`, bold: false },
+                  { type: 'text', text: projectTitle, bold: true },
+                  { type: 'text', text: `". Apply now and be part of the team!`, bold: false },
+                ],
+              },
+            ],
+            publisher: user.id,
+            project_role: role.documentId,
+            project: projectId,
+            isDraft: false,
+            tags: ['job_opportunity', roleLabel.toLowerCase()],
+          },
+        });
+
+        strapi.log.info(`[Project] Job opportunity feed post created for role "${roleLabel}" in project "${projectTitle}"`);
+      } catch (err) {
+        strapi.log.error('[Project] Failed to create job opportunity feed post:', err.message);
+        // Don't fail the role creation if feed post fails
+      }
+    }
 
     return { data: role };
   },
