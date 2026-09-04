@@ -34,7 +34,6 @@ module.exports = createCoreController('api::project-member.project-member', ({ s
     const canManage = await hasProjectPermission(strapi, projectId, user.id, 'manage_members');
     if (!canManage) return ctx.forbidden('manage_members permission required');
 
-    // Verify the role belongs to this project
     const role = await strapi.documents('api::project-role.project-role').findOne({
       documentId: roleId,
       populate: ['project'],
@@ -53,7 +52,48 @@ module.exports = createCoreController('api::project-member.project-member', ({ s
   },
 
   /**
-   * DELETE /projects/:id/members/:memberId — Remove a member (manage_members permission required).
+   * PATCH /projects/:id/members/:memberId/github-username
+   * Link a GitHub username to a project member.
+   * Can be set by the member themselves OR a project admin.
+   * Body: { github_username: string }
+   */
+  async updateGithubUsername(ctx) {
+    const user = ctx.state.user;
+    if (!user) return ctx.unauthorized('Authentication required');
+
+    const { id: projectId, memberId } = ctx.params;
+    const body = ctx.request.body?.data || ctx.request.body;
+    const { github_username } = body;
+
+    const member = await strapi.documents('api::project-member.project-member').findOne({
+      documentId: memberId,
+      populate: ['users_permissions_user', 'project'],
+    });
+
+    if (!member) return ctx.notFound('Member not found');
+    if (member.project?.documentId !== projectId) {
+      return ctx.badRequest('Member does not belong to this project');
+    }
+
+    const isSelf = member.users_permissions_user?.id === user.id;
+    const canManage = await hasProjectPermission(strapi, projectId, user.id, 'manage_members').catch(() => false);
+
+    if (!isSelf) {
+      return ctx.forbidden('You can only update your own GitHub username');
+    }
+
+    const updated = await strapi.documents('api::project-member.project-member').update({
+      documentId: memberId,
+      data: { github_username: (github_username || '').trim() || null },
+      populate: ['users_permissions_user', 'project_role'],
+    });
+
+    strapi.log.info(`[Project] Member ${memberId} GitHub username → "${github_username}" by user ${user.id}`);
+    return { data: updated };
+  },
+
+  /**
+   * DELETE /projects/:id/members/:memberId — Soft-remove a member.
    */
   async removeMember(ctx) {
     const user = ctx.state.user;
@@ -64,7 +104,6 @@ module.exports = createCoreController('api::project-member.project-member', ({ s
     const canManage = await hasProjectPermission(strapi, projectId, user.id, 'manage_members');
     if (!canManage) return ctx.forbidden('manage_members permission required');
 
-    // Soft deactivate
     await strapi.documents('api::project-member.project-member').update({
       documentId: memberId,
       data: { is_active: false },

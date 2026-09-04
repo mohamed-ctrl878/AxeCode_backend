@@ -45,5 +45,15 @@ module.exports = {
         middlewares: [],
       },
     },
+    {
+      method: 'PATCH',
+      path: '/projects/:id/github-repo',
+      handler: 'project.linkGithubRepo',
+      config: {
+        policies: [],
+        middlewares: [],
+      },
+    },
   ],
 };
+

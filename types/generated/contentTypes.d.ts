@@ -527,19 +527,26 @@ export interface ApiBlogBlog extends Struct.CollectionTypeSchema {
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    description: Schema.Attribute.Blocks & Schema.Attribute.Required;
+    description: Schema.Attribute.Blocks;
     engagement_score: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
     image: Schema.Attribute.Media<'images'>;
     isDraft: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<'oneToMany', 'api::blog.blog'> &
       Schema.Attribute.Private;
+    project: Schema.Attribute.Relation<'manyToOne', 'api::project.project'>;
+    project_role: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::project-role.project-role'
+    >;
     publishedAt: Schema.Attribute.DateTime;
     publisher: Schema.Attribute.Relation<
       'manyToOne',
       'plugin::users-permissions.user'
     >;
     tags: Schema.Attribute.JSON;
+    type: Schema.Attribute.Enumeration<['blog', 'job_opportunity']> &
+      Schema.Attribute.DefaultTo<'blog'>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -2204,11 +2211,14 @@ export interface ApiTaskTask extends Struct.CollectionTypeSchema {
       Schema.Attribute.Private;
     description: Schema.Attribute.Text;
     github_pr_id: Schema.Attribute.BigInteger;
+    last_commit_sha: Schema.Attribute.String;
     layer_id: Schema.Attribute.String;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<'oneToMany', 'api::task.task'> &
       Schema.Attribute.Private;
     order: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    pr_title: Schema.Attribute.String;
+    pr_url: Schema.Attribute.String;
     priority: Schema.Attribute.Enumeration<
       ['low', 'medium', 'high', 'critical']
     > &

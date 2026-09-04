@@ -14,7 +14,7 @@
   "attributes": {
     "description": {
       "type": "blocks",
-      "required": true
+      "required": false
     },
     "image": {
       "type": "media",
@@ -39,6 +39,24 @@
     "isDraft": {
       "type": "boolean",
       "default": true
+    },
+    "type": {
+      "type": "enumeration",
+      "enum": [
+        "blog",
+        "job_opportunity"
+      ],
+      "default": "blog"
+    },
+    "project_role": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::project-role.project-role"
+    },
+    "project": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::project.project"
     }
   }
 }

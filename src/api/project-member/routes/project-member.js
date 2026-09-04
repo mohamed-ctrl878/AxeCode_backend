@@ -13,6 +13,12 @@ module.exports = {
       config: { policies: [], middlewares: [] },
     },
     {
+      method: 'PATCH',
+      path: '/projects/:id/members/:memberId/github-username',
+      handler: 'project-member.updateGithubUsername',
+      config: { policies: [], middlewares: [] },
+    },
+    {
       method: 'DELETE',
       path: '/projects/:id/members/:memberId',
       handler: 'project-member.removeMember',
@@ -20,3 +26,4 @@ module.exports = {
     },
   ],
 };
+

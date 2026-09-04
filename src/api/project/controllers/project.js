@@ -168,4 +168,57 @@ module.exports = createCoreController('api::project.project', ({ strapi }) => ({
 
     return { data: { message: 'Project archived successfully' } };
   },
+
+  /**
+   * PATCH /projects/:id/github-repo
+   * Link a GitHub repository to this project (admin only).
+   * Body: { github_repo_url, github_repo_id, github_webhook_secret }
+   */
+  async linkGithubRepo(ctx) {
+    const user = ctx.state.user;
+    if (!user) return ctx.unauthorized('Authentication required');
+
+    const { id } = ctx.params;
+    const body = ctx.request.body?.data || ctx.request.body;
+    const { github_repo_url, github_repo_id, github_webhook_secret } = body;
+
+    const project = await strapi.documents('api::project.project').findOne({
+      documentId: id,
+      populate: ['publisher'],
+    });
+
+    if (!project) return ctx.notFound('Project not found');
+    if (project.publisher?.id !== user.id) {
+      // Allow project admins too
+      const membership = await strapi.db.query('api::project-member.project-member').findOne({
+        where: { project: project.id, users_permissions_user: user.id, is_active: true },
+        populate: { project_role: true },
+      });
+      if (!membership?.project_role?.permissions?.admin) {
+        return ctx.forbidden('Only project admins can link a GitHub repository');
+      }
+    }
+
+    const updateData = {};
+    if (github_repo_url !== undefined) updateData.github_repo_url = github_repo_url;
+    if (github_repo_id !== undefined) updateData.github_repo_id = github_repo_id;
+    if (github_webhook_secret !== undefined) updateData.github_webhook_secret = github_webhook_secret;
+
+    const updated = await strapi.documents('api::project.project').update({
+      documentId: id,
+      data: updateData,
+    });
+
+    strapi.log.info(`[Project] GitHub repo linked: project=${id}, repo_url=${github_repo_url}, repo_id=${github_repo_id}`);
+    return {
+      data: {
+        documentId: updated.documentId,
+        github_repo_url: updated.github_repo_url,
+        github_repo_id: updated.github_repo_id,
+        webhook_url: `${strapi.config.server.url || ''}/api/github/webhook`,
+        message: 'Repository linked. Configure the webhook URL in your GitHub repo settings.',
+      },
+    };
+  },
 }));
+
