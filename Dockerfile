@@ -1,18 +1,15 @@
 # ============================================
 # Stage 1: Install ALL dependencies + Build
 # ============================================
-FROM node:20-alpine AS builder
-
-RUN apk add --no-cache build-base gcc autoconf automake zlib-dev libpng-dev vips-dev python3
+FROM node:20-bookworm-slim AS builder
 
 WORKDIR /app
 
 # Copy package files first (Docker caches this layer if unchanged)
 COPY package.json package-lock.json ./
 
-# Single npm ci: install everything, rebuild native modules once
-RUN npm ci --ignore-scripts && \
-    npm rebuild bcrypt --build-from-source
+# Single npm ci: install everything using pre-built binaries for Debian
+RUN npm ci
 
 # Copy source code (only invalidates cache when code changes)
 COPY . .
@@ -23,13 +20,7 @@ RUN npm run build
 # ============================================
 # Stage 2: Production image (lean)
 # ============================================
-FROM node:20-alpine AS production
-
-RUN apk add --no-cache vips-dev
-
-# Create a non-root user for security
-RUN addgroup -g 1001 -S strapi && \
-    adduser -S strapi -u 1001
+FROM node:20-bookworm-slim AS production
 
 WORKDIR /app
 
@@ -45,11 +36,11 @@ COPY --from=builder /app/favicon.png ./
 # Remove dev dependencies from the copied node_modules
 RUN npm prune --omit=dev 2>/dev/null || true
 
-# Create uploads directory and set ownership
+# Create uploads directory and set ownership to built-in 'node' user
 RUN mkdir -p public/uploads && \
-    chown -R strapi:strapi /app
+    chown -R node:node /app
 
-USER strapi
+USER node
 
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
