@@ -245,10 +245,8 @@ module.exports = ({ strapi }) => {
     // Helper to send OTP email
     async sendOtpEmail(email, code) {
       try {
-        const fromEmail = process.env.GMAIL_USER || 'no-reply@axecode.com';
         await strapi.plugins['email'].services.email.send({
           to: email,
-          from: fromEmail,
           subject: 'AxeCode | Identity Initialization Code',
           text: `Your identity initialization code is: ${code}`,
           html: `
@@ -383,10 +381,8 @@ module.exports = ({ strapi }) => {
    */
   async sendResetOtpEmail(email, code) {
     try {
-      const fromEmail = process.env.GMAIL_USER || 'no-reply@axecode.com';
       await strapi.plugins['email'].services.email.send({
         to: email,
-        from: fromEmail,
         subject: 'AxeCode | Reset Password Code',
         text: `Your password reset code is: ${code}`,
         html: `
