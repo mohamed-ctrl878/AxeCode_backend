@@ -247,16 +247,37 @@ module.exports = ({ strapi }) => {
       try {
         await strapi.plugins['email'].services.email.send({
           to: email,
-          subject: 'AxeCode | Identity Initialization Code',
-          text: `Your identity initialization code is: ${code}`,
+          replyTo: process.env.GMAIL_USER || 'no-reply@axecode.com',
+          subject: `${code} is your AxeCode verification code`,
+          text: [
+            'Welcome to AxeCode!',
+            '',
+            `Your verification code is: ${code}`,
+            '',
+            'Enter this code on the verification page to confirm your email address.',
+            'This code expires in 10 minutes.',
+            '',
+            'If you did not create an AxeCode account, you can safely ignore this email.',
+            '',
+            '— The AxeCode Team',
+          ].join('\n'),
           html: `
-            <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; background: #0b0f19; color: #ffffff; border-radius: 12px; border: 1px solid #1e293b;">
-                <h2 style="color: #34d399; margin-bottom: 20px;">Identity Verification Protocol</h2>
-                <p style="font-size: 14px; opacity: 0.8;">We've initialized your identity profile. Use the following code to authorize access:</p>
-                <div style="background: #1e293b; padding: 15px; border-radius: 8px; text-align: center; margin: 25px 0;">
-                    <span style="font-size: 28px; font-weight: bold; letter-spacing: 5px; color: #34d399;">${code}</span>
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 480px; margin: 0 auto;">
+              <div style="padding: 32px 24px; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px;">
+                <h2 style="margin: 0 0 8px; font-size: 20px; color: #111827;">Verify your email</h2>
+                <p style="margin: 0 0 24px; font-size: 15px; color: #6b7280; line-height: 1.5;">
+                  Welcome to AxeCode! Enter the code below to confirm your email address.
+                </p>
+                <div style="background: #f3f4f6; padding: 16px; border-radius: 8px; text-align: center; margin: 0 0 24px;">
+                  <span style="font-size: 32px; font-weight: 700; letter-spacing: 6px; color: #111827;">${code}</span>
                 </div>
-                <p style="font-size: 10px; opacity: 0.5;">If you didn't initiate this request, please ignore this transmission.</p>
+                <p style="margin: 0; font-size: 13px; color: #9ca3af; line-height: 1.5;">
+                  This code expires in 10 minutes. If you didn't create an AxeCode account, you can safely ignore this email.
+                </p>
+              </div>
+              <p style="margin: 16px 0 0; text-align: center; font-size: 12px; color: #9ca3af;">
+                &copy; ${new Date().getFullYear()} AxeCode &mdash; axecode.qzz.io
+              </p>
             </div>
           `,
         });
@@ -383,16 +404,37 @@ module.exports = ({ strapi }) => {
     try {
       await strapi.plugins['email'].services.email.send({
         to: email,
-        subject: 'AxeCode | Reset Password Code',
-        text: `Your password reset code is: ${code}`,
+        replyTo: process.env.GMAIL_USER || 'no-reply@axecode.com',
+        subject: `${code} is your AxeCode password reset code`,
+        text: [
+          'Password Reset Request',
+          '',
+          `Your password reset code is: ${code}`,
+          '',
+          'Enter this code on the reset page to set a new password.',
+          'This code expires in 10 minutes.',
+          '',
+          'If you did not request a password reset, you can safely ignore this email. Your password will remain unchanged.',
+          '',
+          '— The AxeCode Team',
+        ].join('\n'),
         html: `
-          <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; background: #0b0f19; color: #ffffff; border-radius: 12px; border: 1px solid #1e293b;">
-              <h2 style="color: #60a5fa; margin-bottom: 20px;">Password Reset Protocol</h2>
-              <p style="font-size: 14px; opacity: 0.8;">We've authorized a password reset for your profile. Use the following code to complete the process:</p>
-              <div style="background: #1e293b; padding: 15px; border-radius: 8px; text-align: center; margin: 25px 0;">
-                  <span style="font-size: 28px; font-weight: bold; letter-spacing: 5px; color: #60a5fa;">${code}</span>
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 480px; margin: 0 auto;">
+            <div style="padding: 32px 24px; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px;">
+              <h2 style="margin: 0 0 8px; font-size: 20px; color: #111827;">Reset your password</h2>
+              <p style="margin: 0 0 24px; font-size: 15px; color: #6b7280; line-height: 1.5;">
+                We received a request to reset your AxeCode password. Enter the code below to set a new one.
+              </p>
+              <div style="background: #f3f4f6; padding: 16px; border-radius: 8px; text-align: center; margin: 0 0 24px;">
+                <span style="font-size: 32px; font-weight: 700; letter-spacing: 6px; color: #111827;">${code}</span>
               </div>
-              <p style="font-size: 10px; opacity: 0.5;">If you didn't initiate this protocol, please secure your credentials immediately.</p>
+              <p style="margin: 0; font-size: 13px; color: #9ca3af; line-height: 1.5;">
+                This code expires in 10 minutes. If you didn't request this, you can safely ignore this email.
+              </p>
+            </div>
+            <p style="margin: 16px 0 0; text-align: center; font-size: 12px; color: #9ca3af;">
+              &copy; ${new Date().getFullYear()} AxeCode &mdash; axecode.qzz.io
+            </p>
           </div>
         `,
       });
