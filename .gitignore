@@ -121,9 +121,8 @@ coverage
 # Strapi
 ############################
 
-.env
-.env.production
-license.txt
+.env*
+!.env.example
 exports
 .strapi
 dist
