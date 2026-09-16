@@ -7,6 +7,15 @@
 
 const rateLimits = new Map(); // Simple in-memory rate limiter
 
+// Memory leak prevention: Clean up expired IPs every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, record] of rateLimits.entries()) {
+    if (now > record.resetTime) {
+      rateLimits.delete(ip);
+    }
+  }
+}, 5 * 60 * 1000);
 const { z } = require('zod');
 const validator = require('validator');
 
@@ -136,25 +145,25 @@ module.exports = ({ strapi }) => ({
     try {
       const securityLogic = strapi.service('api::auth.security-logic');
       let token = ctx.cookies.get('jwt');
-      console.log("[SECURITY DEBUG] Cookie JWT present:", !!token);
+      strapi.log.debug(`[SECURITY DEBUG] Cookie JWT present: ${!!token}`);
 
       if (!token && ctx.request?.header?.authorization) {
         const parts = ctx.request.header.authorization.split(' ');
 
         if (parts.length === 2 && parts[0].toLowerCase() === 'bearer') {
           token = parts[1];
-          console.log("[SECURITY DEBUG] Token extracted from Header");
+          strapi.log.debug("[SECURITY DEBUG] Token extracted from Header");
         }
       }
 
       if (!token) {
-        console.log("[SECURITY DEBUG] No token found in Cookie or Header");
+        strapi.log.debug("[SECURITY DEBUG] No token found in Cookie or Header");
         return;
       }
 
       const payload = await securityLogic.verifyToken(token);
 
-      console.log("[SECURITY DEBUG] Payload verified:", !!payload);
+      strapi.log.debug(`[SECURITY DEBUG] Payload verified: ${!!payload}`);
 
       if (!payload || !payload.id) {
         strapi.log.debug('[Security] Malformed or incompatible JWT payload detected');
@@ -165,17 +174,17 @@ module.exports = ({ strapi }) => ({
         where: { id: payload.id },
         populate: { role: true }
       });
-      console.log("[SECURITY DEBUG] User found in DB:", !!user);
+      strapi.log.debug(`[SECURITY DEBUG] User found in DB: ${!!user}`);
 
       if (user && !user.blocked) {
         ctx.state.user = user;
-        console.log("[SECURITY DEBUG] Auth successful for user ID:", user.id);
+        strapi.log.debug(`[SECURITY DEBUG] Auth successful for user ID: ${user.id}`);
       } else if (user?.blocked) {
-        console.log("[SECURITY DEBUG] User is blocked");
+        strapi.log.debug("[SECURITY DEBUG] User is blocked");
       }
     } catch (err) {
       strapi.log.error(`[Security] Authentication error: ${err.message}`);
-      console.error("[SECURITY DEBUG] Exception:", err);
+      strapi.log.debug(`[SECURITY DEBUG] Exception: ${err.message}`);
     }
   }
 });

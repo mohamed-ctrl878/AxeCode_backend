@@ -63,7 +63,7 @@ module.exports = ({ env }) => {
     {
       name: "strapi::session",
       config: {
-        secure: false,
+        secure: env('NODE_ENV') === 'production',
       },
     },
     "strapi::favicon",
