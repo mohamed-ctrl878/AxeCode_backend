@@ -1,6 +1,8 @@
 'use strict';
 
 const { Server } = require('socket.io');
+const { createAdapter } = require('@socket.io/redis-adapter');
+const { createClient } = require('redis');
 const { createFileOwnershipMiddleware } = require('./middlewares/file-ownership-middleware');
 const { createLessonAccessStrategy } = require('./api/upload-security/strategies/lesson-access-strategy');
 const { createAuthenticatedAccessStrategy } = require('./api/upload-security/strategies/authenticated-access-strategy');
@@ -108,7 +110,7 @@ module.exports = {
       }
     })();
 
-    // Initialize Socket.io
+    // ── Initialize Socket.io ──
     const io = new Server(strapi.server.httpServer, {
       cors: {
         origin: [
@@ -121,6 +123,41 @@ module.exports = {
     });
 
     strapi.io = io;
+
+    // ── Layer 3 (Scalability): Attach Redis Adapter so room-based broadcasts ──
+    // (`io.to('user:x').emit(...)`, used by notification-socket and
+    // submission-socket) reach clients connected to ANY Strapi instance, not
+    // only the instance that triggered the emit. Without this, running more
+    // than one Strapi replica behind a load balancer silently drops real-time
+    // events for users whose socket landed on a different instance.
+    //
+    // REDIS_URL is required for this. If it's missing we deliberately do NOT
+    // silently fall back to the in-memory adapter in production, because that
+    // failure mode (events randomly not arriving) is far harder to diagnose
+    // than a loud startup warning.
+    if (process.env.REDIS_URL) {
+      const pubClient = createClient({ url: process.env.REDIS_URL });
+      const subClient = pubClient.duplicate();
+
+      pubClient.on('error', (err) => strapi.log.error(`[Socket.io/Redis] pubClient error: ${err.message}`));
+      subClient.on('error', (err) => strapi.log.error(`[Socket.io/Redis] subClient error: ${err.message}`));
+
+      Promise.all([pubClient.connect(), subClient.connect()])
+        .then(() => {
+          io.adapter(createAdapter(pubClient, subClient));
+          strapi.log.info('[Socket.io] Redis adapter attached — safe for multi-instance horizontal scaling');
+        })
+        .catch((err) => {
+          strapi.log.error(`[Socket.io] Failed to attach Redis adapter, falling back to in-memory adapter (NOT safe for >1 instance): ${err.message}`);
+        });
+    } else {
+      strapi.log.warn(
+        '[Socket.io] REDIS_URL not set — using in-memory adapter. ' +
+        'This is fine for a single instance, but real-time notifications/submission ' +
+        'updates WILL be silently dropped for some users if you run more than one ' +
+        'Strapi instance/replica behind a load balancer. Set REDIS_URL before scaling horizontally.'
+      );
+    }
 
     // Initialize submission socket handlers
     strapi.service('api::submission.submission-socket').initialize(io);
