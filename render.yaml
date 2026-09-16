@@ -24,6 +24,14 @@ services:
       - key: DATABASE_SSL
         value: "false" # Render internal DB connections don't use SSL
 
+      # Redis (Socket.io Adapter). Render's free tier has no managed Redis,
+      # so point this at an external free-tier instance (e.g. Upstash, Redis
+      # Cloud) — fill in the Render Dashboard. Required once this service
+      # runs as more than one instance, otherwise fine to leave unset on a
+      # single staging instance.
+      - key: REDIS_URL
+        sync: false
+
       # Auto-generated secrets
       - key: APP_KEYS
         generateValue: true
