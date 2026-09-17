@@ -57,6 +57,27 @@ module.exports = createCoreController("api::submission.submission", ({ strapi })
     return this.transformResponse(sanitizedResults, { pagination });
   },
 
+  async findOne(ctx) {
+    const { id } = ctx.params;
+    const loggedInUser = ctx.state.user;
+
+    const entity = await strapi.service('api::submission.submission').findOne(id, {
+      populate: ctx.query.populate,
+    });
+    
+    if (!entity) return ctx.notFound();
+
+    const ownerId = entity.user?.id || entity.user;
+    const isOwner = loggedInUser && (ownerId === loggedInUser.id);
+
+    const result = isOwner
+      ? entity
+      : { ...entity, code: '/* Private Code */', judgeOutput: { results: [] } };
+
+    const sanitized = await this.sanitizeOutput(result, ctx);
+    return this.transformResponse(sanitized);
+  },
+
   /**
    * Handle code submission
    */
@@ -99,10 +120,16 @@ module.exports = createCoreController("api::submission.submission", ({ strapi })
    */
   async testSubmit(ctx) {
      const { problem, code, language } = ctx.request.body.data;
+     const user = ctx.state.user;
+     
+     if (!user) {
+         return ctx.unauthorized('You must be logged in to perform test submissions');
+     }
+     
      if (!problem || !code || !language) return ctx.badRequest('Missing fields');
 
      const result = await strapi.documents('api::submission.submission').create({
-         data: { problem, code, language, verdict: 'pending' }
+         data: { problem, code, language, user: user.id, verdict: 'pending' }
      });
      
      strapi.service('api::submission.submission-logic').queueSubmission(result.documentId);

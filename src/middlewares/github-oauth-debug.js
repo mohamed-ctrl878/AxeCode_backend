@@ -9,6 +9,10 @@ module.exports = (config, { strapi }) => {
   return async (ctx, next) => {
     const url = ctx.request.url;
 
+    if (process.env.NODE_ENV === 'production') {
+      return next();
+    }
+
     // Only log for OAuth connect routes
     if (url.includes('/connect/github')) {
       strapi.log.info(`\n========== [GITHUB OAUTH DEBUG] ==========`);

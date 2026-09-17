@@ -18,12 +18,15 @@ services:
       - DATABASE_USERNAME=axecode
       - DATABASE_SSL=false
       - JUDGE0_API_URL=http://judge0-api:2358
+      - REDIS_URL=redis://app-redis:6379
     ports:
       - "1338:1338"
     volumes:
       - strapi-uploads:/app/public/uploads
     depends_on:
       db:
+        condition: service_healthy
+      app-redis:
         condition: service_healthy
     networks:
       - axe-network
@@ -62,6 +65,33 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  # ============================================
+  # App Redis — Socket.io Adapter (pub/sub for real-time
+  # notifications + submission updates across Strapi instances).
+  # Kept separate from judge0-redis on purpose: different lifecycle,
+  # different failure blast-radius (this one is app-critical for
+  # real-time features; judge0-redis is internal to the execution engine).
+  # ============================================
+  app-redis:
+    image: redis:7-alpine
+    container_name: axe-app-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - app-redis-data:/data
+    networks:
+      - axe-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     logging:
       driver: "json-file"
       options:
@@ -171,6 +201,8 @@ volumes:
   npm-letsencrypt:
     driver: local
   judge0-db-data:
+    driver: local
+  app-redis-data:
     driver: local
 
 # ============================================
