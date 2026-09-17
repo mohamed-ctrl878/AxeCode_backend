@@ -1,0 +1,164 @@
+# ============================================================
+# STAGING stack — for ephemeral E2E test runs only.
+#
+# Fully isolated from the production stack in docker-compose.yml:
+#   - distinct container_names (axe-staging-*)
+#   - distinct host ports (see table below)
+#   - distinct named volumes (axe-staging-*)
+#   - distinct network (axe-staging-network)
+#   - distinct project name required at run time: always run this with
+#     `docker compose -p axecode-staging -f docker-compose.staging.yml ...`
+#     so Compose never mistakes it for the production project.
+#
+# No nginx-proxy-manager here — this is talked to directly over the
+# mapped ports, on the same machine, for the duration of a test run only.
+#
+# | Service      | Production port | Staging port |
+# |--------------|------------------|--------------|
+# | strapi       | 1338             | 12338        |
+# | db            | 5432             | 12432        |
+# | app-redis     | (internal only) | (internal only) |
+# | judge0-api    | 2358             | 12358        |
+#
+# Lifecycle is meant to be fully scripted (see scripts/run-staging-e2e.sh):
+# up -> wait for health -> run E2E tests -> down -v (always, even on failure).
+# Never leave this running unattended on a machine that also hosts production.
+# ============================================================
+
+services:
+  strapi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: axe-staging-strapi
+    restart: "no"
+    env_file: .env.staging
+    environment:
+      - NODE_ENV=staging
+      - DATABASE_CLIENT=postgres
+      - DATABASE_HOST=db
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=axecode_staging
+      - DATABASE_USERNAME=axecode_staging
+      - DATABASE_SSL=false
+      - JUDGE0_API_URL=http://judge0-api:2358
+      - REDIS_URL=redis://app-redis:6379
+    ports:
+      - "12338:1338"
+    depends_on:
+      db:
+        condition: service_healthy
+      app-redis:
+        condition: service_healthy
+    networks:
+      - axe-staging-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:1338/_health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
+
+  db:
+    image: postgres:16-alpine
+    container_name: axe-staging-postgres
+    restart: "no"
+    environment:
+      - POSTGRES_DB=axecode_staging
+      - POSTGRES_USER=axecode_staging
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+    ports:
+      - "12432:5432"
+    volumes:
+      - axe-staging-postgres-data:/var/lib/postgresql/data
+    networks:
+      - axe-staging-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U axecode_staging -d axecode_staging"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  app-redis:
+    image: redis:7-alpine
+    container_name: axe-staging-app-redis
+    restart: "no"
+    command: ["redis-server", "--appendonly", "no"]
+    networks:
+      - axe-staging-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  judge0-api:
+    image: judge0/judge0:latest
+    container_name: axe-staging-judge0-api
+    restart: "no"
+    privileged: true
+    ports:
+      - "12358:2358"
+    env_file: judge0.staging.conf
+    volumes:
+      - ./judge0.staging.conf:/judge0.conf:ro
+    networks:
+      - axe-staging-network
+    depends_on:
+      judge0-db:
+        condition: service_healthy
+      judge0-redis:
+        condition: service_healthy
+
+  judge0-worker:
+    image: judge0/judge0:latest
+    container_name: axe-staging-judge0-worker
+    restart: "no"
+    command: ["./scripts/workers"]
+    privileged: true
+    env_file: judge0.staging.conf
+    volumes:
+      - ./judge0.staging.conf:/judge0.conf:ro
+    networks:
+      - axe-staging-network
+    depends_on:
+      judge0-db:
+        condition: service_healthy
+      judge0-redis:
+        condition: service_healthy
+
+  judge0-db:
+    image: postgres:16-alpine
+    container_name: axe-staging-judge0-db
+    restart: "no"
+    env_file: judge0.staging.conf
+    networks:
+      - axe-staging-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U judge0"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  judge0-redis:
+    image: redis:7-alpine
+    container_name: axe-staging-judge0-redis
+    restart: "no"
+    command: [ "sh", "-c", 'docker-entrypoint.sh --appendonly no --requirepass "$$REDIS_PASSWORD"' ]
+    env_file: judge0.staging.conf
+    networks:
+      - axe-staging-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "judge0_staging_redis_pass", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  axe-staging-postgres-data:
+    driver: local
+
+networks:
+  axe-staging-network:
+    driver: bridge
