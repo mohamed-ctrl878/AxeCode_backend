@@ -1,0 +1,117 @@
+name: Staging E2E (manual, self-hosted)
+
+on:
+  workflow_dispatch:
+    inputs:
+      frontend_ref:
+        description: "Branch/ref of AxeCode (frontend) to test against"
+        required: false
+        default: "main"
+      pr_number:
+        description: "PR number to comment the results on (optional)"
+        required: false
+        default: ""
+
+concurrency:
+  group: staging-e2e
+  cancel-in-progress: false
+
+jobs:
+  staging-e2e:
+    runs-on: [self-hosted, staging-capable]
+    environment: staging-e2e
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout backend
+        uses: actions/checkout@v4
+        with:
+          path: AxeCode_backend
+
+      - name: Checkout frontend
+        uses: actions/checkout@v4
+        with:
+          repository: mohamed-ctrl878/AxeCode
+          ref: ${{ inputs.frontend_ref }}
+          path: AxeCode
+
+      - name: Write .env.staging from environment secrets
+        working-directory: AxeCode_backend
+        env:
+          DATABASE_PASSWORD: ${{ secrets.E2E_DATABASE_PASSWORD }}
+        run: |
+          cat > .env.staging <<EOF
+          HOST=0.0.0.0
+          PORT=1338
+          PUBLIC_URL=http://localhost:12338
+          TRUST_PROXY=false
+
+          APP_KEYS=$(openssl rand -base64 16),$(openssl rand -base64 16),$(openssl rand -base64 16),$(openssl rand -base64 16)
+          API_TOKEN_SALT=$(openssl rand -base64 16)
+          ADMIN_JWT_SECRET=$(openssl rand -base64 16)
+          TRANSFER_TOKEN_SALT=$(openssl rand -base64 16)
+          JWT_SECRET=$(openssl rand -base64 16)
+
+          DATABASE_CLIENT=postgres
+          DATABASE_HOST=db
+          DATABASE_PORT=5432
+          DATABASE_NAME=axecode_staging
+          DATABASE_USERNAME=axecode_staging
+          DATABASE_PASSWORD=${DATABASE_PASSWORD}
+
+          REDIS_URL=redis://app-redis:6379
+
+          CORS_ORIGIN=http://localhost:4173
+          FRONTEND_URL=http://localhost:4173
+
+          RECAPTCHA_SITE_KEY=6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI
+          RECAPTCHA_SECRET_KEY=6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe
+          RECAPTCHA_REQUIRED=true
+          RECAPTCHA_MIN_SCORE=0.5
+
+          JUDGE0_API_URL=http://judge0-api:2358
+          VAPID_SUBJECT=mailto:staging@axecode.local
+          KASHIER_MODE=test
+          EOF
+          echo "Wrote .env.staging ($(wc -l < .env.staging) lines). Not printing contents (contains secrets)."
+
+      - name: Run staging stack + Playwright E2E
+        id: e2e
+        working-directory: AxeCode_backend
+        env:
+          FRONTEND_DIR: ../AxeCode
+          E2E_TEST_USER_EMAIL: ${{ secrets.E2E_TEST_USER_EMAIL }}
+          E2E_TEST_USER_PASSWORD: ${{ secrets.E2E_TEST_USER_PASSWORD }}
+        run: |
+          chmod +x scripts/run-staging-e2e.sh
+          ./scripts/run-staging-e2e.sh
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-e2e-report-${{ github.run_id }}
+          path: |
+            AxeCode/playwright-report/
+            AxeCode/test-results/
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Comment results on PR
+        if: always() && inputs.pr_number != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const outcome = '${{ steps.e2e.outcome }}';
+            const icon = outcome === 'success' ? 'v' : 'x';
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: Number('${{ inputs.pr_number }}'),
+              body: `### ${icon} Staging E2E — ${outcome}\n\nFrontend ref: \`${{ inputs.frontend_ref }}\`\n\n[Full run + downloadable report](${runUrl})\n\nStaging stack was torn down automatically after this run.`,
+            });
+
+      - name: Fail the job if E2E failed
+        if: steps.e2e.outcome != 'success'
+        run: exit 1
