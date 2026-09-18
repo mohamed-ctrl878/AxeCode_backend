@@ -34,6 +34,7 @@ jobs:
           repository: mohamed-ctrl878/AxeCode
           ref: ${{ inputs.frontend_ref }}
           path: AxeCode
+          token: ${{ secrets.FRONTEND_REPO_TOKEN }}
 
       - name: Write .env.staging from environment secrets
         working-directory: AxeCode_backend
