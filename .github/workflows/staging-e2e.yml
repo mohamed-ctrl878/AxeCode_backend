@@ -75,7 +75,12 @@ jobs:
           KASHIER_MODE=test
           EOF
           echo "Wrote .env.staging ($(wc -l < .env.staging) lines). Not printing contents (contains secrets)."
-
+      - name: Warm up pullable Docker images
+        working-directory: AxeCode_backend
+        continue-on-error: true
+        run: |
+          docker compose -p axecode-staging -f docker-compose.staging.yml pull --ignore-buildable
+          
       - name: Run staging stack + Playwright E2E
         id: e2e
         working-directory: AxeCode_backend
