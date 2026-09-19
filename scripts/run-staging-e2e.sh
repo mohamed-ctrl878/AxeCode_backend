@@ -15,7 +15,14 @@
 # ============================================================
 set -uo pipefail
 
-COMPOSE="docker compose -p axecode-staging -f docker-compose.staging.yml"
+# --env-file is required: Docker Compose only auto-loads a file literally
+# named `.env` in the working directory. Without this flag, variable
+# substitutions in docker-compose.staging.yml (like ${DATABASE_PASSWORD})
+# silently resolve to an empty string instead of reading .env.staging —
+# which made Postgres refuse to start (the official image rejects an
+# empty superuser password) while docker compose only printed a warning,
+# not an error, making this easy to miss.
+COMPOSE="docker compose -p axecode-staging -f docker-compose.staging.yml --env-file .env.staging"
 FRONTEND_DIR="${FRONTEND_DIR:-../AxeCode}"
 STAGING_BACKEND_URL="http://localhost:12338"
 FRONTEND_PORT=4173
