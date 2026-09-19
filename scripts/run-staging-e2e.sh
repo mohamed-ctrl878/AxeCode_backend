@@ -9,9 +9,26 @@
 #     staging-e2e workflow from GitHub Environment secrets, or by hand
 #     for a manual local run — see .env.staging.example).
 #   - $FRONTEND_DIR points at a checkout of the AxeCode (frontend) repo.
+#   - The axecode-staging-strapi image is ALREADY built (see "Rebuilding
+#     the image" below). This script deliberately does NOT build it.
 #
 # Exit code is the Playwright exit code — the caller (CI or you) decides
 # what to do with pass/fail. Cleanup happens either way.
+#
+# ── Rebuilding the image ──
+# On this machine's disk, `RUN chown -R node:node /app` in the production
+# stage can take 15-40+ minutes (thousands of small files, slow I/O) —
+# and ANY change to the repo (even an unrelated file like this script)
+# invalidates Docker's cache from `COPY . .` onward, forcing that same
+# slow chown to re-run. That's too slow and unpredictable to happen
+# inside a timed CI run, so it never does here — `up` below reuses
+# whatever image already exists. Rebuild manually, at your own pace,
+# whenever backend code actually changes:
+#
+#   tmux new -s docker-build
+#   cd ~/actions-runner-staging/_work_staging/AxeCode_backend/AxeCode_backend/AxeCode_backend
+#   docker compose -p axecode-staging -f docker-compose.staging.yml --env-file .env.staging.example build
+#   # Ctrl+B then D to detach; `tmux attach -t docker-build` to check back.
 # ============================================================
 set -uo pipefail
 
@@ -48,8 +65,17 @@ if [[ ! -f .env.staging ]]; then
   exit 1
 fi
 
-echo "── Starting staging stack ──"
-$COMPOSE up -d --build
+if ! docker image inspect axecode-staging-strapi:latest > /dev/null 2>&1; then
+  echo "ERROR: image 'axecode-staging-strapi:latest' does not exist yet." >&2
+  echo "Build it manually first (see the comment block at the top of this" \
+       "script) — this script intentionally never builds it itself, since" \
+       "a build on this machine's disk can take 15-40+ minutes." >&2
+  EXIT_CODE=1
+  exit "$EXIT_CODE"
+fi
+
+echo "── Starting staging stack (reusing existing image, no build) ──"
+$COMPOSE up -d
 
 echo "── Waiting for Strapi health check (up to 3 minutes) ──"
 for i in $(seq 1 36); do
