@@ -77,13 +77,19 @@ fi
 echo "── Starting staging stack (reusing existing image, no build) ──"
 $COMPOSE up -d
 
-echo "── Waiting for Strapi health check (up to 3 minutes) ──"
-for i in $(seq 1 36); do
+# On this machine, Strapi's own boot (DB migrations + several sequential
+# permission/seed checks in bootstrap(), re-run on every start even when
+# they end up no-ops) has taken up to ~3m10s end to end — right past the
+# old 3-minute window here, which made the health check give up mere
+# seconds before Strapi actually finished. 8 minutes gives real margin
+# without hiding a genuine hang.
+echo "── Waiting for Strapi health check (up to 8 minutes) ──"
+for i in $(seq 1 96); do
   if curl -sf "${STAGING_BACKEND_URL}/_health" > /dev/null 2>&1; then
     echo "Backend is healthy."
     break
   fi
-  if [[ "$i" -eq 36 ]]; then
+  if [[ "$i" -eq 96 ]]; then
     echo "ERROR: backend did not become healthy in time." >&2
     $COMPOSE logs strapi --tail=100 || true
     EXIT_CODE=1
@@ -102,13 +108,13 @@ npm run preview -- --port "$FRONTEND_PORT" --strictPort &
 FRONTEND_PID=$!
 popd > /dev/null
 
-echo "── Waiting for frontend to serve (up to 1 minute) ──"
-for i in $(seq 1 12); do
+echo "── Waiting for frontend to serve (up to 2 minutes) ──"
+for i in $(seq 1 24); do
   if curl -sf "http://localhost:${FRONTEND_PORT}" > /dev/null 2>&1; then
     echo "Frontend is serving."
     break
   fi
-  if [[ "$i" -eq 12 ]]; then
+  if [[ "$i" -eq 24 ]]; then
     echo "ERROR: frontend did not start serving in time." >&2
     EXIT_CODE=1
     exit "$EXIT_CODE"
