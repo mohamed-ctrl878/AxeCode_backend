@@ -100,7 +100,14 @@ done
 
 echo "── Building and serving the frontend against the staging backend ──"
 pushd "$FRONTEND_DIR" > /dev/null
-npm ci --legacy-peer-deps
+# The AxeCode frontend's own CI (.github/workflows/pipeline.yml) doesn't
+# use `npm ci` either, for the same reason we hit here: package-lock.json
+# has drifted out of sync with package.json (most recently missing the
+# @playwright/test entries added for E2E). Match their own established
+# approach instead of fighting it: regenerate the lockfile fresh rather
+# than requiring it to already match exactly.
+rm -f package-lock.json
+npm install --legacy-peer-deps
 VITE_API_BASE_URL="${STAGING_BACKEND_URL}" \
   VITE_RECAPTCHA_SITE_KEY="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI" \
   npm run build
