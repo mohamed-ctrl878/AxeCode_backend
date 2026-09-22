@@ -23,6 +23,12 @@
 # Lifecycle is meant to be fully scripted (see scripts/run-staging-e2e.sh):
 # up -> wait for health -> run E2E tests -> down -v (always, even on failure).
 # Never leave this running unattended on a machine that also hosts production.
+#
+# Postgres healthchecks below are deliberately generous (up to ~10min of
+# tolerance) — on this machine's disk, Postgres startup time under I/O
+# contention has been observed to vary widely between runs, and a tight
+# healthcheck window turns that variance into a flappy/stuck "starting"
+# state instead of just taking a bit longer.
 # ============================================================
 
 services:
@@ -75,10 +81,10 @@ services:
       - axe-staging-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U axecode_staging -d axecode_staging"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-      start_period: 15s
+      interval: 10s
+      timeout: 10s
+      retries: 60
+      start_period: 60s
 
   app-redis:
     image: redis:7-alpine
@@ -137,9 +143,10 @@ services:
       - axe-staging-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U judge0"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
+      interval: 10s
+      timeout: 10s
+      retries: 60
+      start_period: 60s
 
   judge0-redis:
     image: redis:7-alpine
