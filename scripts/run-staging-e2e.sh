@@ -29,6 +29,13 @@
 #   cd ~/actions-runner-staging/_work_staging/AxeCode_backend/AxeCode_backend/AxeCode_backend
 #   docker compose -p axecode-staging -f docker-compose.staging.yml --env-file .env.staging.example build
 #   # Ctrl+B then D to detach; `tmux attach -t docker-build` to check back.
+#
+# ── If this script is killed hard (SIGKILL) before cleanup runs ──
+# No trap can catch SIGKILL. See scripts/staging-reaper.sh, installed as
+# a cron job on this machine, which force-removes any axe-staging-*
+# container/network/volume left running past a safety age — independent
+# of this script, so it still works even if this file's own cleanup
+# never gets to run at all.
 # ============================================================
 set -uo pipefail
 
@@ -55,9 +62,17 @@ cleanup() {
   rm -f .env.staging
   echo "── Cleanup done ──"
 }
-# Runs on normal exit AND on error/interrupt — this is the whole point:
-# nothing is left running on this machine no matter how the run ends.
+# EXIT covers normal return and `exit` calls. SIGTERM/SIGINT are caught
+# explicitly too (not just implied by EXIT) so a cancelled CI job or a
+# Ctrl+C starts cleanup immediately rather than however bash would
+# otherwise handle that signal — every second here matters when the
+# thing being cleaned up is a stack sharing this machine with production.
+# This still can't catch SIGKILL (e.g. if GitHub's SIGTERM grace period
+# elapses first on a slow run) — that gap is what staging-reaper.sh
+# (a cron job, independent of this script) exists to close.
 trap cleanup EXIT
+trap 'exit 143' TERM   # 128+15, conventional SIGTERM exit code; triggers the EXIT trap above
+trap 'exit 130' INT    # 128+2, conventional SIGINT exit code
 
 if [[ ! -f .env.staging ]]; then
   echo "ERROR: .env.staging not found. Copy .env.staging.example and fill it in," \
