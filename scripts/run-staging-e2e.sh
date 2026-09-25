@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # ============================================================
 # Runs the full staging E2E cycle on the self-hosted runner:
-#   up -> wait for health -> run Playwright E2E (frontend repo)
-#   -> cleanup (ALWAYS, success or failure)
+#   up -> wait for health -> seed test user -> run Playwright E2E
+#   (frontend repo) -> cleanup (ALWAYS, success or failure)
 #
 # Assumes:
 #   - .env.staging already exists in this directory (written by the
@@ -113,6 +113,51 @@ for i in $(seq 1 96); do
   sleep 5
 done
 
+# ── Seed test user for E2E ──
+# The staging stack uses a fresh database every run (volumes are destroyed
+# in cleanup). Strapi's bootstrap seeds permissions, wallets, and tags but
+# NOT user accounts. Without this step, Playwright's login tests fail
+# because the test user simply doesn't exist.
+#
+# We register the user through Strapi's own REST API (the same endpoint
+# the real frontend uses), then confirm them directly in Postgres so
+# login works without needing to handle OTP email verification.
+echo "── Seeding E2E test user ──"
+E2E_EMAIL="${E2E_TEST_USER_EMAIL:?E2E_TEST_USER_EMAIL is required}"
+E2E_PASSWORD="${E2E_TEST_USER_PASSWORD:?E2E_TEST_USER_PASSWORD is required}"
+# Derive a username from the email (everything before @)
+E2E_USERNAME=$(echo "$E2E_EMAIL" | cut -d'@' -f1 | tr '[:upper:]' '[:lower:]')
+
+# Step 1: Register the user via Strapi API
+REGISTER_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${STAGING_BACKEND_URL}/api/auth/local/register" \
+  -H "Content-Type: application/json" \
+  -d "{\"username\":\"${E2E_USERNAME}\",\"email\":\"${E2E_EMAIL}\",\"password\":\"${E2E_PASSWORD}\",\"firstname\":\"E2E\",\"lastname\":\"TestUser\"}")
+REGISTER_HTTP_CODE=$(echo "$REGISTER_RESPONSE" | tail -n1)
+REGISTER_BODY=$(echo "$REGISTER_RESPONSE" | sed '$d')
+echo "Register response (HTTP ${REGISTER_HTTP_CODE}): ${REGISTER_BODY}"
+
+# Step 2: Confirm the user directly in Postgres so login works
+# (The register endpoint sets confirmed=false and sends an OTP email,
+# but in CI there's no mailbox to receive it.)
+DB_CONTAINER=$($COMPOSE ps -q db)
+if [[ -n "$DB_CONTAINER" ]]; then
+  docker exec "$DB_CONTAINER" psql -U axecode_staging -d axecode_staging \
+    -c "UPDATE public.up_users SET confirmed = true WHERE email = '${E2E_EMAIL}';" \
+    2>/dev/null && echo "Test user confirmed in DB." || echo "WARN: Could not confirm user in DB (may already be confirmed)."
+else
+  echo "WARN: Could not find DB container to confirm test user."
+fi
+
+# Verify login actually works before wasting time on Playwright
+LOGIN_CHECK=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${STAGING_BACKEND_URL}/api/auth/login" \
+  -H "Content-Type: application/json" \
+  -d "{\"identifier\":\"${E2E_EMAIL}\",\"password\":\"${E2E_PASSWORD}\",\"recaptchaToken\":\"test-bypass\"}")
+echo "Login verification: HTTP ${LOGIN_CHECK}"
+if [[ "$LOGIN_CHECK" != "200" ]]; then
+  echo "WARN: Login returned HTTP ${LOGIN_CHECK} — tests may fail. Strapi logs:" >&2
+  $COMPOSE logs strapi --tail=30 || true
+fi
+
 echo "── Building and serving the frontend against the staging backend ──"
 pushd "$FRONTEND_DIR" > /dev/null
 # The AxeCode frontend's own CI (.github/workflows/pipeline.yml) doesn't
@@ -150,8 +195,8 @@ pushd "$FRONTEND_DIR" > /dev/null
 npx playwright install --with-deps chromium
 
 E2E_BASE_URL="http://localhost:${FRONTEND_PORT}" \
-  E2E_TEST_USER_EMAIL="${E2E_TEST_USER_EMAIL:?E2E_TEST_USER_EMAIL is required}" \
-  E2E_TEST_USER_PASSWORD="${E2E_TEST_USER_PASSWORD:?E2E_TEST_USER_PASSWORD is required}" \
+  E2E_TEST_USER_EMAIL="${E2E_EMAIL}" \
+  E2E_TEST_USER_PASSWORD="${E2E_PASSWORD}" \
   CI=true \
   npm run test:e2e
 EXIT_CODE=$?
