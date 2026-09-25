@@ -125,6 +125,7 @@ rm -f package-lock.json
 npm install --legacy-peer-deps
 VITE_API_BASE_URL="${STAGING_BACKEND_URL}" \
   VITE_RECAPTCHA_SITE_KEY="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI" \
+  VITE_RECAPATCH="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI" \
   npm run build
 npm run preview -- --port "$FRONTEND_PORT" --strictPort &
 FRONTEND_PID=$!
