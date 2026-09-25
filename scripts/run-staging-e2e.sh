@@ -131,7 +131,7 @@ E2E_USERNAME=$(echo "$E2E_EMAIL" | cut -d'@' -f1 | tr '[:upper:]' '[:lower:]')
 # Step 1: Register the user via Strapi API
 REGISTER_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${STAGING_BACKEND_URL}/api/auth/local/register" \
   -H "Content-Type: application/json" \
-  -d "{\"username\":\"${E2E_USERNAME}\",\"email\":\"${E2E_EMAIL}\",\"password\":\"${E2E_PASSWORD}\",\"firstname\":\"E2E\",\"lastname\":\"TestUser\"}")
+  -d "{\"username\":\"${E2E_USERNAME}\",\"email\":\"${E2E_EMAIL}\",\"password\":\"${E2E_PASSWORD}\",\"firstname\":\"E2E\",\"lastname\":\"TestUser\",\"recaptchaToken\":\"test-bypass\"}")
 REGISTER_HTTP_CODE=$(echo "$REGISTER_RESPONSE" | tail -n1)
 REGISTER_BODY=$(echo "$REGISTER_RESPONSE" | sed '$d')
 echo "Register response (HTTP ${REGISTER_HTTP_CODE}): ${REGISTER_BODY}"
