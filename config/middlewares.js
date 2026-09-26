@@ -63,7 +63,7 @@ module.exports = ({ env }) => {
     {
       name: "strapi::session",
       config: {
-        secure: env('NODE_ENV') === 'production',
+        secure: false, // Fixes "Cannot send secure cookie over unencrypted connection" when behind proxy
       },
     },
     "strapi::favicon",
