@@ -8,7 +8,7 @@
 module.exports = (config, { strapi }) => {
   return async (ctx, next) => {
     // Only apply to GET requests for our content types
-    const path = ctx.fullPath || ctx.path;
+    const path = ctx.path; // ctx.path ignores query strings like ?populate=*, preventing matching errors
     const isApiRequest = path.startsWith('/api/');
     
     // We only care about GET (find/findOne) requests to our core APIs
