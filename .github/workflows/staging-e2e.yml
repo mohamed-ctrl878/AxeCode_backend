@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   staging-e2e:
-    runs-on: [self-hosted, staging-capable]
+    runs-on: [self-hosted, staging-runner]
     environment: staging-e2e
     timeout-minutes: 60
 
