@@ -192,7 +192,7 @@ done
 
 echo "── Running Playwright E2E ──"
 pushd "$FRONTEND_DIR" > /dev/null
-npx playwright install --with-deps chromium
+npx playwright install chromium
 
 E2E_BASE_URL="http://localhost:${FRONTEND_PORT}" \
   E2E_TEST_USER_EMAIL="${E2E_EMAIL}" \
