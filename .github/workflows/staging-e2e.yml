@@ -98,8 +98,8 @@ jobs:
         with:
           name: staging-e2e-report-${{ github.run_id }}
           path: |
-            AxeCode/playwright-report/
-            AxeCode/test-results/
+            AxeCode/playwright-report
+            AxeCode/test-results
           retention-days: 14
           if-no-files-found: warn
 
