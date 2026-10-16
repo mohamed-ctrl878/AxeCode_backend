@@ -148,6 +148,15 @@ else
   echo "WARN: Could not find DB container to confirm test user."
 fi
 
+# Step 3: Seed full test data (problems, courses, lessons, articles, events, roadmaps, projects, wallet)
+echo "── Seeding staging test data (problems, courses, lessons, articles, events, roadmaps, projects) ──"
+if [[ -f scripts/staging-seed-data.sql ]] && [[ -n "$DB_CONTAINER" ]]; then
+  docker exec -i "$DB_CONTAINER" psql -U axecode_staging -d axecode_staging < scripts/staging-seed-data.sql \
+    && echo "Staging test data seeded successfully." || echo "WARN: Staging seed script encountered an error."
+else
+  echo "WARN: scripts/staging-seed-data.sql not found or DB_CONTAINER empty."
+fi
+
 # Verify login actually works before wasting time on Playwright
 LOGIN_CHECK=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${STAGING_BACKEND_URL}/api/auth/login" \
   -H "Content-Type: application/json" \
