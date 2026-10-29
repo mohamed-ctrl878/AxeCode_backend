@@ -80,8 +80,16 @@ if [[ ! -f .env.staging ]]; then
   exit 1
 fi
 
+# Auto-tag axecode_backend-strapi:latest as axecode-staging-strapi:latest if missing
 if ! docker image inspect axecode-staging-strapi:latest > /dev/null 2>&1; then
-  echo "ERROR: image 'axecode-staging-strapi:latest' does not exist yet." >&2
+  if docker image inspect axecode_backend-strapi:latest > /dev/null 2>&1; then
+    echo "── Auto-tagging axecode_backend-strapi:latest as axecode-staging-strapi:latest ──"
+    docker tag axecode_backend-strapi:latest axecode-staging-strapi:latest
+  fi
+fi
+
+if ! docker image inspect axecode-staging-strapi:latest > /dev/null 2>&1; then
+  echo "ERROR: neither 'axecode-staging-strapi:latest' nor 'axecode_backend-strapi:latest' exists." >&2
   echo "Build it manually first (see the comment block at the top of this" \
        "script) — this script intentionally never builds it itself, since" \
        "a build on this machine's disk can take 15-40+ minutes." >&2
