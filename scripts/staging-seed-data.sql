@@ -18,23 +18,36 @@ DELETE FROM roadmaps WHERE document_id = 'roadmap_e2e_frontend';
 DELETE FROM tasks WHERE document_id LIKE 'task_e2e_%';
 DELETE FROM projects WHERE document_id = 'project_e2e_portal';
 
--- Ensure Public (2) and Authenticated (1) have find/findOne for catalog browsing
+-- Ensure Authenticated (1) and Public (2) have permissions for auth, catalog browsing, recommendations, and creation
 INSERT INTO up_permissions_role_lnk (permission_id, role_id)
-SELECT p.id, 2
+SELECT p.id, r.id
 FROM up_permissions p
+CROSS JOIN (SELECT 1 AS id UNION ALL SELECT 2 AS id) r
 WHERE p.action IN (
+  'api::auth.auth.register',
+  'plugin::users-permissions.auth.register',
+  'api::auth.auth.login',
   'api::problem.problem.find',
   'api::problem.problem.findOne',
   'api::course.course.find',
   'api::course.course.findOne',
   'api::article.article.find',
   'api::article.article.findOne',
+  'api::article.article.create',
   'api::event.event.find',
   'api::event.event.findOne',
   'api::roadmap.roadmap.find',
   'api::roadmap.roadmap.findOne',
   'api::project.project.find',
-  'api::project.project.findOne'
+  'api::project.project.findOne',
+  'api::project.project.create',
+  'api::recommendation.recommendation.getEvents',
+  'api::recommendation.recommendation.getCourses',
+  'api::recommendation.recommendation.getArticles',
+  'api::recommendation.recommendation.getProblems',
+  'api::recommendation.recommendation.getFeed',
+  'api::recommendation.recommendation.getBlogs',
+  'api::recommendation.recommendation.getPosts'
 )
 ON CONFLICT DO NOTHING;
 
