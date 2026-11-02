@@ -18,38 +18,124 @@ DELETE FROM roadmaps WHERE document_id = 'roadmap_e2e_frontend';
 DELETE FROM tasks WHERE document_id LIKE 'task_e2e_%';
 DELETE FROM projects WHERE document_id = 'project_e2e_portal';
 
--- Ensure Authenticated (1) and Public (2) have permissions for auth, catalog browsing, recommendations, and creation
-INSERT INTO up_permissions_role_lnk (permission_id, role_id)
-SELECT p.id, r.id
-FROM up_permissions p
-CROSS JOIN (SELECT 1 AS id UNION ALL SELECT 2 AS id) r
-WHERE p.action IN (
-  'api::auth.auth.register',
-  'plugin::users-permissions.auth.register',
-  'api::auth.auth.login',
-  'api::problem.problem.find',
-  'api::problem.problem.findOne',
-  'api::course.course.find',
-  'api::course.course.findOne',
-  'api::article.article.find',
-  'api::article.article.findOne',
-  'api::article.article.create',
-  'api::event.event.find',
-  'api::event.event.findOne',
-  'api::roadmap.roadmap.find',
-  'api::roadmap.roadmap.findOne',
-  'api::project.project.find',
-  'api::project.project.findOne',
-  'api::project.project.create',
-  'api::recommendation.recommendation.getEvents',
-  'api::recommendation.recommendation.getCourses',
-  'api::recommendation.recommendation.getArticles',
-  'api::recommendation.recommendation.getProblems',
-  'api::recommendation.recommendation.getFeed',
-  'api::recommendation.recommendation.getBlogs',
-  'api::recommendation.recommendation.getPosts'
-)
-ON CONFLICT DO NOTHING;
+-- Ensure Authenticated and Public roles have permissions for auth, catalog browsing, recommendations, and creation
+DO $$
+DECLARE
+  v_action text;
+  v_perm_id integer;
+  v_role record;
+  v_actions text[] := ARRAY[
+    -- Auth & User Profile
+    'api::auth.auth.register',
+    'plugin::users-permissions.auth.register',
+    'api::auth.auth.login',
+    'plugin::users-permissions.user.me',
+    'plugin::users-permissions.user.find',
+    'plugin::users-permissions.user.findOne',
+    
+    -- Problems
+    'api::problem.problem.find',
+    'api::problem.problem.findOne',
+    'api::problem.problem.create',
+    'api::problem.problem.update',
+    'api::test-case.test-case.find',
+    'api::test-case.test-case.findOne',
+    'api::code-template.code-template.find',
+    'api::code-template.code-template.findOne',
+    
+    -- Submissions
+    'api::submission.submission.create',
+    'api::submission.submission.testSubmit',
+    'api::submission.submission.find',
+    'api::submission.submission.findOne',
+
+    -- Courses, Lessons & Weeks
+    'api::course.course.find',
+    'api::course.course.findOne',
+    'api::course.course.create',
+    'api::course.course.update',
+    'api::lesson.lesson.find',
+    'api::lesson.lesson.findOne',
+    'api::week.week.find',
+    'api::week.week.findOne',
+    
+    -- Articles
+    'api::article.article.find',
+    'api::article.article.findOne',
+    'api::article.article.create',
+    'api::article.article.update',
+
+    -- Events
+    'api::event.event.find',
+    'api::event.event.findOne',
+    'api::event.event.create',
+
+    -- Roadmaps
+    'api::roadmap.roadmap.find',
+    'api::roadmap.roadmap.findOne',
+    'api::roadmap.roadmap.create',
+
+    -- Projects & Tasks
+    'api::project.project.find',
+    'api::project.project.findOne',
+    'api::project.project.create',
+    'api::project.project.update',
+    'api::project.project.delete',
+    'api::task.task.findTasks',
+    'api::task.task.createTask',
+    'api::task.task.updateTask',
+    'api::task.task.transitionTask',
+    'api::task.task.reorderTasks',
+    'api::task.task.deleteTask',
+    'api::sprint.sprint.findSprints',
+    'api::sprint.sprint.createSprint',
+    'api::project-member.project-member.findMembers',
+    'api::project-role.project-role.findRoles',
+    'api::job-title-tag.job-title-tag.find',
+
+    -- Recommendations & Feeds
+    'api::recommendation.recommendation.getFeed',
+    'api::recommendation.recommendation.getArticles',
+    'api::recommendation.recommendation.getBlogs',
+    'api::recommendation.recommendation.getPosts',
+    'api::recommendation.recommendation.getCourses',
+    'api::recommendation.recommendation.getProblems',
+    'api::recommendation.recommendation.getEvents',
+    'api::recommendation.recommendation.getLiveStreams',
+    'api::recommendation.recommendation.getJobAds',
+
+    -- Wallet
+    'api::wallet.wallet.find',
+    'api::wallet.wallet.findOne'
+  ];
+BEGIN
+  FOREACH v_action IN ARRAY v_actions LOOP
+    -- 1. Ensure permission row exists in up_permissions
+    SELECT id INTO v_perm_id FROM up_permissions WHERE action = v_action LIMIT 1;
+    IF v_perm_id IS NULL THEN
+      INSERT INTO up_permissions (document_id, action, created_at, updated_at, published_at)
+      VALUES (
+        substr(md5(v_action || clock_timestamp()::text), 1, 16),
+        v_action,
+        NOW(),
+        NOW(),
+        NOW()
+      ) RETURNING id INTO v_perm_id;
+    END IF;
+
+    -- 2. Link permission to both Authenticated and Public roles
+    FOR v_role IN (SELECT id FROM up_roles WHERE type IN ('authenticated', 'public')) LOOP
+      IF NOT EXISTS (
+        SELECT 1 FROM up_permissions_role_lnk 
+        WHERE permission_id = v_perm_id AND role_id = v_role.id
+      ) THEN
+        INSERT INTO up_permissions_role_lnk (permission_id, role_id)
+        VALUES (v_perm_id, v_role.id);
+      END IF;
+    END LOOP;
+  END LOOP;
+END $$;
+
 
 -- 2. Seed Problem: Valid Palindrome
 INSERT INTO problems (
