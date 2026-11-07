@@ -185,6 +185,47 @@ pushd "$FRONTEND_DIR" > /dev/null
 # than requiring it to already match exactly.
 rm -f package-lock.json
 npm install --legacy-peer-deps
+cat > .env <<ENVEOF
+VITE_API_BASE_URL=${STAGING_BACKEND_URL}
+VITE_RECAPTCHA_SITE_KEY=6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI
+VITE_RECAPATCH=6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI
+VITE_API_REGISTER=/api/auth/local/register
+VITE_API_LOGOUT=/api/auth/logout
+VITE_API_LOGIN=/api/auth/login
+VITE_API_USER=/api/users
+VITE_API_ME=/api/users/me
+VITE_API_MYDATA=/api/users/me?populate=avatar,role
+VITE_API_FORGET_PASS=/api/auth/forgot-password
+VITE_API_RESET_PASS=/api/auth/reset-password
+VITE_EMAIL_CONFIRM=/api/auth/email-confirmation?confirmation=
+VITE_API_CODE_EXE=/api/code-execution
+VITE_API_PROBLEMS=/api/problems
+VITE_API_TEST_CASES=/api/test-cases
+VITE_API_COURSES=/api/recommendations/courses
+VITE_API_COURSE_BASE=/api/courses
+VITE_API_LESSONS=/api/lessons
+VITE_API_WEEKS=/api/weeks
+VITE_API_EVENTS=/api/recommendations/events
+VITE_API_EVENTS_BASE=/api/events
+VITE_API_COURSE_TYPES=/api/course-types
+VITE_API_PROBLEM_TYPES=/api/problem-types
+VITE_API_COMMENTS=/api/comments
+VITE_API_UPLOADS=/api/upload
+VITE_API_ENTITLEMENTS=/api/user-entitlements
+VITE_API_ENTITLEMENTS_SET=/api/entitlements
+VITE_API_CONVERSATION=/api/conversations/
+VITE_API_POSTS=/api/posts/
+VITE_API_ROADMAP=/api/roadmaps
+VITE_API_ARTICLE=/api/recommendations/articles
+VITE_API_ARTICLE_BASE=/api/articles
+VITE_API_LIVE_STREAM=/api/live-streams
+VITE_API_BLOG=/api/recommendations/blogs
+VITE_API_BLOG_BASE=/api/blogs
+VITE_API_UPLOAD=/api/upload
+VITE_API_SUBMISSIONS=/api/submissions
+VITE_CMS_ANALYTICS_ENDPOINT=/api/cms-analytics
+VITE_LISTEN_ALL=true
+ENVEOF
 VITE_API_BASE_URL="${STAGING_BACKEND_URL}" \
   VITE_RECAPTCHA_SITE_KEY="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI" \
   VITE_RECAPATCH="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI" \

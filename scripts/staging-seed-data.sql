@@ -235,7 +235,7 @@ INSERT INTO courses (
 ) VALUES (
   'course_e2e_js',
   'JavaScript Fundamentals',
-  'easy',
+  'Easy',
   false,
   '[{"type":"paragraph","children":[{"text":"Master the core concepts of modern JavaScript with hands-on practice."}]}]'::jsonb,
   '["javascript","web"]'::jsonb,
